@@ -7,7 +7,6 @@ import { Barbers } from "@/components/landing/Barbers";
 import { Hours } from "@/components/landing/Hours";
 import { Contact } from "@/components/landing/Contact";
 import { Footer } from "@/components/landing/Footer";
-import heroImage from "@/assets/hero-barbershop.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,7 +24,6 @@ export const Route = createFileRoute("/")({
           "Experiência premium de cuidado masculino. Cortes modernos, barba desenhada e atendimento de alto padrão.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: heroImage },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "LA CREME BARBER | Barbearia Premium" },
       {
@@ -33,7 +31,6 @@ export const Route = createFileRoute("/")({
         content:
           "Experiência premium de cuidado masculino. Cortes modernos, barba desenhada e atendimento de alto padrão.",
       },
-      { name: "twitter:image", content: heroImage },
     ],
   }),
   component: Index,

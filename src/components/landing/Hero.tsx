@@ -13,7 +13,7 @@ export function Hero() {
           width={1920}
           height={1088}
           className="h-full w-full object-cover"
-          priority
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-soft-black/90 via-soft-black/70 to-soft-black/40" />
       </div>
