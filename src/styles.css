@@ -101,7 +101,7 @@
   --secondary: oklch(0.94 0.01 260);
   --secondary-foreground: oklch(0.18 0.02 260);
   --muted: oklch(0.94 0.01 260);
-  --muted-foreground: oklch(0.5 0.03 260);
+  --muted-foreground: oklch(0.38 0.025 260);
   --accent: oklch(0.75 0.15 85);
   --accent-foreground: oklch(0.18 0.02 260);
   --destructive: oklch(0.577 0.245 27.325);
@@ -172,10 +172,22 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 }
 
