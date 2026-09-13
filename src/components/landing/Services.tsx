@@ -1,4 +1,4 @@
-import { Scissors, FlaskConical, Sparkles, Crown } from "lucide-react";
+import { Scissors, FlaskConical, Sparkles, Sun } from "lucide-react";
 
 const services = [
   {
@@ -23,9 +23,9 @@ const services = [
     time: "75 min",
   },
   {
-    icon: Crown,
-    title: "Tratamento premium",
-    description: "Hidratação capilar, esfoliação facial e cuidados especiais para você se sentir no topo.",
+    icon: Sun,
+    title: "Luzes",
+    description: "Iluminação dos fios com técnica precisa e acabamento natural.",
     price: "R$ 120",
     time: "90 min",
   },
@@ -33,23 +33,23 @@ const services = [
 
 export function Services() {
   return (
-    <section id="servicos" className="bg-secondary/40 py-20 lg:py-28">
+    <section id="servicos" className="bg-secondary/60 py-16 lg:py-24">
       <div className="container-tight">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-bold uppercase tracking-widest text-brand">Serviços</span>
+          <span className="text-[15px] font-bold uppercase text-brand">Serviços</span>
           <h2 className="mt-3 text-balance font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
             Escolha sua experiência
           </h2>
-          <p className="mt-4 text-balance text-muted-foreground">
+          <p className="mt-4 text-pretty text-base text-foreground/75">
             Serviços pensados para o homem moderno, com qualidade, precisão e aquele toque especial.
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service) => (
             <div
               key={service.title}
-              className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-gold/40 hover:shadow-lg"
+              className="group flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-gold/60"
             >
               <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
                 <service.icon className="h-6 w-6" />
@@ -57,12 +57,12 @@ export function Services() {
               <h3 className="mt-5 font-display text-xl font-semibold text-card-foreground">
                 {service.title}
               </h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 flex-1 text-base leading-relaxed text-foreground/75">
                 {service.description}
               </p>
               <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                <span className="font-display text-2xl font-bold text-brand">{service.price}</span>
-                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                 <span className="font-display text-3xl font-bold text-brand">{service.price}</span>
+                 <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-[15px] font-semibold text-foreground">
                   {service.time}
                 </span>
               </div>
@@ -73,7 +73,7 @@ export function Services() {
         <div className="mt-12 text-center">
           <a
             href="#agendar"
-            className="inline-flex items-center justify-center rounded-md bg-brand px-8 py-4 text-base font-bold text-brand-foreground shadow-sm transition-all hover:bg-brand/90 hover:shadow-md"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-brand px-8 py-3 text-base font-bold text-brand-foreground shadow-sm transition-colors hover:bg-brand/90"
           >
             Agendar agora
           </a>

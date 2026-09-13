@@ -4,7 +4,7 @@ export function Hero() {
   return (
     <section
       id="inicio"
-      className="relative flex min-h-screen items-center justify-center overflow-hidden pt-16"
+      className="relative flex min-h-[88svh] items-center justify-center overflow-hidden pt-16"
     >
       <div className="absolute inset-0 z-0">
         <img
@@ -15,21 +15,21 @@ export function Hero() {
           className="h-full w-full object-cover"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-soft-black/90 via-soft-black/70 to-soft-black/40" />
+        <div className="absolute inset-0 bg-soft-black/75" />
       </div>
 
       <div className="container-tight relative z-10 py-20">
         <div className="max-w-3xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-1.5 backdrop-blur-sm">
+          <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-gold/40 bg-soft-black/50 px-4 py-2 backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-gold" />
-            <span className="text-sm font-medium text-gold">Experiência premium de cuidado masculino</span>
+            <span className="text-[15px] font-semibold text-gold">Experiência premium de cuidado masculino</span>
           </div>
 
-          <h1 className="text-balance font-display text-5xl font-bold leading-[0.95] tracking-tight text-off-white sm:text-6xl md:text-7xl lg:text-8xl">
+          <h1 className="text-balance font-display text-4xl font-bold leading-tight text-off-white sm:text-6xl md:text-7xl lg:text-8xl">
             Acredita que acontece
           </h1>
 
-          <p className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-off-white/80 sm:text-xl">
+          <p className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-off-white sm:text-xl">
             Na LA CREME BARBER, transformamos seu visual em uma experiência de alto padrão. 
             Corte, barba e cuidado masculino com o estilo que você merece.
           </p>
@@ -37,13 +37,13 @@ export function Hero() {
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
             <a
               href="#agendar"
-              className="inline-flex items-center justify-center rounded-md bg-gold px-8 py-4 text-base font-bold text-gold-foreground shadow-lg shadow-gold/20 transition-all hover:bg-gold/90 hover:shadow-xl"
+               className="inline-flex min-h-12 items-center justify-center rounded-md bg-brand px-8 py-3 text-base font-bold text-brand-foreground shadow-sm transition-colors hover:bg-brand/90"
             >
               Agendar horário
             </a>
             <a
               href="#servicos"
-              className="inline-flex items-center justify-center rounded-md border border-off-white/30 bg-off-white/10 px-8 py-4 text-base font-semibold text-off-white backdrop-blur-sm transition-all hover:bg-off-white/20"
+               className="inline-flex min-h-12 items-center justify-center rounded-md border border-off-white/50 bg-soft-black/40 px-8 py-3 text-base font-semibold text-off-white backdrop-blur-sm transition-colors hover:bg-soft-black/60"
             >
               Conhecer serviços
             </a>
@@ -51,7 +51,7 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 animate-bounce md:block">
+      <div className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 motion-safe:animate-bounce md:block">
         <div className="h-12 w-6 rounded-full border-2 border-off-white/40 p-1">
           <div className="h-2.5 w-full rounded-full bg-gold" />
         </div>
