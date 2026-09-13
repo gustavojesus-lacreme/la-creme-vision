@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Scissors, Instagram, Facebook } from "lucide-react";
 
 const footerLinks = [
@@ -12,7 +13,10 @@ export function Footer() {
     <footer className="border-t border-border bg-background py-12">
       <div className="container-tight">
         <div className="flex flex-col items-center gap-8 text-center">
-          <Link to="/" className="flex items-center gap-2 text-foreground">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-foreground transition-colors hover:text-brand"
+          >
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand text-brand-foreground">
               <Scissors className="h-5 w-5" />
             </div>
@@ -59,5 +63,3 @@ export function Footer() {
     </footer>
   );
 }
-
-import { Link } from "@tanstack/react-router";
