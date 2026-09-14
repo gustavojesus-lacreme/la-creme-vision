@@ -1,5 +1,4 @@
 import { MapPin, Phone, Clock } from "lucide-react";
-import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const contactInfo = [
@@ -63,12 +62,6 @@ export function Contact() {
             <h3 className="font-display text-2xl font-bold text-card-foreground">
               Solicitar agendamento
             </h3>
-            <div className="mt-4 flex items-start gap-3 rounded-md border border-gold/50 bg-gold/10 p-4 text-foreground">
-              <Info className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
-              <p className="text-base font-semibold leading-relaxed">
-                Demonstração visual — O agendamento online completo será ativado na próxima etapa
-              </p>
-            </div>
 
             <form className="mt-8 space-y-5" onSubmit={(e) => e.preventDefault()}>
               <div className="grid gap-5 sm:grid-cols-2">
@@ -104,11 +97,7 @@ export function Contact() {
                   id="service"
                   className="min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Selecione um serviço</option>
-                  <option value="corte">Corte de cabelo</option>
-                  <option value="barba">Barba desenhada</option>
-                  <option value="combo">Corte + Barba</option>
-                  <option value="luzes">Luzes</option>
+                  <option value="">Consulte os serviços disponíveis</option>
                 </select>
               </div>
 

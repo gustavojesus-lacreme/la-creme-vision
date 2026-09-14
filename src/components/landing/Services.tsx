@@ -1,35 +1,4 @@
-import { Scissors, FlaskConical, Sparkles, Sun } from "lucide-react";
-
-const services = [
-  {
-    icon: Scissors,
-    title: "Corte de cabelo",
-    description: "Corte moderno ou clássico, finalizado com produtos premium para um visual impecável.",
-    price: "R$ 50",
-    time: "45 min",
-  },
-  {
-    icon: FlaskConical,
-    title: "Barba desenhada",
-    description: "Modelagem completa da barba com toalha quente, produtos e acabamento preciso.",
-    price: "R$ 40",
-    time: "30 min",
-  },
-  {
-    icon: Sparkles,
-    title: "Corte + Barba",
-    description: "O combo perfeito para quem quer sair renovado do salão em uma sessão completa.",
-    price: "R$ 80",
-    time: "75 min",
-  },
-  {
-    icon: Sun,
-    title: "Luzes",
-    description: "Iluminação dos fios com técnica precisa e acabamento natural.",
-    price: "R$ 120",
-    time: "90 min",
-  },
-];
+import { Scissors } from "lucide-react";
 
 export function Services() {
   return (
@@ -38,36 +7,23 @@ export function Services() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-[15px] font-bold uppercase text-brand">Serviços</span>
           <h2 className="mt-3 text-balance font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Escolha sua experiência
+            Serviços
           </h2>
           <p className="mt-4 text-pretty text-base text-foreground/75">
-            Serviços pensados para o homem moderno, com qualidade, precisão e aquele toque especial.
+            Consulte nossa equipe para conhecer os atendimentos disponíveis.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {services.map((service) => (
-            <div
-              key={service.title}
-              className="group flex flex-col rounded-lg border border-border bg-card p-5 shadow-sm transition-colors hover:border-gold/60"
-            >
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground">
-                <service.icon className="h-6 w-6" />
-              </div>
-              <h3 className="mt-5 font-display text-xl font-semibold text-card-foreground">
-                {service.title}
-              </h3>
-              <p className="mt-2 flex-1 text-base leading-relaxed text-foreground/75">
-                {service.description}
-              </p>
-              <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                 <span className="font-display text-3xl font-bold text-brand">{service.price}</span>
-                 <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1.5 text-[15px] font-semibold text-foreground">
-                  {service.time}
-                </span>
-              </div>
-            </div>
-          ))}
+        <div className="mt-10 rounded-lg border border-border bg-card p-8 text-center shadow-sm sm:p-10">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-xl bg-brand/10 text-brand">
+            <Scissors className="h-7 w-7" />
+          </div>
+          <h3 className="mt-5 font-display text-xl font-semibold text-card-foreground">
+            Informações em atualização
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-base leading-relaxed text-foreground/75">
+            A relação oficial de serviços e valores será publicada em breve.
+          </p>
         </div>
 
         <div className="mt-12 text-center">

@@ -31,7 +31,7 @@ export function Hero() {
 
           <p className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-off-white sm:text-xl">
             Na LA CREME BARBER, transformamos seu visual em uma experiência de alto padrão. 
-            Corte, barba e cuidado masculino com o estilo que você merece.
+            Cuidado masculino com o estilo que você merece.
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
