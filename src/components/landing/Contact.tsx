@@ -34,8 +34,8 @@ export function Contact() {
               Agende seu horário
             </h2>
             <p className="mt-6 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">
-              Consulte os horários e veja como será a experiência de agendamento. Os dados abaixo
-              são apenas ilustrativos nesta etapa.
+              Entre em contato pelo WhatsApp ou visite nosso espaço. O agendamento online completo
+              será ativado em breve.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
