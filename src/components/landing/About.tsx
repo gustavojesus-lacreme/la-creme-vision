@@ -40,20 +40,11 @@ export function About() {
               time está pronto para transformar sua aparência com precisão e estilo.
             </p>
 
-            <div className="mt-10 grid grid-cols-1 gap-5 min-[430px]:grid-cols-3 sm:gap-8">
-              <div className="text-center sm:text-left">
-                <div className="font-display text-3xl font-bold text-brand sm:text-4xl">+5</div>
-                <div className="mt-1 text-[15px] font-medium text-foreground/75">Anos de experiência</div>
-              </div>
-              <div className="text-center sm:text-left">
-                <div className="font-display text-3xl font-bold text-brand sm:text-4xl">+10k</div>
-                <div className="mt-1 text-[15px] font-medium text-foreground/75">Clientes atendidos</div>
-              </div>
-              <div className="text-center sm:text-left">
-                <div className="font-display text-3xl font-bold text-brand sm:text-4xl">+15</div>
-                <div className="mt-1 text-[15px] font-medium text-foreground/75">Serviços exclusivos</div>
-              </div>
-            </div>
+            <p className="mt-6 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">
+              Nosso compromisso é com a qualidade, a higiene e a satisfação de quem senta na nossa
+              cadeira. Cada atendimento é uma oportunidade de entregar um resultado que traduza
+              confiança e estilo.
+            </p>
           </div>
 
           <div className="grid gap-4">
