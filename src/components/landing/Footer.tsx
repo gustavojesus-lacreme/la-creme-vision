@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Scissors, Instagram, Facebook } from "lucide-react";
+import { Scissors, Instagram } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 
 const footerLinks = [
   { label: "Início", href: "#inicio" },
