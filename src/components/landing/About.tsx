@@ -4,7 +4,7 @@ const highlights = [
   {
     icon: Award,
     title: "Excelência",
-    description: "Profissionais treinados para entregar o melhor resultado em cada corte.",
+    description: "Cuidado e atenção aos detalhes em cada atendimento.",
   },
   {
     icon: Users,
@@ -31,13 +31,12 @@ export function About() {
               A barbearia que eleva seu estilo
             </h2>
             <p className="mt-6 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">
-              A LA CREME BARBER nasceu para oferecer mais do que um simples corte. Aqui, cada 
+              A LA CREME BARBER nasceu para oferecer uma experiência especial de cuidado. Aqui, cada 
               detalhe é cuidadosamente planejado para que você se sinta no seu melhor momento. 
               Unimos técnica, produtos de qualidade e um atendimento que faz a diferença.
             </p>
             <p className="mt-4 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">
-              Seja para um corte clássico, uma barba desenhada ou um tratamento completo, nosso 
-              time está pronto para transformar sua aparência com precisão e estilo.
+              Nossa equipe está pronta para cuidar da sua aparência com atenção, precisão e estilo.
             </p>
 
             <p className="mt-6 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">

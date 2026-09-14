@@ -6,3 +6,5 @@
 - [x] Corrigir horários de funcionamento
 - [x] Sinalizar formulário como demonstração visual
 - [ ] Validar a página em mobile e desktop
+- [x] Remover textos de demonstração e informações de serviços não confirmadas
+- [x] Conferir endereço, WhatsApp, Instagram e horários oficiais
