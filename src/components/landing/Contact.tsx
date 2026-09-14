@@ -90,7 +90,7 @@ export function Contact() {
                   <input
                     id="phone"
                     type="tel"
-                    placeholder="(11) 99999-9999"
+                    placeholder="(16) 99733-5841"
                     className="min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none transition-colors placeholder:text-foreground/55 focus:border-brand focus:ring-2 focus:ring-ring"
                   />
                 </div>
