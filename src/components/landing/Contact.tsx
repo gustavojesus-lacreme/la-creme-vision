@@ -1,4 +1,4 @@
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Clock } from "lucide-react";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -6,20 +6,14 @@ const contactInfo = [
   {
     icon: MapPin,
     label: "Endereço",
-    value: "Av. Paulista, 1000 - Bela Vista, São Paulo - SP",
-    href: "#",
+    value: "Rua Francisco Isidoro da Silva, nº 85 - Ribeirão Preto - SP, CEP 14079-384",
+    href: "https://maps.google.com/?q=Rua+Francisco+Isidoro+da+Silva,+85,+Ribeirão+Preto+-+SP,+14079-384",
   },
   {
     icon: Phone,
-    label: "Telefone",
-    value: "(11) 99999-9999",
-    href: "tel:+5511999999999",
-  },
-  {
-    icon: Mail,
-    label: "E-mail",
-    value: "contato@lacremebarber.com.br",
-    href: "mailto:contato@lacremebarber.com.br",
+    label: "WhatsApp",
+    value: "(16) 99733-5841",
+    href: "https://wa.me/5516997335841",
   },
   {
     icon: Clock,
@@ -40,8 +34,8 @@ export function Contact() {
               Agende seu horário
             </h2>
             <p className="mt-6 text-pretty text-base leading-relaxed text-foreground/80 sm:text-lg">
-              Consulte os horários e veja como será a experiência de agendamento. Os dados abaixo
-              são apenas ilustrativos nesta etapa.
+              Entre em contato pelo WhatsApp ou visite nosso espaço. O agendamento online completo
+              será ativado em breve.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -96,7 +90,7 @@ export function Contact() {
                   <input
                     id="phone"
                     type="tel"
-                    placeholder="(11) 99999-9999"
+                    placeholder="(16) 99733-5841"
                     className="min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none transition-colors placeholder:text-foreground/55 focus:border-brand focus:ring-2 focus:ring-ring"
                   />
                 </div>
