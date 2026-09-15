@@ -93,10 +93,11 @@ function BookingPage() {
     queryKey: ["profile", session?.user.id],
     enabled: !!session,
     queryFn: async () => {
+      if (!session) return null;
       const { data, error: err } = await supabase
         .from("profiles")
         .select("first_name, last_name, whatsapp")
-        .eq("id", session!.user.id)
+        .eq("id", session.user.id)
         .maybeSingle();
       if (err) throw err;
       return data;
@@ -107,8 +108,9 @@ function BookingPage() {
     queryKey: ["busy", barberId, dateStr],
     enabled: !!barberId,
     queryFn: async () => {
+      if (!barberId) return [] as BusyInterval[];
       const { data, error: err } = await supabase.rpc("get_busy_slots", {
-        _barber_id: barberId!,
+        _barber_id: barberId,
         _day: dateStr,
       });
       if (err) throw err;
