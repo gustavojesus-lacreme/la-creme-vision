@@ -14,13 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          barber_id: string
+          created_at: string
+          customer_first_name: string
+          customer_last_name: string
+          customer_whatsapp: string
+          ends_at: string
+          id: string
+          service_id: string
+          starts_at: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          customer_first_name: string
+          customer_last_name: string
+          customer_whatsapp: string
+          ends_at: string
+          id?: string
+          service_id: string
+          starts_at: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          customer_first_name?: string
+          customer_last_name?: string
+          customer_whatsapp?: string
+          ends_at?: string
+          id?: string
+          service_id?: string
+          starts_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barbers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          specialty: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          specialty?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          specialty?: string
+        }
+        Relationships: []
+      }
+      business_hours: {
+        Row: {
+          closed: boolean
+          closes_at: string | null
+          opens_at: string | null
+          weekday: number
+        }
+        Insert: {
+          closed?: boolean
+          closes_at?: string | null
+          opens_at?: string | null
+          weekday: number
+        }
+        Update: {
+          closed?: boolean
+          closes_at?: string | null
+          opens_at?: string | null
+          weekday?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string
+          id: string
+          last_name?: string
+          whatsapp?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          duration_minutes: number
+          id: string
+          name: string
+          price_cents: number
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          duration_minutes: number
+          id?: string
+          name: string
+          price_cents: number
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          duration_minutes?: number
+          id?: string
+          name?: string
+          price_cents?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_busy_slots: {
+        Args: { _barber_id: string; _day: string }
+        Returns: {
+          ends_at: string
+          starts_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
