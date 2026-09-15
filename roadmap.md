@@ -1,10 +1,8 @@
 # Roadmap
 
-- [x] Melhorar legibilidade, contraste e alvos de toque
-- [x] Ajustar serviços e preços solicitados
-- [x] Compactar cartões e identificar equipe demonstrativa
-- [x] Corrigir horários de funcionamento
-- [x] Sinalizar formulário como demonstração visual
-- [ ] Validar a página em mobile e desktop
-- [x] Remover textos de demonstração e informações de serviços não confirmadas
-- [x] Conferir endereço, WhatsApp, Instagram e horários oficiais
+- [x] Remover seções e páginas institucionais
+- [x] Abrir direto na tela de agendamento
+- [x] Atualizar serviços, preços e durações oficiais
+- [x] Barbeiro Gustavo Jesus e horários oficiais
+- [x] Login/cadastro, visitante, meus agendamentos e minha conta
+- [x] Validar o fluxo no celular
