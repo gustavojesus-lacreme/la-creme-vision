@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, CalendarCheck, User, LogOut, Scissors } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { Button } from "@/components/ui/button";
 
 const items = [
   { to: "/agendar", label: "Agendar", icon: CalendarPlus },
@@ -35,21 +36,21 @@ export function AppNav() {
         </Link>
 
         {session ? (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleSignOut}
-            className="inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold text-foreground hover:bg-secondary"
+            className="min-h-11 px-3 text-sm font-semibold text-foreground"
           >
             <LogOut className="h-4 w-4" />
             Sair
-          </button>
+          </Button>
         ) : (
-          <Link
-            to="/auth"
-            className="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold text-brand hover:bg-secondary"
-          >
-            Entrar
-          </Link>
+          <Button asChild variant="ghost" className="min-h-11 px-3 text-sm font-semibold text-brand">
+            <Link to="/auth" search={{ modo: "entrar" }}>
+              Entrar
+            </Link>
+          </Button>
         )}
       </div>
 
