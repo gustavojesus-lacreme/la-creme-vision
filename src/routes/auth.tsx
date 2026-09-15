@@ -1,0 +1,190 @@
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Scissors } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { useSession } from "@/hooks/useSession";
+
+type Modo = "entrar" | "cadastro";
+
+export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): { modo: Modo } => ({
+    modo: search['modo'] === "cadastro" ? "cadastro" : "entrar",
+  }),
+  head: () => ({
+    meta: [
+      { title: "Entrar | LA CREME BARBER" },
+      { name: "description", content: "Acesse sua conta para agendar e ver seus horários." },
+      { property: "og:title", content: "Entrar | LA CREME BARBER" },
+      { property: "og:description", content: "Acesse sua conta na LA CREME BARBER." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const { modo } = Route.useSearch();
+  const navigate = useNavigate();
+  const { session } = useSession();
+
+  const [mode, setMode] = useState<Modo>(modo);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session) navigate({ to: "/agendar", replace: true });
+  }, [session, navigate]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+
+    if (mode === "entrar") {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) setError("Não foi possível entrar. Confira e-mail e senha.");
+      else navigate({ to: "/agendar", replace: true });
+    } else {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { first_name: firstName, last_name: lastName, whatsapp },
+        },
+      });
+      if (signUpError) setError("Não foi possível criar o cadastro. Tente outro e-mail.");
+      else if (!data.session) setMessage("Confira seu e-mail para confirmar o cadastro.");
+      else navigate({ to: "/agendar", replace: true });
+    }
+
+    setBusy(false);
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setError("Não foi possível entrar com o Google.");
+      return;
+    }
+    if (result.redirected) return;
+    navigate({ to: "/agendar", replace: true });
+  }
+
+  const inputClass =
+    "min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
+
+  return (
+    <main className="flex min-h-svh flex-col items-center justify-center bg-background px-5 py-10">
+      <div className="w-full max-w-sm">
+        <Link to="/" className="flex flex-col items-center text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand text-brand-foreground">
+            <Scissors className="h-6 w-6" />
+          </span>
+          <span className="mt-3 font-display text-lg font-bold text-foreground">
+            LA CREME BARBER
+          </span>
+        </Link>
+
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-md bg-secondary p-1">
+          {(["entrar", "cadastro"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value)}
+              className={`min-h-11 rounded-md text-sm font-bold ${
+                mode === value ? "bg-background text-brand shadow-sm" : "text-foreground/70"
+              }`}
+            >
+              {value === "entrar" ? "Entrar" : "Criar cadastro"}
+            </button>
+          ))}
+        </div>
+
+        <form className="mt-6 space-y-3" onSubmit={handleSubmit}>
+          {mode === "cadastro" && (
+            <>
+              <input
+                className={inputClass}
+                placeholder="Nome"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+              <input
+                className={inputClass}
+                placeholder="Sobrenome"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+              <input
+                className={inputClass}
+                placeholder="WhatsApp"
+                inputMode="tel"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                required
+              />
+            </>
+          )}
+          <input
+            className={inputClass}
+            type="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            className={inputClass}
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+          />
+
+          {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
+          {message && <p className="text-sm font-semibold text-brand">{message}</p>}
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground disabled:opacity-60"
+          >
+            {mode === "entrar" ? "Entrar" : "Criar cadastro"}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={handleGoogle}
+          className="mt-3 min-h-13 w-full rounded-md border border-input bg-background px-6 text-base font-semibold text-foreground"
+        >
+          Continuar com Google
+        </button>
+
+        <Link
+          to="/agendar"
+          className="mt-4 flex min-h-12 items-center justify-center text-base font-semibold text-foreground/70 underline underline-offset-4"
+        >
+          Continuar como visitante
+        </Link>
+      </div>
+    </main>
+  );
+}
