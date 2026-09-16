@@ -51,8 +51,18 @@ function AuthPage() {
 
     if (mode === "entrar") {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) setError("Não foi possível entrar. Confira e-mail e senha.");
-      else navigate({ to: "/agendar", replace: true });
+      if (signInError) {
+        const msg = signInError.message.toLowerCase();
+        if (msg.includes("email not confirmed")) {
+          setError("Confirme seu e-mail pelo link que enviamos antes de entrar.");
+        } else if (msg.includes("invalid login")) {
+          setError("E-mail ou senha incorretos. Verifique os dados e tente novamente.");
+        } else {
+          setError(signInError.message);
+        }
+      } else {
+        navigate({ to: "/agendar", replace: true });
+      }
     } else {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -62,10 +72,29 @@ function AuthPage() {
           data: { first_name: firstName, last_name: lastName, whatsapp },
         },
       });
-      if (signUpError) setError("Não foi possível criar o cadastro. Tente outro e-mail.");
-      else if (!data.session) setMessage("Confira seu e-mail para confirmar o cadastro.");
-      else navigate({ to: "/agendar", replace: true });
+      const alreadyRegistered =
+        signUpError?.message.toLowerCase().includes("already registered") ||
+        signUpError?.message.toLowerCase().includes("already been registered") ||
+        (!signUpError && data.user && (data.user.identities?.length ?? 0) === 0);
+
+      if (alreadyRegistered) {
+        setError("Este e-mail já possui cadastro. Use a opção Entrar ou recupere sua senha.");
+      } else if (signUpError) {
+        const msg = signUpError.message.toLowerCase();
+        if (msg.includes("password")) {
+          setError("Senha muito curta. Use pelo menos 6 caracteres.");
+        } else if (msg.includes("invalid") && msg.includes("email")) {
+          setError("E-mail inválido. Confira o endereço digitado.");
+        } else {
+          setError(signUpError.message);
+        }
+      } else if (!data.session) {
+        setMessage("Cadastro criado. Confira seu e-mail para confirmar e depois entre.");
+      } else {
+        navigate({ to: "/agendar", replace: true });
+      }
     }
+
 
     setBusy(false);
   }
