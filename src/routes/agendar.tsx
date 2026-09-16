@@ -52,7 +52,13 @@ function BookingPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState<{ when: Date; service: string } | null>(null);
+  const [confirmed, setConfirmed] = useState<{
+    when: Date;
+    service: string;
+    priceCents: number;
+    barber: string;
+    clientName: string;
+  } | null>(null);
 
   const servicesQuery = useQuery({
     queryKey: ["services"],
@@ -169,7 +175,13 @@ function BookingPage() {
     if (insertError) {
       setError("Não foi possível confirmar. Escolha outro horário e tente novamente.");
     } else {
-      setConfirmed({ when: slot, service: service.name });
+      setConfirmed({
+        when: slot,
+        service: service.name,
+        priceCents: service.price_cents,
+        barber: barber.name,
+        clientName: `${firstName.trim()}${lastName.trim() ? ` ${lastName.trim()}` : ""}`,
+      });
       setSlot(null);
       busyQuery.refetch();
     }
