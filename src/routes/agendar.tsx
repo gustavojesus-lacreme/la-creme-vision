@@ -189,6 +189,14 @@ function BookingPage() {
   }
 
   if (confirmed) {
+    const summaryRows: Array<[string, string]> = [
+      ["Cliente", confirmed.clientName],
+      ["Serviço", confirmed.service],
+      ["Barbeiro", confirmed.barber],
+      ["Data", formatDateLong(confirmed.when)],
+      ["Horário", formatTime(confirmed.when)],
+      ["Valor total", formatPrice(confirmed.priceCents)],
+    ];
     return (
       <div className="min-h-svh bg-background">
         <AppNav />
@@ -200,25 +208,41 @@ function BookingPage() {
             <h1 className="mt-4 font-display text-xl font-bold text-card-foreground">
               Agendamento confirmado
             </h1>
-            <p className="mt-2 text-base text-foreground/80">
-              {confirmed.service} · {formatDateLong(confirmed.when)} às {formatTime(confirmed.when)}
-            </p>
+
+            <dl className="mt-6 divide-y divide-border rounded-md border border-border bg-background/50 text-left">
+              {summaryRows.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <dt className="text-sm font-semibold uppercase tracking-wide text-foreground/60">
+                    {label}
+                  </dt>
+                  <dd
+                    className={`text-right text-base font-bold ${
+                      label === "Valor total" ? "text-brand" : "text-card-foreground"
+                    }`}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
             <div className="mt-6 space-y-3">
+              <Link
+                to="/meus-agendamentos"
+                className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold text-brand-foreground"
+              >
+                Meus agendamentos
+              </Link>
               <button
                 type="button"
                 onClick={() => setConfirmed(null)}
-                className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground"
+                className="flex min-h-13 w-full items-center justify-center rounded-md border border-input px-6 text-base font-semibold text-foreground"
               >
                 Novo agendamento
               </button>
-              {session && (
-                <Link
-                  to="/meus-agendamentos"
-                  className="flex min-h-13 w-full items-center justify-center rounded-md border border-input text-base font-semibold text-foreground"
-                >
-                  Meus agendamentos
-                </Link>
-              )}
             </div>
           </div>
         </main>
