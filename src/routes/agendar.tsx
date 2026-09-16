@@ -292,7 +292,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">2. Barbeiro</h2>
+          <h2 className="text-base font-bold uppercase text-brand">3. Barbeiro</h2>
           <div className="grid gap-2">
             {barbersQuery.data?.map((item) => (
               <button
@@ -311,7 +311,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">3. Data</h2>
+          <h2 className="text-base font-bold uppercase text-brand">4. Data</h2>
           <input
             type="date"
             className={inputClass}
@@ -322,7 +322,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">4. Horário disponível</h2>
+          <h2 className="text-base font-bold uppercase text-brand">5. Horário disponível</h2>
           {!service || !barber ? (
             <p className="text-base text-foreground/70">Escolha o serviço e o barbeiro.</p>
           ) : dayHours?.closed ? (
@@ -355,33 +355,11 @@ function BookingPage() {
           )}
         </section>
 
-        <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">5. Nome, sobrenome e WhatsApp</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input
-              className={inputClass}
-              placeholder="Nome"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              className={inputClass}
-              placeholder="Sobrenome"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <input
-            className={inputClass}
-            placeholder="WhatsApp"
-            inputMode="tel"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-          />
-        </section>
+
+
 
         <section className={`${cardClass} space-y-2`}>
-          <h2 className="font-display text-lg font-bold text-card-foreground">Resumo</h2>
+          <h2 className="font-display text-lg font-bold text-card-foreground">6. Confirmar agendamento</h2>
           <p className="text-base text-foreground/80">
             {service ? `${service.name} · ${formatPrice(service.price_cents)}` : "Serviço não escolhido"}
           </p>
