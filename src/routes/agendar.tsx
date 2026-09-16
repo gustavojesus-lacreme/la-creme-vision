@@ -220,28 +220,53 @@ function BookingPage() {
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Agendar horário</h1>
 
-        {!session && (
-          <section className="border-b border-border pb-5" aria-label="Acesso à conta">
-            <div className="grid grid-cols-2 gap-2">
-              <Button asChild className="min-h-12 text-base font-bold">
-                <Link to="/auth" search={{ modo: "entrar" }}>
-                  Entrar
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="min-h-12 text-base font-bold">
-                <Link to="/auth" search={{ modo: "cadastro" }}>
-                  Criar cadastro
-                </Link>
-              </Button>
+        <section className="space-y-2">
+          <h2 className="text-base font-bold uppercase text-brand">1. Seus dados</h2>
+          {!session && (
+            <div className="space-y-3 pb-1">
+              <div className="grid grid-cols-2 gap-2">
+                <Button asChild className="min-h-12 text-base font-bold">
+                  <Link to="/auth" search={{ modo: "entrar" }}>
+                    Entrar
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="min-h-12 text-base font-bold">
+                  <Link to="/auth" search={{ modo: "cadastro" }}>
+                    Criar cadastro
+                  </Link>
+                </Button>
+              </div>
+              <p className="text-center text-base font-medium text-muted-foreground">
+                Ou continue como visitante preenchendo abaixo
+              </p>
             </div>
-            <p className="mt-3 text-center text-base font-medium text-muted-foreground">
-              Ou continue como visitante
-            </p>
-          </section>
-        )}
+          )}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              className={inputClass}
+              placeholder="Nome"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <input
+              className={inputClass}
+              placeholder="Sobrenome"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+          <input
+            className={inputClass}
+            placeholder="WhatsApp"
+            inputMode="tel"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+          />
+        </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">1. Serviço</h2>
+          <h2 className="text-base font-bold uppercase text-brand">2. Serviço</h2>
+
           <div className="grid gap-2">
             {servicesQuery.data?.map((item) => (
               <button
