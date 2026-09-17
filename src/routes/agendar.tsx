@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/useSession";
+import { readGuest, type GuestData } from "@/lib/guest";
 import {
   buildAvailableSlots,
   formatDateLong,
@@ -41,7 +41,11 @@ const inputClass =
   "min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 
 function BookingPage() {
-  const { session } = useSession();
+  const { session, loading } = useSession();
+  const navigate = useNavigate();
+  const [guest, setGuest] = useState<GuestData | null>(null);
+  const [guestChecked, setGuestChecked] = useState(false);
+
 
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [barberId, setBarberId] = useState<string | null>(null);
@@ -123,6 +127,23 @@ function BookingPage() {
       return (data ?? []) as BusyInterval[];
     },
   });
+
+  useEffect(() => {
+    setGuest(readGuest());
+    setGuestChecked(true);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !guestChecked) return;
+    if (!session && !guest) navigate({ to: "/", replace: true });
+  }, [loading, guestChecked, session, guest, navigate]);
+
+  useEffect(() => {
+    if (session || !guest) return;
+    setFirstName((v) => v || guest.firstName);
+    setLastName((v) => v || guest.lastName);
+    setWhatsapp((v) => v || guest.whatsapp);
+  }, [guest, session]);
 
   useEffect(() => {
     const profile = profileQuery.data;
