@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/useSession";
+import { readGuest, type GuestData } from "@/lib/guest";
 import {
   buildAvailableSlots,
   formatDateLong,
@@ -41,7 +41,11 @@ const inputClass =
   "min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 
 function BookingPage() {
-  const { session } = useSession();
+  const { session, loading } = useSession();
+  const navigate = useNavigate();
+  const [guest, setGuest] = useState<GuestData | null>(null);
+  const [guestChecked, setGuestChecked] = useState(false);
+
 
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [barberId, setBarberId] = useState<string | null>(null);
@@ -125,6 +129,23 @@ function BookingPage() {
   });
 
   useEffect(() => {
+    setGuest(readGuest());
+    setGuestChecked(true);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !guestChecked) return;
+    if (!session && !guest) navigate({ to: "/", replace: true });
+  }, [loading, guestChecked, session, guest, navigate]);
+
+  useEffect(() => {
+    if (session || !guest) return;
+    setFirstName((v) => v || guest.firstName);
+    setLastName((v) => v || guest.lastName);
+    setWhatsapp((v) => v || guest.whatsapp);
+  }, [guest, session]);
+
+  useEffect(() => {
     const profile = profileQuery.data;
     if (!profile) return;
     setFirstName((v) => v || profile.first_name);
@@ -151,6 +172,8 @@ function BookingPage() {
       busy: busyQuery.data ?? [],
     });
   }, [service, dayHours, dateStr, busyQuery.data]);
+
+  const clientLabel = `${firstName} ${lastName}`.trim() || "Visitante";
 
   const ready =
     !!service && !!barber && !!slot && firstName.trim() !== "" && whatsapp.trim() !== "";
@@ -187,6 +210,8 @@ function BookingPage() {
     }
     setSaving(false);
   }
+
+  if (!session && guestChecked && !guest) return null;
 
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [
@@ -256,52 +281,13 @@ function BookingPage() {
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Agendar horário</h1>
 
-        <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">1. Seus dados</h2>
-          {!session && (
-            <div className="space-y-3 pb-1">
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild className="min-h-12 text-base font-bold">
-                  <Link to="/auth" search={{ modo: "entrar" }}>
-                    Entrar
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="min-h-12 text-base font-bold">
-                  <Link to="/auth" search={{ modo: "cadastro" }}>
-                    Criar cadastro
-                  </Link>
-                </Button>
-              </div>
-              <p className="text-center text-base font-medium text-muted-foreground">
-                Ou continue como visitante preenchendo abaixo
-              </p>
-            </div>
-          )}
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input
-              className={inputClass}
-              placeholder="Nome"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              className={inputClass}
-              placeholder="Sobrenome"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <input
-            className={inputClass}
-            placeholder="WhatsApp"
-            inputMode="tel"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-          />
-        </section>
+        <p className="text-base text-foreground/70">
+          Cliente: <span className="font-bold text-foreground">{clientLabel}</span>
+        </p>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">2. Serviço</h2>
+          <h2 className="text-base font-bold uppercase text-brand">1. Serviço</h2>
+
 
           <div className="grid gap-2">
             {servicesQuery.data?.map((item) => (
@@ -328,7 +314,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">3. Barbeiro</h2>
+          <h2 className="text-base font-bold uppercase text-brand">2. Barbeiro</h2>
           <div className="grid gap-2">
             {barbersQuery.data?.map((item) => (
               <button
@@ -347,7 +333,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">4. Data</h2>
+          <h2 className="text-base font-bold uppercase text-brand">3. Data</h2>
           <input
             type="date"
             className={inputClass}
@@ -358,7 +344,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">5. Horário disponível</h2>
+          <h2 className="text-base font-bold uppercase text-brand">4. Horário disponível</h2>
           {!service || !barber ? (
             <p className="text-base text-foreground/70">Escolha o serviço e o barbeiro.</p>
           ) : dayHours?.closed ? (
@@ -395,7 +381,7 @@ function BookingPage() {
 
 
         <section className={`${cardClass} space-y-2`}>
-          <h2 className="font-display text-lg font-bold text-card-foreground">6. Confirmar agendamento</h2>
+          <h2 className="font-display text-lg font-bold text-card-foreground">5. Confirmar agendamento</h2>
           <p className="text-base text-foreground/80">
             {service ? `${service.name} · ${formatPrice(service.price_cents)}` : "Serviço não escolhido"}
           </p>
