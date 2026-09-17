@@ -173,6 +173,8 @@ function BookingPage() {
     });
   }, [service, dayHours, dateStr, busyQuery.data]);
 
+  const clientLabel = `${firstName} ${lastName}`.trim() || "Visitante";
+
   const ready =
     !!service && !!barber && !!slot && firstName.trim() !== "" && whatsapp.trim() !== "";
 
