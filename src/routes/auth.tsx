@@ -5,11 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
 
-type Modo = "entrar" | "cadastro";
+type Modo = "entrar" | "cadastro" | "visitante";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): { modo: Modo } => ({
-    modo: search['modo'] === "cadastro" ? "cadastro" : "entrar",
+    modo:
+      search['modo'] === "cadastro"
+        ? "cadastro"
+        : search['modo'] === "visitante"
+          ? "visitante"
+          : "entrar",
   }),
   head: () => ({
     meta: [
