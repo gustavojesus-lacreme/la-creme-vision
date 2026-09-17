@@ -211,6 +211,8 @@ function BookingPage() {
     setSaving(false);
   }
 
+  if (!session && guestChecked && !guest) return null;
+
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [
       ["Cliente", confirmed.clientName],

@@ -19,6 +19,7 @@ export function AppNav() {
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearGuest();
     await supabase.auth.signOut();
     navigate({ to: "/", replace: true });
   }
