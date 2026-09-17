@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, CalendarCheck, User, LogOut, Scissors } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { clearGuest } from "@/lib/guest";
 import { Button } from "@/components/ui/button";
 
 const items = [
