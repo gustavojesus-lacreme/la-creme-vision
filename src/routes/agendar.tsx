@@ -256,52 +256,13 @@ function BookingPage() {
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Agendar horário</h1>
 
-        <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">1. Seus dados</h2>
-          {!session && (
-            <div className="space-y-3 pb-1">
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild className="min-h-12 text-base font-bold">
-                  <Link to="/auth" search={{ modo: "entrar" }}>
-                    Entrar
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="min-h-12 text-base font-bold">
-                  <Link to="/auth" search={{ modo: "cadastro" }}>
-                    Criar cadastro
-                  </Link>
-                </Button>
-              </div>
-              <p className="text-center text-base font-medium text-muted-foreground">
-                Ou continue como visitante preenchendo abaixo
-              </p>
-            </div>
-          )}
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input
-              className={inputClass}
-              placeholder="Nome"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              className={inputClass}
-              placeholder="Sobrenome"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <input
-            className={inputClass}
-            placeholder="WhatsApp"
-            inputMode="tel"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-          />
-        </section>
+        <p className="text-base text-foreground/70">
+          Cliente: <span className="font-bold text-foreground">{clientLabel}</span>
+        </p>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">2. Serviço</h2>
+          <h2 className="text-base font-bold uppercase text-brand">1. Serviço</h2>
+
 
           <div className="grid gap-2">
             {servicesQuery.data?.map((item) => (
@@ -328,7 +289,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">3. Barbeiro</h2>
+          <h2 className="text-base font-bold uppercase text-brand">2. Barbeiro</h2>
           <div className="grid gap-2">
             {barbersQuery.data?.map((item) => (
               <button
@@ -347,7 +308,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">4. Data</h2>
+          <h2 className="text-base font-bold uppercase text-brand">3. Data</h2>
           <input
             type="date"
             className={inputClass}
@@ -358,7 +319,7 @@ function BookingPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">5. Horário disponível</h2>
+          <h2 className="text-base font-bold uppercase text-brand">4. Horário disponível</h2>
           {!service || !barber ? (
             <p className="text-base text-foreground/70">Escolha o serviço e o barbeiro.</p>
           ) : dayHours?.closed ? (
@@ -395,7 +356,7 @@ function BookingPage() {
 
 
         <section className={`${cardClass} space-y-2`}>
-          <h2 className="font-display text-lg font-bold text-card-foreground">6. Confirmar agendamento</h2>
+          <h2 className="font-display text-lg font-bold text-card-foreground">5. Confirmar agendamento</h2>
           <p className="text-base text-foreground/80">
             {service ? `${service.name} · ${formatPrice(service.price_cents)}` : "Serviço não escolhido"}
           </p>
