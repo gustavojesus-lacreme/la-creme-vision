@@ -113,7 +113,7 @@ function MyAppointments() {
               <button
                 type="button"
                 onClick={() => cancel(pendingCancelId)}
-                className="min-h-12 w-full rounded-md bg-destructive px-6 text-base font-bold text-white"
+                className="min-h-12 w-full rounded-md bg-destructive px-6 text-base font-bold text-destructive-foreground"
               >
                 Sim, cancelar
               </button>
