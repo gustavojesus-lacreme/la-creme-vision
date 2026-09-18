@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/meus-agendamentos")({
 
 function MyAppointments() {
   const queryClient = useQueryClient();
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
 
   const appointmentsQuery = useQuery({
     queryKey: ["my-appointments"],
@@ -35,6 +36,7 @@ function MyAppointments() {
 
   async function cancel(id: string) {
     await supabase.from("appointments").update({ status: "cancelado" }).eq("id", id);
+    setPendingCancelId(null);
     queryClient.invalidateQueries({ queryKey: ["my-appointments"] });
   }
 
