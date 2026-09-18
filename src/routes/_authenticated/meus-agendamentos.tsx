@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,10 +88,10 @@ function MyAppointments() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => cancel(item.id)}
+                    onClick={() => setPendingCancelId(item.id)}
                     className="mt-3 min-h-11 w-full rounded-md border border-input text-sm font-semibold text-foreground"
                   >
-                    Cancelar
+                    Cancelar agendamento
                   </button>
                 )}
               </div>
