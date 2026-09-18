@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/meus-agendamentos")({
 
 function MyAppointments() {
   const queryClient = useQueryClient();
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
 
   const appointmentsQuery = useQuery({
     queryKey: ["my-appointments"],
@@ -35,6 +37,7 @@ function MyAppointments() {
 
   async function cancel(id: string) {
     await supabase.from("appointments").update({ status: "cancelado" }).eq("id", id);
+    setPendingCancelId(null);
     queryClient.invalidateQueries({ queryKey: ["my-appointments"] });
   }
 
@@ -85,10 +88,10 @@ function MyAppointments() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => cancel(item.id)}
+                    onClick={() => setPendingCancelId(item.id)}
                     className="mt-3 min-h-11 w-full rounded-md border border-input text-sm font-semibold text-foreground"
                   >
-                    Cancelar
+                    Cancelar agendamento
                   </button>
                 )}
               </div>
@@ -96,6 +99,35 @@ function MyAppointments() {
           })}
         </div>
       </main>
+
+      {pendingCancelId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 text-center">
+            <h2 className="font-display text-lg font-bold text-card-foreground">
+              Cancelar agendamento
+            </h2>
+            <p className="mt-2 text-base text-foreground/80">
+              Tem certeza que deseja cancelar este agendamento?
+            </p>
+            <div className="mt-6 space-y-2">
+              <button
+                type="button"
+                onClick={() => cancel(pendingCancelId)}
+                className="min-h-12 w-full rounded-md bg-destructive px-6 text-base font-bold text-destructive-foreground"
+              >
+                Sim, cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingCancelId(null)}
+                className="min-h-12 w-full rounded-md border border-input px-6 text-base font-semibold text-foreground"
+              >
+                Não, voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
