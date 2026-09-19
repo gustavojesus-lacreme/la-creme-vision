@@ -63,10 +63,13 @@ function MyAppointments() {
           </div>
         )}
 
-        <div className="grid gap-3">
-          {appointmentsQuery.data?.map((item) => {
+        {(() => {
+          const items = appointmentsQuery.data ?? [];
+          const active = items.filter((item) => item.status !== "cancelado");
+          const canceled = items.filter((item) => item.status === "cancelado");
+
+          const renderCard = (item: (typeof items)[number]) => {
             const when = new Date(item.starts_at);
-            const canceled = item.status === "cancelado";
             return (
               <div key={item.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -83,7 +86,7 @@ function MyAppointments() {
                     {item.services ? formatPrice(item.services.price_cents) : ""}
                   </span>
                 </div>
-                {canceled ? (
+                {item.status === "cancelado" ? (
                   <p className="mt-3 text-sm font-semibold text-destructive">Cancelado</p>
                 ) : (
                   <button
@@ -96,8 +99,33 @@ function MyAppointments() {
                 )}
               </div>
             );
-          })}
-        </div>
+          };
+
+          return (
+            <>
+              <section className="space-y-3">
+                <h2 className="font-display text-lg font-bold text-foreground">
+                  Agendamentos atuais
+                </h2>
+                {active.length === 0 && !appointmentsQuery.isLoading && (
+                  <p className="text-base text-foreground/70">
+                    Você não tem agendamentos ativos.
+                  </p>
+                )}
+                <div className="grid gap-3">{active.map(renderCard)}</div>
+              </section>
+
+              {canceled.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="font-display text-lg font-bold text-foreground/70">
+                    Agendamentos cancelados
+                  </h2>
+                  <div className="grid gap-3 opacity-80">{canceled.map(renderCard)}</div>
+                </section>
+              )}
+            </>
+          );
+        })()}
       </main>
 
       {pendingCancelId && (
