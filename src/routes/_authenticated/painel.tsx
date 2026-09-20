@@ -1,0 +1,132 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { AppNav } from "@/components/app/AppNav";
+import { formatDateLong, formatTime } from "@/lib/booking";
+import { isBarberAdmin } from "@/lib/admin";
+
+export const Route = createFileRoute("/_authenticated/painel")({
+  head: () => ({
+    meta: [
+      { title: "Painel do barbeiro | LA CREME BARBER" },
+      { name: "description", content: "Controle dos atendimentos da LA CREME BARBER." },
+      { property: "og:title", content: "Painel do barbeiro | LA CREME BARBER" },
+      { property: "og:description", content: "Controle dos atendimentos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: BarberPanel,
+});
+
+const STATUS_LABELS: Record<string, string> = {
+  agendado: "Agendado",
+  finalizado: "Finalizado",
+  cancelado: "Cancelado",
+  nao_compareceu: "Não compareceu",
+};
+
+const ACTIONS = [
+  { status: "finalizado", label: "Finalizado" },
+  { status: "cancelado", label: "Cancelado" },
+  { status: "nao_compareceu", label: "Não compareceu" },
+] as const;
+
+function BarberPanel() {
+  const queryClient = useQueryClient();
+
+  const adminQuery = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: isBarberAdmin,
+  });
+
+  const appointmentsQuery = useQuery({
+    queryKey: ["panel-appointments"],
+    enabled: adminQuery.data === true,
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(
+          "id, starts_at, status, customer_first_name, customer_last_name, services(name), barbers(name)",
+        )
+        .gte("starts_at", today.toISOString())
+        .order("starts_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  async function setStatus(id: string, status: string) {
+    await supabase.from("appointments").update({ status }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
+  }
+
+  return (
+    <div className="min-h-svh bg-background">
+      <AppNav />
+      <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
+        <h1 className="font-display text-2xl font-bold text-foreground">Painel do barbeiro</h1>
+
+        {(adminQuery.isLoading || (adminQuery.data && appointmentsQuery.isLoading)) && (
+          <p className="text-base text-foreground/70">Carregando...</p>
+        )}
+
+        {adminQuery.data === false && (
+          <div className="rounded-lg border border-border bg-card p-6 text-center">
+            <p className="text-base text-foreground/80">
+              Acesso restrito ao barbeiro.
+            </p>
+          </div>
+        )}
+
+        {adminQuery.data === true && appointmentsQuery.data?.length === 0 && (
+          <div className="rounded-lg border border-border bg-card p-6 text-center">
+            <p className="text-base text-foreground/80">Nenhum agendamento a partir de hoje.</p>
+          </div>
+        )}
+
+        <div className="grid gap-3">
+          {appointmentsQuery.data?.map((item) => {
+            const when = new Date(item.starts_at);
+            return (
+              <div key={item.id} className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-bold text-card-foreground">
+                      {item.customer_first_name} {item.customer_last_name}
+                    </p>
+                    <p className="text-sm text-foreground/70">
+                      {item.services?.name} · {item.barbers?.name}
+                    </p>
+                    <p className="text-sm text-foreground/70">
+                      {formatDateLong(when)} às {formatTime(when)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
+                    {STATUS_LABELS[item.status] ?? item.status}
+                  </span>
+                </div>
+                {item.status === "agendado" && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {ACTIONS.map((action) => (
+                      <button
+                        key={action.status}
+                        type="button"
+                        onClick={() => setStatus(item.id, action.status)}
+                        className="min-h-11 rounded-md border border-input px-2 text-xs font-semibold text-foreground"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </main>
+    </div>
+  );
+}

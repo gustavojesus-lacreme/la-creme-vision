@@ -65,8 +65,17 @@ function MyAppointments() {
 
         {(() => {
           const items = appointmentsQuery.data ?? [];
-          const active = items.filter((item) => item.status !== "cancelado");
-          const canceled = items.filter((item) => item.status === "cancelado");
+          // "Não compareceu" aparece para o cliente como Cancelado.
+          const isCanceled = (status: string) =>
+            status === "cancelado" || status === "nao_compareceu";
+          const statusLabel = (status: string) =>
+            status === "agendado"
+              ? "Agendado"
+              : status === "finalizado"
+                ? "Finalizado"
+                : "Cancelado";
+          const active = items.filter((item) => !isCanceled(item.status));
+          const canceled = items.filter((item) => isCanceled(item.status));
 
           const renderCard = (item: (typeof items)[number]) => {
             const when = new Date(item.starts_at);
@@ -86,9 +95,7 @@ function MyAppointments() {
                     {item.services ? formatPrice(item.services.price_cents) : ""}
                   </span>
                 </div>
-                {item.status === "cancelado" ? (
-                  <p className="mt-3 text-sm font-semibold text-destructive">Cancelado</p>
-                ) : (
+                {item.status === "agendado" ? (
                   <button
                     type="button"
                     onClick={() => setPendingCancelId(item.id)}
@@ -96,6 +103,14 @@ function MyAppointments() {
                   >
                     Cancelar agendamento
                   </button>
+                ) : (
+                  <p
+                    className={`mt-3 text-sm font-semibold ${
+                      isCanceled(item.status) ? "text-destructive" : "text-brand"
+                    }`}
+                  >
+                    {statusLabel(item.status)}
+                  </p>
                 )}
               </div>
             );
