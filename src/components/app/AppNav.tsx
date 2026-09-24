@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isBarberAdmin } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -23,7 +23,11 @@ export function AppNav() {
     queryFn: isBarberAdmin,
   });
   const navItems = adminQuery.data
-    ? [...items, { to: "/admin-servicos" as const, label: "Serviços", icon: Settings }]
+    ? [
+        ...items,
+        { to: "/painel" as const, label: "Painel", icon: LayoutList },
+        { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
+      ]
     : items;
 
   async function handleSignOut() {
