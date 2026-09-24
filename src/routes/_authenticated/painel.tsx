@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { formatDateLong, formatTime } from "@/lib/booking";
-import { isBarberAdmin } from "@/lib/admin";
+import { getPanelAccess } from "@/lib/admin";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   head: () => ({
@@ -35,24 +35,29 @@ const ACTIONS = [
 function BarberPanel() {
   const queryClient = useQueryClient();
 
-  const adminQuery = useQuery({
-    queryKey: ["is-admin"],
-    queryFn: isBarberAdmin,
+  const accessQuery = useQuery({
+    queryKey: ["panel-access"],
+    queryFn: getPanelAccess,
   });
+  const access = accessQuery.data ?? null;
 
   const appointmentsQuery = useQuery({
-    queryKey: ["panel-appointments"],
-    enabled: adminQuery.data === true,
+    queryKey: ["panel-appointments", access?.role === "barbeiro" ? access.barberId : "all"],
+    enabled: access != null,
     queryFn: async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase
+      let query = supabase
         .from("appointments")
         .select(
           "id, starts_at, ends_at, status, services_label, customer_first_name, customer_last_name, services(name), barbers(name)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
+      if (access?.role === "barbeiro") {
+        query = query.eq("barber_id", access.barberId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
@@ -69,11 +74,11 @@ function BarberPanel() {
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Painel do barbeiro</h1>
 
-        {(adminQuery.isLoading || (adminQuery.data && appointmentsQuery.isLoading)) && (
+        {(accessQuery.isLoading || (access && appointmentsQuery.isLoading)) && (
           <p className="text-base text-foreground/70">Carregando...</p>
         )}
 
-        {adminQuery.data === false && (
+        {accessQuery.data === null && (
           <div className="rounded-lg border border-border bg-card p-6 text-center">
             <p className="text-base text-foreground/80">
               Acesso restrito ao barbeiro.
@@ -81,7 +86,7 @@ function BarberPanel() {
           </div>
         )}
 
-        {adminQuery.data === true && appointmentsQuery.data?.length === 0 && (
+        {access != null && appointmentsQuery.data?.length === 0 && (
           <div className="rounded-lg border border-border bg-card p-6 text-center">
             <p className="text-base text-foreground/80">Nenhum agendamento a partir de hoje.</p>
           </div>
