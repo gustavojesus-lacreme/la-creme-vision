@@ -73,3 +73,35 @@ export function buildAvailableSlots(options: {
   }
   return slots;
 }
+
+export type PricedService = { id: string; name: string; price_cents: number; duration_minutes: number };
+export type ServiceCombo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number };
+
+/** Combos first (largest first, no overlapping services), then remaining services individually. */
+export function calculateTotals(selected: PricedService[], combos: ServiceCombo[]) {
+  const remaining = new Set(selected.map((s) => s.id));
+  const applied: ServiceCombo[] = [];
+  const sorted = [...combos]
+    .filter((c) => c.service_ids.length > 0)
+    .sort((a, b) => b.service_ids.length - a.service_ids.length);
+  for (const combo of sorted) {
+    if (combo.service_ids.every((id) => remaining.has(id))) {
+      applied.push(combo);
+      combo.service_ids.forEach((id) => remaining.delete(id));
+    }
+  }
+  const extras = selected.filter((s) => remaining.has(s.id));
+  const priceCents =
+    applied.reduce((t, c) => t + c.price_cents, 0) + extras.reduce((t, s) => t + s.price_cents, 0);
+  const durationMinutes =
+    applied.reduce((t, c) => t + c.duration_minutes, 0) +
+    extras.reduce((t, s) => t + s.duration_minutes, 0);
+  return { priceCents, durationMinutes, applied, extras };
+}
+
+export function formatDuration(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (!h) return `${m} min`;
+  return m ? `${h}h ${m}min` : `${h}h`;
+}

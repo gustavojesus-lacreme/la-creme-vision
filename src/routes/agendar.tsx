@@ -12,6 +12,9 @@ import {
   formatPrice,
   formatTime,
   toDateInputValue,
+  calculateTotals,
+  formatDuration,
+  type ServiceCombo,
   weekdayOf,
   type BusyInterval,
 } from "@/lib/booking";
@@ -47,7 +50,7 @@ function BookingPage() {
   const [guestChecked, setGuestChecked] = useState(false);
 
 
-  const [serviceId, setServiceId] = useState<string | null>(null);
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
   const [slot, setSlot] = useState<Date | null>(null);
@@ -60,6 +63,8 @@ function BookingPage() {
     when: Date;
     service: string;
     priceCents: number;
+    durationMinutes: number;
+    ends: Date;
     barber: string;
     clientName: string;
   } | null>(null);
@@ -73,6 +78,18 @@ function BookingPage() {
         .order("sort_order");
       if (err) throw err;
       return data ?? [];
+    },
+  });
+
+  const combosQuery = useQuery({
+    queryKey: ["service_combos"],
+    queryFn: async () => {
+      const { data, error: err } = await supabase
+        .from("service_combos")
+        .select("id, name, service_ids, price_cents, duration_minutes")
+        .eq("active", true);
+      if (err) throw err;
+      return (data ?? []) as ServiceCombo[];
     },
   });
 
@@ -155,9 +172,21 @@ function BookingPage() {
 
   useEffect(() => {
     setSlot(null);
-  }, [serviceId, barberId, dateStr]);
+  }, [serviceIds, barberId, dateStr]);
 
-  const service = servicesQuery.data?.find((s) => s.id === serviceId) ?? null;
+  const selectedServices = (servicesQuery.data ?? []).filter((s) => serviceIds.includes(s.id));
+  const totals = calculateTotals(selectedServices, combosQuery.data ?? []);
+  const service =
+    selectedServices.length > 0
+      ? {
+          id: selectedServices[0]!.id,
+          name: selectedServices.map((s) => s.name).join(" + "),
+          price_cents: totals.priceCents,
+          duration_minutes: totals.durationMinutes,
+        }
+      : null;
+  const toggleService = (id: string) =>
+    setServiceIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
@@ -193,6 +222,10 @@ function BookingPage() {
       customer_first_name: firstName.trim(),
       customer_last_name: lastName.trim(),
       customer_whatsapp: whatsapp.trim(),
+      service_ids: serviceIds,
+      services_label: service.name,
+      total_price_cents: service.price_cents,
+      total_duration_minutes: service.duration_minutes,
     });
 
     if (insertError) {
@@ -202,10 +235,13 @@ function BookingPage() {
         when: slot,
         service: service.name,
         priceCents: service.price_cents,
+        durationMinutes: service.duration_minutes,
+        ends,
         barber: barber.name,
         clientName: `${firstName.trim()}${lastName.trim() ? ` ${lastName.trim()}` : ""}`,
       });
       setSlot(null);
+      setServiceIds([]);
       busyQuery.refetch();
     }
     setSaving(false);
@@ -216,10 +252,11 @@ function BookingPage() {
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [
       ["Cliente", confirmed.clientName],
-      ["Serviço", confirmed.service],
+      ["Serviços", confirmed.service],
       ["Barbeiro", confirmed.barber],
       ["Data", formatDateLong(confirmed.when)],
-      ["Horário", formatTime(confirmed.when)],
+      ["Horário", `${formatTime(confirmed.when)} – ${formatTime(confirmed.ends)}`],
+      ["Duração", formatDuration(confirmed.durationMinutes)],
       ["Valor total", formatPrice(confirmed.priceCents)],
     ];
     return (
@@ -230,8 +267,8 @@ function BookingPage() {
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand text-brand-foreground">
               <Check className="h-6 w-6" />
             </span>
-            <h1 className="mt-4 font-display text-xl font-bold text-card-foreground">
-              Agendamento confirmado
+            <h1 className="mt-4 font-display text-xl font-bold uppercase text-card-foreground">
+              Agendamento realizado!
             </h1>
 
             <dl className="mt-6 divide-y divide-border rounded-md border border-border bg-background/50 text-left">
@@ -257,16 +294,16 @@ function BookingPage() {
             <div className="mt-6 space-y-3">
               <Link
                 to="/meus-agendamentos"
-                className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold text-brand-foreground"
+                className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground"
               >
-                Meus agendamentos
+                Ver meus agendamentos
               </Link>
               <button
                 type="button"
                 onClick={() => setConfirmed(null)}
-                className="flex min-h-13 w-full items-center justify-center rounded-md border border-input px-6 text-base font-semibold text-foreground"
+                className="flex min-h-13 w-full items-center justify-center rounded-md border border-input px-6 text-base font-semibold uppercase text-foreground"
               >
-                Novo agendamento
+                Voltar ao início
               </button>
             </div>
           </div>
@@ -286,17 +323,17 @@ function BookingPage() {
         </p>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">1. Serviço</h2>
-
-
+          <h2 className="text-base font-bold uppercase text-brand">1. Serviços</h2>
+          <p className="text-sm text-foreground/70">Você pode escolher mais de um.</p>
           <div className="grid gap-2">
             {servicesQuery.data?.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setServiceId(item.id)}
+                aria-pressed={serviceIds.includes(item.id)}
+                onClick={() => toggleService(item.id)}
                 className={`${cardClass} flex min-h-14 items-center justify-between gap-3 text-left ${
-                  serviceId === item.id ? "border-brand ring-2 ring-brand/30" : ""
+                  serviceIds.includes(item.id) ? "border-brand ring-2 ring-brand/30" : ""
                 }`}
               >
                 <span>
@@ -380,23 +417,45 @@ function BookingPage() {
 
 
 
-        <section className={`${cardClass} space-y-2`}>
-          <h2 className="font-display text-lg font-bold text-card-foreground">5. Confirmar agendamento</h2>
-          <p className="text-base text-foreground/80">
-            {service ? `${service.name} · ${formatPrice(service.price_cents)}` : "Serviço não escolhido"}
-          </p>
-          <p className="text-base text-foreground/80">
-            {barber ? barber.name : "Barbeiro não escolhido"}
-          </p>
-          <p className="text-base text-foreground/80">
-            {slot ? `${formatDateLong(slot)} às ${formatTime(slot)}` : "Horário não escolhido"}
-          </p>
+        <section className={`${cardClass} space-y-3`}>
+          <h2 className="font-display text-lg font-bold text-card-foreground">5. Resumo</h2>
+          <dl className="divide-y divide-border rounded-md border border-border bg-background/50">
+            {(
+              [
+                ["Cliente", clientLabel],
+                ["Serviços", service ? service.name : "—"],
+                ["Barbeiro", barber ? barber.name : "—"],
+                ["Data", slot ? formatDateLong(slot) : "—"],
+                ["Início", slot ? formatTime(slot) : "—"],
+                [
+                  "Término",
+                  slot && service
+                    ? formatTime(new Date(slot.getTime() + service.duration_minutes * 60000))
+                    : "—",
+                ],
+                ["Duração total", service ? formatDuration(service.duration_minutes) : "—"],
+                ["Valor total", service ? formatPrice(service.price_cents) : "—"],
+              ] as Array<[string, string]>
+            ).map(([label, value]) => (
+              <div key={label} className="flex items-start justify-between gap-3 px-3 py-2">
+                <dt className="text-sm font-semibold text-foreground/60">{label}</dt>
+                <dd
+                  className={`text-right text-base font-bold ${
+                    label === "Valor total" ? "text-brand" : "text-card-foreground"
+                  }`}
+                >
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
           {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
+          <h2 className="pt-2 font-display text-lg font-bold text-card-foreground">6. Confirmar</h2>
           <button
             type="button"
             disabled={!ready || saving}
             onClick={handleConfirm}
-            className="mt-2 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground disabled:opacity-50"
+            className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground disabled:opacity-50"
           >
             Confirmar agendamento
           </button>
