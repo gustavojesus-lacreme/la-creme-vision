@@ -80,11 +80,18 @@ export type ServiceCombo = { id: string; name: string; service_ids: string[]; pr
 /** Combos first (largest first, no overlapping services), then remaining services individually. */
 export function calculateTotals(selected: PricedService[], combos: ServiceCombo[]) {
   const remaining = new Set(selected.map((s) => s.id));
+  // Regra do Pezinho: incluído no Corte (sem preço nem duração extra).
+  const norm = (n: string) => n.trim().toLowerCase();
+  const hasCorte = selected.some((s) => norm(s.name) === "corte");
+  const pezinho = selected.find((s) => norm(s.name) === "pezinho");
+  if (hasCorte && pezinho) remaining.delete(pezinho.id);
   const applied: ServiceCombo[] = [];
   const sorted = [...combos]
     .filter((c) => c.service_ids.length > 0)
     .sort((a, b) => b.service_ids.length - a.service_ids.length);
   for (const combo of sorted) {
+    const ids = combo.service_ids.filter((id) => id !== pezinho?.id || !hasCorte);
+    if (ids.length > 0 && ids.length < combo.service_ids.length && ids.length === 1) continue;
     if (combo.service_ids.every((id) => remaining.has(id))) {
       applied.push(combo);
       combo.service_ids.forEach((id) => remaining.delete(id));
