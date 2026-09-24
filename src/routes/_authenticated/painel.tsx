@@ -6,6 +6,8 @@ import { formatDateLong, formatTime } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
 
 export const Route = createFileRoute("/_authenticated/painel")({
+  validateSearch: (s: Record<string, unknown>): { ver?: string } =>
+    typeof s["ver"] === "string" ? { ver: s["ver"] } : {},
   head: () => ({
     meta: [
       { title: "Painel do barbeiro | LA CREME BARBER" },
@@ -34,15 +36,24 @@ const ACTIONS = [
 
 function BarberPanel() {
   const queryClient = useQueryClient();
+  const { ver } = Route.useSearch();
 
   const accessQuery = useQuery({
     queryKey: ["panel-access"],
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
+  const previewId = access?.role === "admin" && ver ? ver : null;
+  const barberFilter = access?.role === "barbeiro" ? access.barberId : previewId;
+
+  const previewNameQuery = useQuery({
+    queryKey: ["preview-barber", previewId],
+    enabled: !!previewId,
+    queryFn: async () => (await supabase.from("barbers").select("name").eq("id", previewId!).maybeSingle()).data?.name ?? "",
+  });
 
   const appointmentsQuery = useQuery({
-    queryKey: ["panel-appointments", access?.role === "barbeiro" ? access.barberId : "all"],
+    queryKey: ["panel-appointments", barberFilter ?? "all"],
     enabled: access != null,
     queryFn: async () => {
       const today = new Date();
@@ -54,8 +65,8 @@ function BarberPanel() {
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
-      if (access?.role === "barbeiro") {
-        query = query.eq("barber_id", access.barberId);
+      if (barberFilter) {
+        query = query.eq("barber_id", barberFilter);
       }
       const { data, error } = await query;
       if (error) throw error;
