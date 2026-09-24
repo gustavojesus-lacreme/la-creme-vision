@@ -252,10 +252,11 @@ function BookingPage() {
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [
       ["Cliente", confirmed.clientName],
-      ["Serviço", confirmed.service],
+      ["Serviços", confirmed.service],
       ["Barbeiro", confirmed.barber],
       ["Data", formatDateLong(confirmed.when)],
-      ["Horário", formatTime(confirmed.when)],
+      ["Horário", `${formatTime(confirmed.when)} – ${formatTime(confirmed.ends)}`],
+      ["Duração", formatDuration(confirmed.durationMinutes)],
       ["Valor total", formatPrice(confirmed.priceCents)],
     ];
     return (
@@ -266,8 +267,8 @@ function BookingPage() {
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand text-brand-foreground">
               <Check className="h-6 w-6" />
             </span>
-            <h1 className="mt-4 font-display text-xl font-bold text-card-foreground">
-              Agendamento confirmado
+            <h1 className="mt-4 font-display text-xl font-bold uppercase text-card-foreground">
+              Agendamento realizado!
             </h1>
 
             <dl className="mt-6 divide-y divide-border rounded-md border border-border bg-background/50 text-left">
@@ -293,16 +294,16 @@ function BookingPage() {
             <div className="mt-6 space-y-3">
               <Link
                 to="/meus-agendamentos"
-                className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold text-brand-foreground"
+                className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground"
               >
-                Meus agendamentos
+                Ver meus agendamentos
               </Link>
               <button
                 type="button"
                 onClick={() => setConfirmed(null)}
-                className="flex min-h-13 w-full items-center justify-center rounded-md border border-input px-6 text-base font-semibold text-foreground"
+                className="flex min-h-13 w-full items-center justify-center rounded-md border border-input px-6 text-base font-semibold uppercase text-foreground"
               >
-                Novo agendamento
+                Voltar ao início
               </button>
             </div>
           </div>
@@ -322,17 +323,17 @@ function BookingPage() {
         </p>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold uppercase text-brand">1. Serviço</h2>
-
-
+          <h2 className="text-base font-bold uppercase text-brand">1. Serviços</h2>
+          <p className="text-sm text-foreground/70">Você pode escolher mais de um.</p>
           <div className="grid gap-2">
             {servicesQuery.data?.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setServiceId(item.id)}
+                aria-pressed={serviceIds.includes(item.id)}
+                onClick={() => toggleService(item.id)}
                 className={`${cardClass} flex min-h-14 items-center justify-between gap-3 text-left ${
-                  serviceId === item.id ? "border-brand ring-2 ring-brand/30" : ""
+                  serviceIds.includes(item.id) ? "border-brand ring-2 ring-brand/30" : ""
                 }`}
               >
                 <span>
@@ -416,23 +417,45 @@ function BookingPage() {
 
 
 
-        <section className={`${cardClass} space-y-2`}>
-          <h2 className="font-display text-lg font-bold text-card-foreground">5. Confirmar agendamento</h2>
-          <p className="text-base text-foreground/80">
-            {service ? `${service.name} · ${formatPrice(service.price_cents)}` : "Serviço não escolhido"}
-          </p>
-          <p className="text-base text-foreground/80">
-            {barber ? barber.name : "Barbeiro não escolhido"}
-          </p>
-          <p className="text-base text-foreground/80">
-            {slot ? `${formatDateLong(slot)} às ${formatTime(slot)}` : "Horário não escolhido"}
-          </p>
+        <section className={`${cardClass} space-y-3`}>
+          <h2 className="font-display text-lg font-bold text-card-foreground">5. Resumo</h2>
+          <dl className="divide-y divide-border rounded-md border border-border bg-background/50">
+            {(
+              [
+                ["Cliente", clientLabel],
+                ["Serviços", service ? service.name : "—"],
+                ["Barbeiro", barber ? barber.name : "—"],
+                ["Data", slot ? formatDateLong(slot) : "—"],
+                ["Início", slot ? formatTime(slot) : "—"],
+                [
+                  "Término",
+                  slot && service
+                    ? formatTime(new Date(slot.getTime() + service.duration_minutes * 60000))
+                    : "—",
+                ],
+                ["Duração total", service ? formatDuration(service.duration_minutes) : "—"],
+                ["Valor total", service ? formatPrice(service.price_cents) : "—"],
+              ] as Array<[string, string]>
+            ).map(([label, value]) => (
+              <div key={label} className="flex items-start justify-between gap-3 px-3 py-2">
+                <dt className="text-sm font-semibold text-foreground/60">{label}</dt>
+                <dd
+                  className={`text-right text-base font-bold ${
+                    label === "Valor total" ? "text-brand" : "text-card-foreground"
+                  }`}
+                >
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
           {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
+          <h2 className="pt-2 font-display text-lg font-bold text-card-foreground">6. Confirmar</h2>
           <button
             type="button"
             disabled={!ready || saving}
             onClick={handleConfirm}
-            className="mt-2 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground disabled:opacity-50"
+            className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground disabled:opacity-50"
           >
             Confirmar agendamento
           </button>
