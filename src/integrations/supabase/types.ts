@@ -24,8 +24,12 @@ export type Database = {
           ends_at: string
           id: string
           service_id: string
+          service_ids: string[]
+          services_label: string
           starts_at: string
           status: string
+          total_duration_minutes: number | null
+          total_price_cents: number | null
           user_id: string | null
         }
         Insert: {
@@ -37,8 +41,12 @@ export type Database = {
           ends_at: string
           id?: string
           service_id: string
+          service_ids?: string[]
+          services_label?: string
           starts_at: string
           status?: string
+          total_duration_minutes?: number | null
+          total_price_cents?: number | null
           user_id?: string | null
         }
         Update: {
@@ -50,8 +58,12 @@ export type Database = {
           ends_at?: string
           id?: string
           service_id?: string
+          service_ids?: string[]
+          services_label?: string
           starts_at?: string
           status?: string
+          total_duration_minutes?: number | null
+          total_price_cents?: number | null
           user_id?: string | null
         }
         Relationships: [
@@ -140,6 +152,39 @@ export type Database = {
           id?: string
           last_name?: string
           whatsapp?: string
+        }
+        Relationships: []
+      }
+      service_combos: {
+        Row: {
+          active: boolean
+          created_at: string
+          duration_minutes: number
+          id: string
+          name: string
+          price_cents: number
+          service_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          name: string
+          price_cents: number
+          service_ids: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          name?: string
+          price_cents?: number
+          service_ids?: string[]
+          updated_at?: string
         }
         Relationships: []
       }
