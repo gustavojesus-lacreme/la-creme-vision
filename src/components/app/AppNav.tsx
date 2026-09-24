@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, CalendarCheck, User, LogOut, Scissors } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isBarberAdmin } from "@/lib/admin";
+import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -16,6 +17,14 @@ export function AppNav() {
   const { session } = useSession();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const adminQuery = useQuery({
+    queryKey: ["is-admin", session?.user.id],
+    enabled: !!session,
+    queryFn: isBarberAdmin,
+  });
+  const navItems = adminQuery.data
+    ? [...items, { to: "/admin-servicos" as const, label: "Serviços", icon: Settings }]
+    : items;
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -57,7 +66,7 @@ export function AppNav() {
       </div>
 
       <nav className="mx-auto flex w-full max-w-3xl gap-1 px-2 pb-2" aria-label="Menu principal">
-        {items.map((item) => (
+        {navItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}

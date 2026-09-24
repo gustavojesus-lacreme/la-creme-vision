@@ -75,6 +75,7 @@ function BookingPage() {
       const { data, error: err } = await supabase
         .from("services")
         .select("id, name, description, price_cents, duration_minutes")
+        .eq("active", true)
         .order("sort_order");
       if (err) throw err;
       return data ?? [];

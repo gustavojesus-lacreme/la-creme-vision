@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_authenticated/meus-agendamentos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
@@ -36,6 +37,12 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminServicosRoute =
+  AuthenticatedAdminServicosRouteImport.update({
+    id: '/admin-servicos',
+    path: '/admin-servicos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeusAgendamentosRoute =
   AuthenticatedMeusAgendamentosRouteImport.update({
     id: '/meus-agendamentos',
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
+  '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -65,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
+  '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -75,6 +84,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
+  '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agendar'
     | '/auth'
+    | '/admin-servicos'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agendar'
     | '/auth'
+    | '/admin-servicos'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/agendar'
     | '/auth'
+    | '/_authenticated/admin-servicos'
     | '/_authenticated/meus-agendamentos'
     | '/_authenticated/minha-conta'
     | '/_authenticated/painel'
@@ -144,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin-servicos': {
+      id: '/_authenticated/admin-servicos'
+      path: '/admin-servicos'
+      fullPath: '/admin-servicos'
+      preLoaderRoute: typeof AuthenticatedAdminServicosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meus-agendamentos': {
       id: '/_authenticated/meus-agendamentos'
       path: '/meus-agendamentos'
@@ -169,12 +189,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedMeusAgendamentosRoute: typeof AuthenticatedMeusAgendamentosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedMeusAgendamentosRoute: AuthenticatedMeusAgendamentosRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
