@@ -27,8 +27,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ACTIONS = [
-  { status: "finalizado", label: "Finalizado" },
-  { status: "cancelado", label: "Cancelado" },
+  { status: "finalizado", label: "Finalizar" },
+  { status: "cancelado", label: "Cancelar" },
   { status: "nao_compareceu", label: "Não compareceu" },
 ] as const;
 
@@ -49,7 +49,7 @@ function BarberPanel() {
       const { data, error } = await supabase
         .from("appointments")
         .select(
-          "id, starts_at, status, customer_first_name, customer_last_name, services(name), barbers(name)",
+          "id, starts_at, ends_at, status, services_label, customer_first_name, customer_last_name, services(name), barbers(name)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
@@ -98,10 +98,10 @@ function BarberPanel() {
                       {item.customer_first_name} {item.customer_last_name}
                     </p>
                     <p className="text-sm text-foreground/70">
-                      {item.services?.name} · {item.barbers?.name}
+                      {item.services_label || item.services?.name} · {item.barbers?.name}
                     </p>
                     <p className="text-sm text-foreground/70">
-                      {formatDateLong(when)} às {formatTime(when)}
+                      {formatDateLong(when)} · {formatTime(when)} – {formatTime(new Date(item.ends_at))}
                     </p>
                   </div>
                   <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
