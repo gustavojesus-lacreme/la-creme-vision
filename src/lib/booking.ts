@@ -90,8 +90,6 @@ export function calculateTotals(selected: PricedService[], combos: ServiceCombo[
     .filter((c) => c.service_ids.length > 0)
     .sort((a, b) => b.service_ids.length - a.service_ids.length);
   for (const combo of sorted) {
-    const ids = combo.service_ids.filter((id) => id !== pezinho?.id || !hasCorte);
-    if (ids.length > 0 && ids.length < combo.service_ids.length && ids.length === 1) continue;
     if (combo.service_ids.every((id) => remaining.has(id))) {
       applied.push(combo);
       combo.service_ids.forEach((id) => remaining.delete(id));
