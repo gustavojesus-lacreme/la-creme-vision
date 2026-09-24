@@ -23,18 +23,18 @@ export function AppNav() {
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
-  const navItems = access
-    ? [
-        ...items,
-        { to: "/painel" as const, label: "Painel", icon: LayoutList, Users },
-        ...(access.role === "admin"
-          ? [
-              { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
-              { to: "/admin-barbeiros" as const, label: "Barbeiros", icon: Users },
-            ]
-          : []),
-      ]
-    : items;
+  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList };
+  const navItems =
+    access?.role === "admin"
+      ? [
+          ...items,
+          painel,
+          { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
+          { to: "/admin-barbeiros" as const, label: "Barbeiros", icon: Users },
+        ]
+      : access?.role === "barbeiro"
+        ? [painel, items[1], items[2]]
+        : items;
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
