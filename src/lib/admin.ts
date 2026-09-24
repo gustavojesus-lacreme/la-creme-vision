@@ -1,5 +1,35 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type PanelAccess =
+  | { role: "admin" }
+  | { role: "barbeiro"; barberId: string }
+  | null;
+
+export async function getPanelAccess(): Promise<PanelAccess> {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) return null;
+
+  const { data: roles, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error || !roles) return null;
+
+  if (roles.some((r) => r.role === "admin")) return { role: "admin" };
+
+  if (roles.some((r) => r.role === "barbeiro")) {
+    const { data: barber } = await supabase
+      .from("barbers")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (barber) return { role: "barbeiro", barberId: barber.id };
+  }
+
+  return null;
+}
+
 export async function isBarberAdmin(): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;

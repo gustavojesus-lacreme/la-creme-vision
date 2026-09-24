@@ -35,24 +35,29 @@ const ACTIONS = [
 function BarberPanel() {
   const queryClient = useQueryClient();
 
-  const adminQuery = useQuery({
-    queryKey: ["is-admin"],
-    queryFn: isBarberAdmin,
+  const accessQuery = useQuery({
+    queryKey: ["panel-access"],
+    queryFn: getPanelAccess,
   });
+  const access = accessQuery.data ?? null;
 
   const appointmentsQuery = useQuery({
-    queryKey: ["panel-appointments"],
-    enabled: adminQuery.data === true,
+    queryKey: ["panel-appointments", access?.role === "barbeiro" ? access.barberId : "all"],
+    enabled: access != null,
     queryFn: async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase
+      let query = supabase
         .from("appointments")
         .select(
           "id, starts_at, ends_at, status, services_label, customer_first_name, customer_last_name, services(name), barbers(name)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
+      if (access?.role === "barbeiro") {
+        query = query.eq("barber_id", access.barberId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
