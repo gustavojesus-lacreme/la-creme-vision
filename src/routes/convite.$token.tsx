@@ -8,10 +8,10 @@ import { acceptBarberInvite, getBarberInvite } from "@/lib/invites.functions";
 export const Route = createFileRoute("/convite/$token")({
   head: () => ({
     meta: [
-      { title: "Convite de barbeiro | LA CREME BARBER" },
-      { name: "description", content: "Complete seu acesso como barbeiro da LA CREME BARBER." },
-      { property: "og:title", content: "Convite de barbeiro | LA CREME BARBER" },
-      { property: "og:description", content: "Complete seu acesso como barbeiro." },
+      { title: "Ativar acesso | LA CREME BARBER" },
+      { name: "description", content: "Ative seu acesso de barbeiro da LA CREME BARBER." },
+      { property: "og:title", content: "Ativar acesso | LA CREME BARBER" },
+      { property: "og:description", content: "Ative seu acesso de barbeiro." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -22,12 +22,18 @@ export const Route = createFileRoute("/convite/$token")({
 const inputClass =
   "min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 
+const STATUS_MSG: Record<string, string> = {
+  used: "Este link de ativação já foi utilizado. Se você já ativou, entre com seu e-mail e senha.",
+  expired: "Este link de ativação expirou. Peça um novo link ao administrador.",
+  invalid: "Link de ativação inválido. Confira o link recebido ou peça um novo ao administrador.",
+};
+
 function InvitePage() {
   const { token } = Route.useParams();
   const navigate = useNavigate();
   const inviteQuery = useQuery({
     queryKey: ["invite", token],
-    queryFn: () => getBarberInvite({ data: { token } }).catch(() => null),
+    queryFn: () => getBarberInvite({ data: { token } }).catch(() => ({ status: "invalid" as const, barberName: "" })),
   });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +49,7 @@ function InvitePage() {
     setBusy(true);
     const res = await acceptBarberInvite({ data: { token, email: email.trim(), password } }).catch(() => ({
       ok: false as const,
-      error: "Não foi possível criar o acesso.",
+      error: "Não foi possível ativar o acesso.",
     }));
     if (!res.ok) {
       setError(res.error);
@@ -53,6 +59,8 @@ function InvitePage() {
     await supabase.auth.signInWithPassword({ email: email.trim(), password });
     navigate({ to: "/painel", replace: true });
   }
+
+  const status = inviteQuery.data?.status ?? "invalid";
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-background px-5 py-10">
@@ -65,23 +73,26 @@ function InvitePage() {
         </div>
         {inviteQuery.isLoading ? (
           <p className="mt-6 text-center text-base text-foreground/70">Carregando...</p>
-        ) : !inviteQuery.data ? (
-          <div className="mt-6 space-y-3 text-center">
-            <p className="text-base text-foreground/80">Convite inválido, expirado ou já utilizado.</p>
-            <Link to="/" className="text-base font-semibold text-brand underline">Voltar</Link>
+        ) : status !== "ok" ? (
+          <div className="mt-6 space-y-4 rounded-lg border border-border bg-card p-5 text-center">
+            <p className="text-base text-card-foreground">{STATUS_MSG[status]}</p>
+            <Link to="/auth" search={{ modo: "entrar" }} className="inline-block text-base font-semibold text-brand underline">
+              Ir para Entrar
+            </Link>
           </div>
         ) : (
           <form className="mt-6 space-y-3" onSubmit={submit}>
-            <h1 className="text-center font-display text-lg font-bold text-foreground">
-              Olá, {inviteQuery.data.barberName}
-            </h1>
-            <p className="text-center text-sm text-foreground/70">Crie seu acesso de barbeiro.</p>
-            <input className={inputClass} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className={inputClass} type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <input className={inputClass} type="password" placeholder="Confirmar senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            <h1 className="text-center font-display text-xl font-bold text-foreground">Bem-vindo à LA CREME BARBER</h1>
+            <p className="text-center text-base text-foreground/80">
+              Olá, <strong>{inviteQuery.data?.barberName}</strong>.<br />
+              Seu acesso foi criado pelo administrador. Complete seus dados para ativar sua conta.
+            </p>
+            <input className={inputClass} type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className={inputClass} type="password" placeholder="Criar senha (mín. 8 caracteres)" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input className={inputClass} type="password" placeholder="Confirmar senha" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
             <button type="submit" disabled={busy} className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground disabled:opacity-60">
-              Criar acesso
+              {busy ? "Ativando..." : "Ativar acesso"}
             </button>
           </form>
         )}
