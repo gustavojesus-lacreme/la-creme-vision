@@ -106,7 +106,6 @@ export function calculateTotals(selected: PricedService[], combos: ServiceCombo[
     }
   }
   const extras = effective.filter((s) => remaining.has(s.id));
-  const extras = selected.filter((s) => remaining.has(s.id));
   const priceCents =
     applied.reduce((t, c) => t + c.price_cents, 0) + extras.reduce((t, s) => t + s.price_cents, 0);
   const durationMinutes =
