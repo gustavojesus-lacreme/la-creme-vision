@@ -23,18 +23,18 @@ export function AppNav() {
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
-  const navItems = access
-    ? [
-        ...items,
-        { to: "/painel" as const, label: "Painel", icon: LayoutList, Users },
-        ...(access.role === "admin"
-          ? [
-              { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
-              { to: "/admin-barbeiros" as const, label: "Barbeiros", icon: Users },
-            ]
-          : []),
-      ]
-    : items;
+  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList };
+  const navItems =
+    access?.role === "admin"
+      ? [
+          ...items,
+          painel,
+          { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
+          { to: "/admin-barbeiros" as const, label: "Barbeiros", icon: Users },
+        ]
+      : access?.role === "barbeiro"
+        ? [painel, items[1], items[2]]
+        : items;
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -75,12 +75,12 @@ export function AppNav() {
         )}
       </div>
 
-      <nav className="mx-auto flex w-full max-w-3xl gap-1 px-2 pb-2" aria-label="Menu principal">
+      <nav className="mx-auto flex w-full max-w-3xl gap-1 overflow-x-auto px-2 pb-2" aria-label="Menu principal">
         {navItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            className="flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2 text-[13px] font-semibold text-foreground/70 hover:bg-secondary"
+            className="flex min-w-16 flex-1 shrink-0 flex-col items-center gap-1 rounded-md px-1 py-2 text-[12px] font-semibold text-foreground/70 hover:bg-secondary"
             activeProps={{ className: "bg-secondary text-brand" }}
           >
             <item.icon className="h-5 w-5" />

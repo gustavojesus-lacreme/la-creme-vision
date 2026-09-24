@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
@@ -85,8 +85,13 @@ function BarberPanel() {
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Painel do barbeiro</h1>
         {previewId && (
-          <div className="rounded-lg border border-brand bg-secondary p-3 text-sm font-semibold text-foreground">
-            Visualizando como {previewNameQuery.data || "barbeiro"} (somente teste).
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand bg-secondary p-3">
+            <p className="text-sm font-semibold text-foreground">
+              Visualização de teste: {previewNameQuery.data || "barbeiro"} — somente teste
+            </p>
+            <Link to="/painel" search={{}} className="min-h-11 rounded-md bg-brand px-3 py-2 text-sm font-bold text-brand-foreground">
+              Voltar para minha conta
+            </Link>
           </div>
         )}
 

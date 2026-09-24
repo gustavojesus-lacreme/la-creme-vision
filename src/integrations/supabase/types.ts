@@ -122,32 +122,41 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          email: string | null
           id: string
+          last_name: string
           name: string
           service_ids: string[]
           sort_order: number
           specialty: string
           user_id: string | null
+          whatsapp: string
         }
         Insert: {
           active?: boolean
           created_at?: string
+          email?: string | null
           id?: string
+          last_name?: string
           name: string
           service_ids?: string[]
           sort_order?: number
           specialty?: string
           user_id?: string | null
+          whatsapp?: string
         }
         Update: {
           active?: boolean
           created_at?: string
+          email?: string | null
           id?: string
+          last_name?: string
           name?: string
           service_ids?: string[]
           sort_order?: number
           specialty?: string
           user_id?: string | null
+          whatsapp?: string
         }
         Relationships: []
       }
