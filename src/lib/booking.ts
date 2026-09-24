@@ -77,24 +77,35 @@ export function buildAvailableSlots(options: {
 export type PricedService = { id: string; name: string; price_cents: number; duration_minutes: number };
 export type ServiceCombo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number };
 
-/** Combos first (largest first, no overlapping services), then remaining services individually. */
+const normName = (n: string) => n.trim().toLowerCase();
+/** Serviço bloqueado -> serviço que o bloqueia (Corte inclui Pezinho; Barba inclui Bigode). */
+const BLOCKED_BY: Record<string, string> = { pezinho: "corte", bigode: "barba" };
+
+/** Retorna true se o serviço deve ficar inativo dada a seleção atual. */
+export function isServiceBlocked(service: { name: string }, selected: { name: string }[]) {
+  const blocker = BLOCKED_BY[normName(service.name)];
+  return !!blocker && selected.some((s) => normName(s.name) === blocker);
+}
+
+/** Exact combo first; otherwise largest contained combos (no overlap), then remaining services individually. */
 export function calculateTotals(selected: PricedService[], combos: ServiceCombo[]) {
-  const remaining = new Set(selected.map((s) => s.id));
-  // Regra do Pezinho: incluído no Corte (sem preço nem duração extra).
-  const norm = (n: string) => n.trim().toLowerCase();
-  const hasCorte = selected.some((s) => norm(s.name) === "corte");
-  const pezinho = selected.find((s) => norm(s.name) === "pezinho");
-  if (hasCorte && pezinho) remaining.delete(pezinho.id);
+  const effective = selected.filter((s) => !isServiceBlocked(s, selected));
+  const remaining = new Set(effective.map((s) => s.id));
   const applied: ServiceCombo[] = [];
-  const sorted = [...combos]
-    .filter((c) => c.service_ids.length > 0)
-    .sort((a, b) => b.service_ids.length - a.service_ids.length);
+  const valid = combos.filter((c) => c.service_ids.length > 0);
+  const exact = valid.find(
+    (c) => c.service_ids.length === remaining.size && c.service_ids.every((id) => remaining.has(id)),
+  );
+  const sorted = exact
+    ? [exact]
+    : [...valid].sort((a, b) => b.service_ids.length - a.service_ids.length);
   for (const combo of sorted) {
     if (combo.service_ids.every((id) => remaining.has(id))) {
       applied.push(combo);
       combo.service_ids.forEach((id) => remaining.delete(id));
     }
   }
+  const extras = effective.filter((s) => remaining.has(s.id));
   const extras = selected.filter((s) => remaining.has(s.id));
   const priceCents =
     applied.reduce((t, c) => t + c.price_cents, 0) + extras.reduce((t, s) => t + s.price_cents, 0);

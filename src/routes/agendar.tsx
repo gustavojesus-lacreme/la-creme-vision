@@ -13,6 +13,7 @@ import {
   formatTime,
   toDateInputValue,
   calculateTotals,
+  isServiceBlocked,
   formatDuration,
   type ServiceCombo,
   weekdayOf,
@@ -187,7 +188,15 @@ function BookingPage() {
         }
       : null;
   const toggleService = (id: string) =>
-    setServiceIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+    setServiceIds((ids) => {
+      const all = servicesQuery.data ?? [];
+      const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+      const nextSel = all.filter((s) => next.includes(s.id));
+      return next.filter((x) => {
+        const s = all.find((a) => a.id === x);
+        return !s || !isServiceBlocked(s, nextSel);
+      });
+    });
   const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
@@ -327,15 +336,18 @@ function BookingPage() {
           <h2 className="text-base font-bold uppercase text-brand">1. Serviços</h2>
           <p className="text-sm text-foreground/70">Você pode escolher mais de um.</p>
           <div className="grid gap-2">
-            {servicesQuery.data?.map((item) => (
+            {servicesQuery.data?.map((item) => {
+              const blocked = isServiceBlocked(item, selectedServices);
+              return (
               <button
                 key={item.id}
                 type="button"
+                disabled={blocked}
                 aria-pressed={serviceIds.includes(item.id)}
                 onClick={() => toggleService(item.id)}
                 className={`${cardClass} flex min-h-14 items-center justify-between gap-3 text-left ${
                   serviceIds.includes(item.id) ? "border-brand ring-2 ring-brand/30" : ""
-                }`}
+                } ${blocked ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <span>
                   <span className="block text-base font-bold text-card-foreground">{item.name}</span>
@@ -344,10 +356,11 @@ function BookingPage() {
                   </span>
                 </span>
                 <span className="text-base font-bold text-brand">
-                  {formatPrice(item.price_cents)}
+                  {blocked ? "Incluído" : formatPrice(item.price_cents)}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
 
