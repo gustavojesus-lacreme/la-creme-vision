@@ -84,6 +84,11 @@ function BarberPanel() {
       <AppNav />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Painel do barbeiro</h1>
+        {previewId && (
+          <div className="rounded-lg border border-brand bg-secondary p-3 text-sm font-semibold text-foreground">
+            Visualizando como {previewNameQuery.data || "barbeiro"} (somente teste).
+          </div>
+        )}
 
         {(accessQuery.isLoading || (access && appointmentsQuery.isLoading)) && (
           <p className="text-base text-foreground/70">Carregando...</p>
@@ -124,7 +129,7 @@ function BarberPanel() {
                     {STATUS_LABELS[item.status] ?? item.status}
                   </span>
                 </div>
-                {item.status === "agendado" && (
+                {item.status === "agendado" && !previewId && (
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {ACTIONS.map((action) => (
                       <button
