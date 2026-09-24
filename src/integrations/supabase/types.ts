@@ -83,12 +83,48 @@ export type Database = {
           },
         ]
       }
+      barber_invites: {
+        Row: {
+          barber_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_invites_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barbers: {
         Row: {
           active: boolean
           created_at: string
           id: string
           name: string
+          service_ids: string[]
           sort_order: number
           specialty: string
           user_id: string | null
@@ -98,6 +134,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          service_ids?: string[]
           sort_order?: number
           specialty?: string
           user_id?: string | null
@@ -107,6 +144,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          service_ids?: string[]
           sort_order?: number
           specialty?: string
           user_id?: string | null
