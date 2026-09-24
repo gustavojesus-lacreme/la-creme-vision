@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { isBarberAdmin } from "@/lib/admin";
+import { getPanelAccess } from "@/lib/admin";
 import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -17,16 +17,19 @@ export function AppNav() {
   const { session } = useSession();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const adminQuery = useQuery({
-    queryKey: ["is-admin", session?.user.id],
+  const accessQuery = useQuery({
+    queryKey: ["panel-access", session?.user.id],
     enabled: !!session,
-    queryFn: isBarberAdmin,
+    queryFn: getPanelAccess,
   });
-  const navItems = adminQuery.data
+  const access = accessQuery.data ?? null;
+  const navItems = access
     ? [
         ...items,
         { to: "/painel" as const, label: "Painel", icon: LayoutList },
-        { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
+        ...(access.role === "admin"
+          ? [{ to: "/admin-servicos" as const, label: "Serviços", icon: Settings }]
+          : []),
       ]
     : items;
 
