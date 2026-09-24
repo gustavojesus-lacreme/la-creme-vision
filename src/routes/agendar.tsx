@@ -12,6 +12,9 @@ import {
   formatPrice,
   formatTime,
   toDateInputValue,
+  calculateTotals,
+  formatDuration,
+  type ServiceCombo,
   weekdayOf,
   type BusyInterval,
 } from "@/lib/booking";
@@ -47,7 +50,7 @@ function BookingPage() {
   const [guestChecked, setGuestChecked] = useState(false);
 
 
-  const [serviceId, setServiceId] = useState<string | null>(null);
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
   const [slot, setSlot] = useState<Date | null>(null);
@@ -60,6 +63,8 @@ function BookingPage() {
     when: Date;
     service: string;
     priceCents: number;
+    durationMinutes: number;
+    ends: Date;
     barber: string;
     clientName: string;
   } | null>(null);
@@ -73,6 +78,18 @@ function BookingPage() {
         .order("sort_order");
       if (err) throw err;
       return data ?? [];
+    },
+  });
+
+  const combosQuery = useQuery({
+    queryKey: ["service_combos"],
+    queryFn: async () => {
+      const { data, error: err } = await supabase
+        .from("service_combos")
+        .select("id, name, service_ids, price_cents, duration_minutes")
+        .eq("active", true);
+      if (err) throw err;
+      return (data ?? []) as ServiceCombo[];
     },
   });
 
@@ -155,9 +172,21 @@ function BookingPage() {
 
   useEffect(() => {
     setSlot(null);
-  }, [serviceId, barberId, dateStr]);
+  }, [serviceIds, barberId, dateStr]);
 
-  const service = servicesQuery.data?.find((s) => s.id === serviceId) ?? null;
+  const selectedServices = (servicesQuery.data ?? []).filter((s) => serviceIds.includes(s.id));
+  const totals = calculateTotals(selectedServices, combosQuery.data ?? []);
+  const service =
+    selectedServices.length > 0
+      ? {
+          id: selectedServices[0]!.id,
+          name: selectedServices.map((s) => s.name).join(" + "),
+          price_cents: totals.priceCents,
+          duration_minutes: totals.durationMinutes,
+        }
+      : null;
+  const toggleService = (id: string) =>
+    setServiceIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
@@ -193,6 +222,10 @@ function BookingPage() {
       customer_first_name: firstName.trim(),
       customer_last_name: lastName.trim(),
       customer_whatsapp: whatsapp.trim(),
+      service_ids: serviceIds,
+      services_label: service.name,
+      total_price_cents: service.price_cents,
+      total_duration_minutes: service.duration_minutes,
     });
 
     if (insertError) {
@@ -202,10 +235,13 @@ function BookingPage() {
         when: slot,
         service: service.name,
         priceCents: service.price_cents,
+        durationMinutes: service.duration_minutes,
+        ends,
         barber: barber.name,
         clientName: `${firstName.trim()}${lastName.trim() ? ` ${lastName.trim()}` : ""}`,
       });
       setSlot(null);
+      setServiceIds([]);
       busyQuery.refetch();
     }
     setSaving(false);
