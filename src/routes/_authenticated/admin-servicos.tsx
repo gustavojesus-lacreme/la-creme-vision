@@ -104,7 +104,7 @@ function AdminServicesPage() {
         {isAdmin && (
           <>
             <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-base font-bold uppercase text-brand">Serviços</h2>
                 <button type="button" className={`${btnOutline} flex items-center gap-1`} onClick={() => setEditService("new")}>
                   <Plus className="h-4 w-4" /> Novo serviço
@@ -121,14 +121,14 @@ function AdminServicesPage() {
                   editService !== "new" && editService?.id === s.id ? (
                     <ServiceForm key={s.id} service={s} onDone={() => { setEditService(null); refresh(); }} />
                   ) : (
-                    <div key={s.id} className={`${card} flex items-center justify-between gap-3 ${s.active ? "" : "opacity-60"}`}>
-                      <div>
+                    <div key={s.id} className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${s.active ? "" : "opacity-60"}`}>
+                      <div className="min-w-0 break-words">
                         <p className="text-base font-bold text-card-foreground">{s.name}</p>
                         <p className="text-sm text-foreground/70">
                           {formatPrice(s.price_cents)} · {s.duration_minutes} min · {s.active ? "Ativo" : "Inativo"}
                         </p>
                       </div>
-                      <div className="flex shrink-0 gap-2">
+                      <div className="flex shrink-0 flex-wrap gap-2">
                         <button type="button" className={btnOutline} onClick={() => toggleService(s)}>
                           {s.active ? "Desativar" : "Ativar"}
                         </button>
@@ -141,7 +141,7 @@ function AdminServicesPage() {
             </section>
 
             <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-base font-bold uppercase text-brand">Combinações</h2>
                 <button type="button" className={`${btnOutline} flex items-center gap-1`} onClick={() => setEditCombo("new")}>
                   <Plus className="h-4 w-4" /> Nova combinação
@@ -155,8 +155,8 @@ function AdminServicesPage() {
                   editCombo !== "new" && editCombo?.id === c.id ? (
                     <ComboForm key={c.id} combo={c} services={services} onDone={() => { setEditCombo(null); refresh(); }} />
                   ) : (
-                    <div key={c.id} className={`${card} flex items-center justify-between gap-3 ${c.active ? "" : "opacity-60"}`}>
-                      <div>
+                    <div key={c.id} className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${c.active ? "" : "opacity-60"}`}>
+                      <div className="min-w-0 break-words">
                         <p className="text-base font-bold text-card-foreground">
                           {c.service_ids.map(nameOf).join(" + ")}
                         </p>
@@ -164,7 +164,7 @@ function AdminServicesPage() {
                           {formatPrice(c.price_cents)} · {c.duration_minutes} min · {c.active ? "Ativa" : "Inativa"}
                         </p>
                       </div>
-                      <div className="flex shrink-0 gap-2">
+                      <div className="flex shrink-0 flex-wrap gap-2">
                         <button type="button" className={btnOutline} onClick={() => toggleCombo(c)}>
                           {c.active ? "Desativar" : "Ativar"}
                         </button>
