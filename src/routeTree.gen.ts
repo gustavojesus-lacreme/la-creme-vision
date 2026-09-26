@@ -20,6 +20,7 @@ import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_aut
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
+import { Route as ConviteBarbeiroTokenRouteImport } from './routes/convite.barbeiro.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -79,6 +80,11 @@ const ConviteTokenRoute = ConviteTokenRouteImport.update({
   path: '/convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConviteBarbeiroTokenRoute = ConviteBarbeiroTokenRouteImport.update({
+  id: '/convite/barbeiro/$token',
+  path: '/convite/barbeiro/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   id:
     | '__root__'
     | '/'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/_authenticated/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   AgendarRoute: typeof AgendarRoute
   AuthRoute: typeof AuthRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  ConviteBarbeiroTokenRoute: typeof ConviteBarbeiroTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/convite/barbeiro/$token': {
+      id: '/convite/barbeiro/$token'
+      path: '/convite/barbeiro/$token'
+      fullPath: '/convite/barbeiro/$token'
+      preLoaderRoute: typeof ConviteBarbeiroTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -275,6 +295,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendarRoute: AgendarRoute,
   AuthRoute: AuthRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  ConviteBarbeiroTokenRoute: ConviteBarbeiroTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
