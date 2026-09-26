@@ -234,8 +234,8 @@ function AdminBarbersPage() {
             {confirmDel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
                 <div className={`${card} w-full max-w-sm space-y-3`}>
-                  <p className="text-base font-bold text-card-foreground">Excluir este barbeiro definitivamente?</p>
-                  <p className="text-sm text-foreground/80">Esta ação removerá o perfil de {confirmDel.name} e os registros relacionados. Esta ação não poderá ser desfeita.</p>
+                  <p className="text-base font-bold text-card-foreground">Excluir definitivamente este barbeiro?</p>
+                  <p className="text-sm text-foreground/80">Esta ação removerá o perfil, o acesso e o convite de {confirmDel.name}, junto com os agendamentos dele. Não poderá ser desfeita.</p>
                   <div className="flex gap-2">
                     <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirmDel)}>Excluir definitivamente</button>
                     <button className={`${btnOutline} flex-1`} onClick={() => setConfirmDel(null)}>Cancelar</button>
@@ -264,7 +264,7 @@ function AdminBarbersPage() {
                           {pending ? "Aguardando cadastro" : awaitingApproval ? "🟡 Pendente de ativação" : !b.active ? "⚪ Desativado" : "🟢 Ativo"}
                         </span>
                         {pending && (
-                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO ATIVAÇÃO</span>
+                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO CADASTRO</span>
                         )}
                       </div>
                     </div>
