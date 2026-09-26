@@ -314,6 +314,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "barbeiro"

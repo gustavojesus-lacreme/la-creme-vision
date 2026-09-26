@@ -44,7 +44,7 @@ export const listClients = createServerFn({ method: "GET" })
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   });
 
-// With history: archive + block login (history kept). Without history: account removed.
+// Permanently removes a client: appointments, profile, roles and login.
 export const deleteClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
@@ -54,19 +54,13 @@ export const deleteClient = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: roles } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", data.clientId);
     if (roles?.some((r) => r.role !== "user")) return { ok: false as const, error: "Esta conta não é de cliente." };
-    const { count } = await supabaseAdmin
-      .from("appointments")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", data.clientId);
-
-    if ((count ?? 0) === 0) {
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(data.clientId);
-      if (!error) return { ok: true as const, archived: false };
-    }
-    const { error } = await supabaseAdmin.from("profiles").update({ archived_at: new Date().toISOString() }).eq("id", data.clientId);
-    if (error) return { ok: false as const, error: "Não foi possível excluir." };
-    await supabaseAdmin.auth.admin.updateUserById(data.clientId, { ban_duration: "876000h" });
-    return { ok: true as const, archived: true };
+    const { error: aErr } = await supabaseAdmin.from("appointments").delete().eq("user_id", data.clientId);
+    if (aErr) return { ok: false as const, error: "Não foi possível excluir os agendamentos do cliente." };
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.clientId);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.clientId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.clientId);
+    if (error) return { ok: false as const, error: "Não foi possível excluir a conta." };
+    return { ok: true as const };
   });
 
 export const restoreClient = createServerFn({ method: "POST" })
