@@ -218,6 +218,9 @@ function BookingPage() {
       });
     });
   const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
+  useEffect(() => {
+    if (barberId && barbersQuery.data && !barbersQuery.data.some((b) => b.id === barberId)) setBarberId(null);
+  }, [barberId, barbersQuery.data]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
   const slots = useMemo(() => {
