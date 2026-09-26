@@ -6,10 +6,10 @@ async function loadInvite(token: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("barber_invites")
-    .select("id, barber_id, expires_at, used_at, barbers(name, last_name, user_id)")
+    .select("id, barber_id, expires_at, used_at, barbers(name, last_name, user_id, archived_at)")
     .eq("token", token)
     .maybeSingle();
-  if (!data) return { status: "invalid" as const };
+  if (!data || data.barbers?.archived_at) return { status: "invalid" as const };
   if (data.used_at || data.barbers?.user_id) return { status: "used" as const };
   if (new Date(data.expires_at) < new Date()) return { status: "expired" as const };
   return { status: "ok" as const, supabaseAdmin, invite: data };
@@ -23,9 +23,21 @@ export const getBarberInvite = createServerFn({ method: "POST" })
     return { status: "ok" as const, barberName: r.invite.barbers?.name ?? "" };
   });
 
+// Confirms that the person owns an existing account (e.g. a client account) by checking the password.
+async function verifyExistingAccount(email: string, password: string) {
+  const { createClient } = await import("@supabase/supabase-js");
+  const client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return null;
+  await client.auth.signOut().catch(() => {});
+  return data.user.id;
+}
+
 export const acceptBarberInvite = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ token: z.string().uuid(), email: z.string().trim().email().max(255), password: z.string().min(8).max(72) }).parse(d),
+    z.object({ token: z.string().uuid(), email: z.string().trim().email().max(255), password: z.string().min(6).max(72) }).parse(d),
   )
   .handler(async ({ data }) => {
     const r = await loadInvite(data.token);
@@ -47,28 +59,58 @@ export const acceptBarberInvite = createServerFn({ method: "POST" })
     const full = invite.barbers?.name ?? "";
     const last = invite.barbers?.last_name ?? "";
     const first = last && full.endsWith(last) ? full.slice(0, -last.length).trim() : full;
+
+    let uid: string | null = null;
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
       user_metadata: { first_name: first, last_name: last },
     });
-    if (error || !created.user) {
-      await release();
+    if (created?.user) {
+      uid = created.user.id;
+    } else {
       const msg = error?.message.toLowerCase() ?? "";
-      if (msg.includes("already")) return { ok: false as const, error: "Este e-mail já possui cadastro. Use outro e-mail." };
-      if (msg.includes("password")) return { ok: false as const, error: "Senha fraca. Use uma senha mais forte." };
-      return { ok: false as const, error: "Não foi possível ativar o acesso." };
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        // Existing account (usually a client): link it instead of creating a duplicate.
+        uid = await verifyExistingAccount(data.email, data.password);
+        if (!uid) {
+          await release();
+          return {
+            ok: false as const,
+            error: "Este e-mail já possui cadastro. Digite a senha atual dessa conta nos dois campos para vinculá-la ao seu acesso de barbeiro.",
+          };
+        }
+        const { data: other } = await supabaseAdmin.from("barbers").select("id").eq("user_id", uid).neq("id", invite.barber_id).maybeSingle();
+        if (other) {
+          await release();
+          return { ok: false as const, error: "Esta conta já está vinculada a outro barbeiro." };
+        }
+      } else {
+        await release();
+        if (msg.includes("password")) return { ok: false as const, error: "Senha fraca. Use uma senha mais forte." };
+        return { ok: false as const, error: "Não foi possível ativar o acesso." };
+      }
     }
-    const uid = created.user.id;
-    await supabaseAdmin.from("barbers").update({ user_id: uid, email: data.email }).eq("id", invite.barber_id);
+
+    const { error: linkErr } = await supabaseAdmin
+      .from("barbers")
+      .update({ user_id: uid, email: data.email, active: true })
+      .eq("id", invite.barber_id);
+    if (linkErr) {
+      await release();
+      return { ok: false as const, error: "Não foi possível vincular a conta ao barbeiro." };
+    }
+    await supabaseAdmin.from("user_roles").upsert({ user_id: uid, role: "barbeiro" }, { onConflict: "user_id,role" });
     await supabaseAdmin.from("user_roles").delete().eq("user_id", uid).eq("role", "user");
-    await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: "barbeiro" });
+    await supabaseAdmin.from("profiles").update({ archived_at: null }).eq("id", uid);
+    await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: "none" });
     // Invalidate any other pending links for this barber.
     await supabaseAdmin.from("barber_invites").delete().eq("barber_id", invite.barber_id).is("used_at", null);
     return { ok: true as const };
   });
 
+// Removes a barber. With appointment history the profile is archived (history kept); otherwise it is deleted.
 export const deleteBarber = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ barberId: z.string().uuid() }).parse(d))
@@ -76,23 +118,30 @@ export const deleteBarber = createServerFn({ method: "POST" })
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) return { ok: false as const, error: "Somente o administrador pode excluir barbeiros." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: barber } = await supabaseAdmin.from("barbers").select("user_id").eq("id", data.barberId).maybeSingle();
+    if (!barber) return { ok: false as const, error: "Barbeiro não encontrado." };
     const { count } = await supabaseAdmin
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .eq("barber_id", data.barberId);
-    if ((count ?? 0) > 0)
-      return {
-        ok: false as const,
-        error: "Este barbeiro possui agendamentos no histórico. Para preservar esses dados, desative o perfil em vez de excluir.",
-      };
-    const { data: barber } = await supabaseAdmin.from("barbers").select("user_id").eq("id", data.barberId).maybeSingle();
-    if (!barber) return { ok: false as const, error: "Barbeiro não encontrado." };
     await supabaseAdmin.from("barber_invites").delete().eq("barber_id", data.barberId);
-    const { error } = await supabaseAdmin.from("barbers").delete().eq("id", data.barberId);
-    if (error) return { ok: false as const, error: "Não foi possível excluir." };
+
+    let archived = false;
+    if ((count ?? 0) > 0) {
+      const { error } = await supabaseAdmin
+        .from("barbers")
+        .update({ active: false, archived_at: new Date().toISOString(), user_id: null })
+        .eq("id", data.barberId);
+      if (error) return { ok: false as const, error: "Não foi possível excluir." };
+      archived = true;
+    } else {
+      const { error } = await supabaseAdmin.from("barbers").delete().eq("id", data.barberId);
+      if (error) return { ok: false as const, error: "Não foi possível excluir." };
+    }
+    // The person's login loses barber access (admins keep admin access).
     if (barber.user_id) {
       await supabaseAdmin.from("user_roles").delete().eq("user_id", barber.user_id).eq("role", "barbeiro");
       await supabaseAdmin.from("user_roles").upsert({ user_id: barber.user_id, role: "user" }, { onConflict: "user_id,role" });
     }
-    return { ok: true as const };
+    return { ok: true as const, archived };
   });
