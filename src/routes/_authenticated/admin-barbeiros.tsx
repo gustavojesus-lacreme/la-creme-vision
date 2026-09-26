@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
+import { publicAppOrigin } from "@/lib/public-url";
+import { deleteBarber } from "@/lib/invites.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-barbeiros")({
   head: () => ({
@@ -125,7 +127,16 @@ function AdminBarbersPage() {
     qc.invalidateQueries({ queryKey: ["admin-barbers"] });
   }
 
-  const linkFor = (token: string) => `${window.location.origin}/convite/${token}`;
+  const linkFor = (token: string) => `${publicAppOrigin()}/convite/${token}`;
+  const [confirmDel, setConfirmDel] = useState<Barber | null>(null);
+  const [delMsg, setDelMsg] = useState<string | null>(null);
+  async function doDelete(b: Barber) {
+    const res = await deleteBarber({ data: { barberId: b.id } }).catch(() => ({ ok: false as const, error: "Não foi possível excluir." }));
+    setConfirmDel(null);
+    setDelMsg(res.ok ? `${b.name} foi excluído.` : res.error);
+    qc.invalidateQueries({ queryKey: ["admin-barbers"] });
+    qc.invalidateQueries({ queryKey: ["admin-invites"] });
+  }
 
   function copy(barberId: string, token: string) {
     navigator.clipboard?.writeText(linkFor(token)).catch(() => {});
@@ -190,6 +201,19 @@ function AdminBarbersPage() {
               </button>
             )}
 
+            {delMsg && <div className={`${card} text-sm font-semibold text-foreground`}>{delMsg}</div>}
+            {confirmDel && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
+                <div className={`${card} w-full max-w-sm space-y-3`}>
+                  <p className="text-base font-bold text-card-foreground">Excluir {confirmDel.name}?</p>
+                  <p className="text-sm text-foreground/80">O perfil será apagado definitivamente. Se houver agendamentos no histórico, a exclusão será bloqueada e você deverá desativar o barbeiro.</p>
+                  <div className="flex gap-2">
+                    <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirmDel)}>Sim, excluir</button>
+                    <button className={`${btnOutline} flex-1`} onClick={() => setConfirmDel(null)}>Não, voltar</button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid gap-3">
               {barbersQuery.data?.map((b) => {
                 const pending = !b.user_id;
@@ -207,21 +231,22 @@ function AdminBarbersPage() {
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <span className="rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
-                          {b.active ? "Ativo" : "Inativo"}
+                          {!b.active ? "Desativado" : pending ? "Pendente de ativação" : "Ativo"}
                         </span>
-                        <span className={`rounded-md px-2 py-1 text-xs font-bold ${pending ? "border border-gold text-gold" : "bg-brand text-brand-foreground"}`}>
-                          {pending ? "AGUARDANDO ATIVAÇÃO" : "Acesso ativo"}
-                        </span>
+                        {pending && (
+                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO ATIVAÇÃO</span>
+                        )}
                       </div>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <button className={btnOutline} onClick={() => open(b)}>Editar</button>
                       <button className={btnOutline} onClick={() => toggle(b)}>{b.active ? "Desativar" : "Ativar"}</button>
+                      <button className={`${btnOutline} text-destructive`} onClick={() => { setDelMsg(null); setConfirmDel(b); }}>Excluir</button>
                       {pending && (
                         invite ? (
-                          <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => copy(b.id, invite.token)}>Copiar link de acesso</button>
+                          <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => copy(b.id, invite.token)}>Copiar link de convite</button>
                         ) : (
-                          <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => generate(b)}>Gerar link de acesso</button>
+                          <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => generate(b)}>Gerar link de convite</button>
                         )
                       )}
                     </div>
@@ -233,7 +258,7 @@ function AdminBarbersPage() {
                         </p>
                         <p className="break-all text-sm text-brand">{linkFor(invite.token)}</p>
                         <button className="mt-2 text-sm font-semibold text-foreground/70 underline" onClick={() => generate(b)}>
-                          Gerar novo link (invalida o anterior)
+                          Gerar novo link (o anterior deixa de funcionar)
                         </button>
                       </div>
                     )}
