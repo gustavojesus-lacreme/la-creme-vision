@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type PanelAccess =
   | { role: "admin" }
   | { role: "barbeiro"; barberId: string }
+  | { role: "barbeiro_pendente"; reason: "aguardando" | "desativado" }
   | null;
 
 export async function getPanelAccess(): Promise<PanelAccess> {
@@ -21,10 +22,11 @@ export async function getPanelAccess(): Promise<PanelAccess> {
   if (roles.some((r) => r.role === "barbeiro")) {
     const { data: barber } = await supabase
       .from("barbers")
-      .select("id")
+      .select("id, active, approved_at")
       .eq("user_id", userId)
       .maybeSingle();
-    if (barber) return { role: "barbeiro", barberId: barber.id };
+    if (barber?.approved_at && barber.active) return { role: "barbeiro", barberId: barber.id };
+    if (barber) return { role: "barbeiro_pendente", reason: barber.approved_at ? "desativado" : "aguardando" };
   }
 
   return null;

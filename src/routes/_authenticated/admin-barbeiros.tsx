@@ -30,6 +30,7 @@ type Barber = {
   email: string | null;
   active: boolean;
   user_id: string | null;
+  approved_at: string | null;
   service_ids: string[];
   sort_order: number;
 };
@@ -55,7 +56,7 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("barbers")
-        .select("id, name, last_name, whatsapp, email, active, user_id, service_ids, sort_order")
+        .select("id, name, last_name, whatsapp, email, active, user_id, approved_at, service_ids, sort_order")
         .is("archived_at", null)
         .order("sort_order");
       if (error) throw error;
@@ -123,9 +124,16 @@ function AdminBarbersPage() {
     qc.invalidateQueries({ queryKey: ["admin-barbers"] });
   }
 
+  const [confirmAct, setConfirmAct] = useState<Barber | null>(null);
+  async function approve(b: Barber) {
+    await supabase.from("barbers").update({ approved_at: new Date().toISOString(), active: true }).eq("id", b.id);
+    setConfirmAct(null);
+    await qc.invalidateQueries({ queryKey: ["admin-barbers"] });
+  }
+
   async function toggle(b: Barber) {
     await supabase.from("barbers").update({ active: !b.active }).eq("id", b.id);
-    qc.invalidateQueries({ queryKey: ["admin-barbers"] });
+    await qc.invalidateQueries({ queryKey: ["admin-barbers"] });
   }
 
   const linkFor = (token: string) => `${publicAppOrigin()}/convite/barbeiro/${token}`;
@@ -202,12 +210,32 @@ function AdminBarbersPage() {
               </button>
             )}
 
+            {(() => {
+              const n = barbersQuery.data?.filter((b) => b.user_id && !b.approved_at).length ?? 0;
+              return n > 0 ? (
+                <div className="rounded-lg border-2 border-gold bg-card p-4 text-base font-bold text-card-foreground">
+                  🟡 {n} barbeiro{n > 1 ? "s" : ""} aguardando ativação
+                </div>
+              ) : null;
+            })()}
+            {confirmAct && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
+                <div className={`${card} w-full max-w-sm space-y-3`}>
+                  <p className="text-base font-bold text-card-foreground">Ativar este barbeiro?</p>
+                  <p className="text-sm text-foreground/80">{confirmAct.name} passa a ver a própria agenda e a aparecer para os clientes.</p>
+                  <div className="flex gap-2">
+                    <button className={`${btnPrimary} flex-1`} onClick={() => approve(confirmAct)}>Ativar</button>
+                    <button className={`${btnOutline} flex-1`} onClick={() => setConfirmAct(null)}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
             {delMsg && <div className={`${card} text-sm font-semibold text-foreground`}>{delMsg}</div>}
             {confirmDel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
                 <div className={`${card} w-full max-w-sm space-y-3`}>
-                  <p className="text-base font-bold text-card-foreground">Excluir este barbeiro definitivamente?</p>
-                  <p className="text-sm text-foreground/80">Esta ação removerá o perfil de {confirmDel.name} e os registros relacionados. Esta ação não poderá ser desfeita.</p>
+                  <p className="text-base font-bold text-card-foreground">Excluir definitivamente este barbeiro?</p>
+                  <p className="text-sm text-foreground/80">Esta ação removerá o perfil, o acesso e o convite de {confirmDel.name}, junto com os agendamentos dele. Não poderá ser desfeita.</p>
                   <div className="flex gap-2">
                     <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirmDel)}>Excluir definitivamente</button>
                     <button className={`${btnOutline} flex-1`} onClick={() => setConfirmDel(null)}>Cancelar</button>
@@ -218,6 +246,7 @@ function AdminBarbersPage() {
             <div className="grid gap-3">
               {barbersQuery.data?.map((b) => {
                 const pending = !b.user_id;
+                const awaitingApproval = !!b.user_id && !b.approved_at;
                 const invite = invitesQuery.data?.find((i) => i.barber_id === b.id);
                 return (
                   <div key={b.id} className={card}>
@@ -232,16 +261,20 @@ function AdminBarbersPage() {
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <span className="rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
-                          {!b.active ? "Desativado" : pending ? "Pendente de ativação" : "Ativo"}
+                          {pending ? "Aguardando cadastro" : awaitingApproval ? "🟡 Pendente de ativação" : !b.active ? "⚪ Desativado" : "🟢 Ativo"}
                         </span>
                         {pending && (
-                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO ATIVAÇÃO</span>
+                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO CADASTRO</span>
                         )}
                       </div>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <button className={btnOutline} onClick={() => open(b)}>Editar</button>
-                      <button className={btnOutline} onClick={() => toggle(b)}>{b.active ? "Desativar" : "Ativar"}</button>
+                      {awaitingApproval ? (
+                        <button className={btnPrimary} onClick={() => setConfirmAct(b)}>Ativar barbeiro</button>
+                      ) : (
+                        <button className={btnOutline} disabled={pending} onClick={() => toggle(b)}>{b.active ? "Desativar" : "Ativar"}</button>
+                      )}
                       <button className={`${btnOutline} text-destructive`} onClick={() => { setDelMsg(null); setConfirmDel(b); }}>Excluir</button>
                       {pending && (
                         invite ? (
@@ -274,7 +307,7 @@ function AdminBarbersPage() {
               <div className="flex gap-2">
                 <select className={input} value={previewId} onChange={(e) => setPreviewId(e.target.value)}>
                   <option value="">Escolha um barbeiro</option>
-                  {barbersQuery.data?.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  {barbersQuery.data?.filter((b) => b.user_id && b.approved_at && b.active).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
                 {previewId ? (
                   <Link to="/painel" search={{ ver: previewId }} className={`${btnPrimary} flex items-center`}>Ver</Link>

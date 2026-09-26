@@ -39,11 +39,12 @@ function BarberPanel() {
   const { ver } = Route.useSearch();
 
   const accessQuery = useQuery({
-    queryKey: ["panel-access"],
+    queryKey: ["panel-access-page"],
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
   const previewId = access?.role === "admin" && ver ? ver : null;
+  const pending = access?.role === "barbeiro_pendente" ? (access as { role: "barbeiro_pendente"; reason: "aguardando" | "desativado" }) : null;
   const barberFilter = access?.role === "barbeiro" ? access.barberId : previewId;
 
   const previewNameQuery = useQuery({
@@ -54,7 +55,7 @@ function BarberPanel() {
 
   const appointmentsQuery = useQuery({
     queryKey: ["panel-appointments", barberFilter ?? "all"],
-    enabled: access != null,
+    enabled: access != null && !pending,
     queryFn: async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -83,7 +84,7 @@ function BarberPanel() {
     <div className="min-h-svh bg-background">
       <AppNav />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="font-display text-2xl font-bold text-foreground">Painel do barbeiro</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">Meu Painel</h1>
         {previewId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand bg-secondary p-3">
             <p className="text-sm font-semibold text-foreground">
@@ -107,7 +108,20 @@ function BarberPanel() {
           </div>
         )}
 
-        {access != null && appointmentsQuery.data?.length === 0 && (
+        {pending && (
+          <div className="rounded-lg border border-gold bg-card p-6 text-center">
+            <p className="text-base font-bold text-card-foreground">
+              {pending.reason === "aguardando" ? "Cadastro concluído" : "Acesso desativado"}
+            </p>
+            <p className="mt-1 text-base text-foreground/80">
+              {pending.reason === "aguardando"
+                ? "Seu cadastro está aguardando ativação da administração da LA CREME BARBER. Assim que for ativado, sua agenda aparecerá aqui."
+                : "Seu acesso de barbeiro está desativado. Fale com a administração da LA CREME BARBER."}
+            </p>
+          </div>
+        )}
+
+        {access != null && !pending && appointmentsQuery.data?.length === 0 && (
           <div className="rounded-lg border border-border bg-card p-6 text-center">
             <p className="text-base text-foreground/80">Nenhum agendamento a partir de hoje.</p>
           </div>

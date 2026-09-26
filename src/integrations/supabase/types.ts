@@ -121,6 +121,7 @@ export type Database = {
       barbers: {
         Row: {
           active: boolean
+          approved_at: string | null
           archived_at: string | null
           created_at: string
           email: string | null
@@ -135,6 +136,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          approved_at?: string | null
           archived_at?: string | null
           created_at?: string
           email?: string | null
@@ -149,6 +151,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          approved_at?: string | null
           archived_at?: string | null
           created_at?: string
           email?: string | null

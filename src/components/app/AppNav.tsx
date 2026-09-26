@@ -35,6 +35,8 @@ export function AppNav() {
         ]
       : access?.role === "barbeiro"
         ? [painel, items[1], items[2]]
+        : access?.role === "barbeiro_pendente"
+          ? [painel, items[2]]
         : items;
 
   async function handleSignOut() {

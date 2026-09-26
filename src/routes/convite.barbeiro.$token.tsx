@@ -99,10 +99,10 @@ function InvitePage() {
           </div>
         ) : (
           <form className="mt-6 space-y-3" onSubmit={submit}>
-            <h1 className="text-center font-display text-xl font-bold text-foreground">Convite para entrar na equipe LA CREME BARBER</h1>
+            <h1 className="text-center font-display text-xl font-bold text-foreground">Ativação de acesso</h1>
             <p className="text-center text-base text-foreground/80">
               Olá, <strong>{inviteQuery.data?.barberName}</strong>.<br />
-              Seu acesso foi criado pelo administrador. Informe seu e-mail e crie uma senha. Se você já tem cadastro como cliente, use o mesmo e-mail e a senha atual.
+              Seu perfil de barbeiro foi criado pela administração da LA CREME BARBER. Informe seu e-mail e crie uma senha. Se você já tem cadastro como cliente, use o mesmo e-mail e a senha atual.
             </p>
             <input className={inputClass} type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <input className={inputClass} type="password" placeholder="Senha (mín. 6 caracteres)" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
