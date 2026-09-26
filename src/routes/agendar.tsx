@@ -167,7 +167,7 @@ function BookingPage() {
     queryFn: getPanelAccess,
   });
   useEffect(() => {
-    if (accessQuery.data?.role === "barbeiro") navigate({ to: "/painel", replace: true });
+    if (accessQuery.data?.role === "barbeiro" || accessQuery.data?.role === "barbeiro_pendente") navigate({ to: "/painel", replace: true });
   }, [accessQuery.data, navigate]);
 
   useEffect(() => {
