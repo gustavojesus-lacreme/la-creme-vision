@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function loadInvite(token: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -65,5 +66,33 @@ export const acceptBarberInvite = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: "barbeiro" });
     // Invalidate any other pending links for this barber.
     await supabaseAdmin.from("barber_invites").delete().eq("barber_id", invite.barber_id).is("used_at", null);
+    return { ok: true as const };
+  });
+
+export const deleteBarber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ barberId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) return { ok: false as const, error: "Somente o administrador pode excluir barbeiros." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { count } = await supabaseAdmin
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("barber_id", data.barberId);
+    if ((count ?? 0) > 0)
+      return {
+        ok: false as const,
+        error: "Este barbeiro possui agendamentos no histórico. Para preservar esses dados, desative o perfil em vez de excluir.",
+      };
+    const { data: barber } = await supabaseAdmin.from("barbers").select("user_id").eq("id", data.barberId).maybeSingle();
+    if (!barber) return { ok: false as const, error: "Barbeiro não encontrado." };
+    await supabaseAdmin.from("barber_invites").delete().eq("barber_id", data.barberId);
+    const { error } = await supabaseAdmin.from("barbers").delete().eq("id", data.barberId);
+    if (error) return { ok: false as const, error: "Não foi possível excluir." };
+    if (barber.user_id) {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", barber.user_id).eq("role", "barbeiro");
+      await supabaseAdmin.from("user_roles").upsert({ user_id: barber.user_id, role: "user" }, { onConflict: "user_id,role" });
+    }
     return { ok: true as const };
   });

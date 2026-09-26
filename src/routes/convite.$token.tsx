@@ -82,7 +82,7 @@ function InvitePage() {
           </div>
         ) : (
           <form className="mt-6 space-y-3" onSubmit={submit}>
-            <h1 className="text-center font-display text-xl font-bold text-foreground">Bem-vindo à LA CREME BARBER</h1>
+            <h1 className="text-center font-display text-xl font-bold text-foreground">Convite para entrar na equipe LA CREME BARBER</h1>
             <p className="text-center text-base text-foreground/80">
               Olá, <strong>{inviteQuery.data?.barberName}</strong>.<br />
               Seu acesso foi criado pelo administrador. Complete seus dados para ativar sua conta.
