@@ -26,7 +26,7 @@ export const getBarberInvite = createServerFn({ method: "POST" })
 // Confirms that the person owns an existing account (e.g. a client account) by checking the password.
 async function verifyExistingAccount(email: string, password: string) {
   const { createClient } = await import("@supabase/supabase-js");
-  const client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+  const client = createClient(process.env['SUPABASE_URL']!, process.env['SUPABASE_PUBLISHABLE_KEY']!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await client.auth.signInWithPassword({ email, password });
