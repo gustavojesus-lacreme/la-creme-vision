@@ -44,7 +44,7 @@ function BarberPanel() {
   });
   const access = accessQuery.data ?? null;
   const previewId = access?.role === "admin" && ver ? ver : null;
-  const pending = access?.role === "barbeiro_pendente" ? access : null;
+  const pending = access && access.role === "barbeiro_pendente" ? access : null;
   const barberFilter = access?.role === "barbeiro" ? access.barberId : previewId;
 
   const previewNameQuery = useQuery({
