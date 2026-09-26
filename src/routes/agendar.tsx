@@ -97,17 +97,24 @@ function BookingPage() {
   });
 
   const barbersQuery = useQuery({
-    queryKey: ["barbers"],
+    queryKey: ["barbers", "bookable"],
     queryFn: async () => {
+      // Mesma regra de is_barber_bookable no banco: ativo, não arquivado, conta vinculada e aprovado.
       const { data, error: err } = await supabase
         .from("barbers")
         .select("id, name, specialty")
         .eq("active", true)
         .is("archived_at", null)
+        .not("user_id", "is", null)
+        .not("approved_at", "is", null)
         .order("sort_order");
       if (err) throw err;
       return data ?? [];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   const hoursQuery = useQuery({
@@ -211,6 +218,9 @@ function BookingPage() {
       });
     });
   const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
+  useEffect(() => {
+    if (barberId && barbersQuery.data && !barbersQuery.data.some((b) => b.id === barberId)) setBarberId(null);
+  }, [barberId, barbersQuery.data]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
   const slots = useMemo(() => {
