@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Scissors } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,13 +25,12 @@ const inputClass =
 
 const STATUS_MSG: Record<string, string> = {
   used: "Este link de ativação já foi utilizado. Se você já ativou, entre com seu e-mail e senha.",
-  expired: "Este link de ativação expirou. Peça um novo link ao administrador.",
-  invalid: "Link de ativação inválido. Confira o link recebido ou peça um novo ao administrador.",
+  expired: "Este convite é inválido ou expirou. Peça um novo link ao administrador.",
+  invalid: "Este convite é inválido ou expirou. Peça um novo link ao administrador.",
 };
 
 function InvitePage() {
   const { token } = Route.useParams();
-  const navigate = useNavigate();
   const { session, loading: sessionLoading } = useSession();
   const inviteQuery = useQuery({
     queryKey: ["invite", token],
@@ -42,6 +41,7 @@ function InvitePage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,8 +58,8 @@ function InvitePage() {
       setBusy(false);
       return;
     }
-    await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    navigate({ to: "/painel", replace: true });
+    setDone(true);
+    setBusy(false);
   }
 
   const status = inviteQuery.data?.status ?? "invalid";
@@ -73,7 +73,13 @@ function InvitePage() {
           </span>
           <span className="mt-3 font-display text-lg font-bold text-foreground">LA CREME BARBER</span>
         </div>
-        {inviteQuery.isLoading || sessionLoading ? (
+        {done ? (
+          <div className="mt-6 space-y-4 rounded-lg border border-border bg-card p-5 text-center">
+            <h1 className="font-display text-xl font-bold text-card-foreground">Cadastro concluído!</h1>
+            <p className="text-base text-card-foreground">Seu acesso foi criado e está aguardando a ativação da administração.</p>
+            <Link to="/auth" search={{ modo: "entrar" }} className="inline-block text-base font-semibold text-brand underline">Ir para Entrar</Link>
+          </div>
+        ) : inviteQuery.isLoading || sessionLoading ? (
           <p className="mt-6 text-center text-base text-foreground/70">Carregando...</p>
         ) : status === "ok" && session ? (
           <div className="mt-6 space-y-4 rounded-lg border border-border bg-card p-5 text-center">
@@ -109,7 +115,7 @@ function InvitePage() {
             <input className={inputClass} type="password" placeholder="Confirmar senha" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
             <button type="submit" disabled={busy} className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold text-brand-foreground disabled:opacity-60">
-              {busy ? "Ativando..." : "Ativar acesso"}
+              {busy ? "Criando..." : "CRIAR ACESSO"}
             </button>
           </form>
         )}
