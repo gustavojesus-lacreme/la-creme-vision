@@ -101,6 +101,8 @@ function BookingPage() {
       const { data, error: err } = await supabase
         .from("barbers")
         .select("id, name, specialty")
+        .eq("active", true)
+        .is("archived_at", null)
         .order("sort_order");
       if (err) throw err;
       return data ?? [];
