@@ -252,7 +252,8 @@ function BookingPage() {
     });
 
     if (insertError) {
-      setError("Não foi possível confirmar. Escolha outro horário e tente novamente.");
+      barbersQuery.refetch();
+      setError("Não foi possível confirmar. Confira o barbeiro e o horário e tente novamente.");
     } else {
       setConfirmed({
         when: slot,
