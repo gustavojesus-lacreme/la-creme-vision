@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings, LayoutList, Users } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings, LayoutList, Users, Contact } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -31,6 +31,7 @@ export function AppNav() {
           painel,
           { to: "/admin-servicos" as const, label: "Serviços", icon: Settings },
           { to: "/admin-barbeiros" as const, label: "Barbeiros", icon: Users },
+          { to: "/admin-clientes" as const, label: "Clientes", icon: Contact },
         ]
       : access?.role === "barbeiro"
         ? [painel, items[1], items[2]]

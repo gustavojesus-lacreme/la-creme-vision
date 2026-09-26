@@ -14,11 +14,13 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authenticated/admin-barbeiros'
+import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_authenticated/meus-agendamentos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
+import { Route as ConviteBarbeiroTokenRouteImport } from './routes/convite.barbeiro.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -43,6 +45,12 @@ const AuthenticatedAdminBarbeirosRoute =
   AuthenticatedAdminBarbeirosRouteImport.update({
     id: '/admin-barbeiros',
     path: '/admin-barbeiros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminClientesRoute =
+  AuthenticatedAdminClientesRouteImport.update({
+    id: '/admin-clientes',
+    path: '/admin-clientes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminServicosRoute =
@@ -72,28 +80,37 @@ const ConviteTokenRoute = ConviteTokenRouteImport.update({
   path: '/convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConviteBarbeiroTokenRoute = ConviteBarbeiroTokenRouteImport.update({
+  id: '/convite/barbeiro/$token',
+  path: '/convite/barbeiro/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
+  '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
+  '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -102,11 +119,13 @@ export interface FileRoutesById {
   '/agendar': typeof AgendarRoute
   '/auth': typeof AuthRoute
   '/_authenticated/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
+  '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,22 +134,26 @@ export interface FileRouteTypes {
     | '/agendar'
     | '/auth'
     | '/admin-barbeiros'
+    | '/admin-clientes'
     | '/admin-servicos'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/agendar'
     | '/auth'
     | '/admin-barbeiros'
+    | '/admin-clientes'
     | '/admin-servicos'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   id:
     | '__root__'
     | '/'
@@ -138,11 +161,13 @@ export interface FileRouteTypes {
     | '/agendar'
     | '/auth'
     | '/_authenticated/admin-barbeiros'
+    | '/_authenticated/admin-clientes'
     | '/_authenticated/admin-servicos'
     | '/_authenticated/meus-agendamentos'
     | '/_authenticated/minha-conta'
     | '/_authenticated/painel'
     | '/convite/$token'
+    | '/convite/barbeiro/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,6 +176,7 @@ export interface RootRouteChildren {
   AgendarRoute: typeof AgendarRoute
   AuthRoute: typeof AuthRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  ConviteBarbeiroTokenRoute: typeof ConviteBarbeiroTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -190,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBarbeirosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin-clientes': {
+      id: '/_authenticated/admin-clientes'
+      path: '/admin-clientes'
+      fullPath: '/admin-clientes'
+      preLoaderRoute: typeof AuthenticatedAdminClientesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin-servicos': {
       id: '/_authenticated/admin-servicos'
       path: '/admin-servicos'
@@ -225,11 +258,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/convite/barbeiro/$token': {
+      id: '/convite/barbeiro/$token'
+      path: '/convite/barbeiro/$token'
+      fullPath: '/convite/barbeiro/$token'
+      preLoaderRoute: typeof ConviteBarbeiroTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminBarbeirosRoute: typeof AuthenticatedAdminBarbeirosRoute
+  AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedMeusAgendamentosRoute: typeof AuthenticatedMeusAgendamentosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
@@ -238,6 +279,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminBarbeirosRoute: AuthenticatedAdminBarbeirosRoute,
+  AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedMeusAgendamentosRoute: AuthenticatedMeusAgendamentosRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
@@ -253,6 +295,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendarRoute: AgendarRoute,
   AuthRoute: AuthRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  ConviteBarbeiroTokenRoute: ConviteBarbeiroTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

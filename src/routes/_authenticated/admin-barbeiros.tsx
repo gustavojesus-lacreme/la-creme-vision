@@ -56,6 +56,7 @@ function AdminBarbersPage() {
       const { data, error } = await supabase
         .from("barbers")
         .select("id, name, last_name, whatsapp, email, active, user_id, service_ids, sort_order")
+        .is("archived_at", null)
         .order("sort_order");
       if (error) throw error;
       return (data ?? []) as Barber[];
@@ -127,13 +128,13 @@ function AdminBarbersPage() {
     qc.invalidateQueries({ queryKey: ["admin-barbers"] });
   }
 
-  const linkFor = (token: string) => `${publicAppOrigin()}/convite/${token}`;
+  const linkFor = (token: string) => `${publicAppOrigin()}/convite/barbeiro/${token}`;
   const [confirmDel, setConfirmDel] = useState<Barber | null>(null);
   const [delMsg, setDelMsg] = useState<string | null>(null);
   async function doDelete(b: Barber) {
     const res = await deleteBarber({ data: { barberId: b.id } }).catch(() => ({ ok: false as const, error: "Não foi possível excluir." }));
     setConfirmDel(null);
-    setDelMsg(res.ok ? `${b.name} foi excluído.` : res.error);
+    setDelMsg(res.ok ? (res.archived ? `${b.name} foi excluído da lista. O histórico de agendamentos foi mantido.` : `${b.name} foi excluído.`) : res.error);
     qc.invalidateQueries({ queryKey: ["admin-barbers"] });
     qc.invalidateQueries({ queryKey: ["admin-invites"] });
   }
@@ -205,8 +206,8 @@ function AdminBarbersPage() {
             {confirmDel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
                 <div className={`${card} w-full max-w-sm space-y-3`}>
-                  <p className="text-base font-bold text-card-foreground">Excluir {confirmDel.name}?</p>
-                  <p className="text-sm text-foreground/80">O perfil será apagado definitivamente. Se houver agendamentos no histórico, a exclusão será bloqueada e você deverá desativar o barbeiro.</p>
+                  <p className="text-base font-bold text-card-foreground">Tem certeza que deseja excluir este barbeiro?</p>
+                  <p className="text-sm text-foreground/80">{confirmDel.name} sai da lista e perde o acesso de barbeiro. Se houver agendamentos no histórico, eles ficam guardados.</p>
                   <div className="flex gap-2">
                     <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirmDel)}>Sim, excluir</button>
                     <button className={`${btnOutline} flex-1`} onClick={() => setConfirmDel(null)}>Não, voltar</button>

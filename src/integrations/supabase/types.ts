@@ -121,6 +121,7 @@ export type Database = {
       barbers: {
         Row: {
           active: boolean
+          archived_at: string | null
           created_at: string
           email: string | null
           id: string
@@ -134,6 +135,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          archived_at?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -147,6 +149,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          archived_at?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -183,6 +186,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          archived_at: string | null
           created_at: string
           first_name: string
           id: string
@@ -190,6 +194,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           first_name?: string
           id: string
@@ -197,6 +202,7 @@ export type Database = {
           whatsapp?: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           first_name?: string
           id?: string

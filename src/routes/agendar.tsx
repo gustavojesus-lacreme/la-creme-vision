@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
 import { readGuest, type GuestData } from "@/lib/guest";
+import { getPanelAccess } from "@/lib/admin";
 import {
   buildAvailableSlots,
   formatDateLong,
@@ -101,6 +102,8 @@ function BookingPage() {
       const { data, error: err } = await supabase
         .from("barbers")
         .select("id, name, specialty")
+        .eq("active", true)
+        .is("archived_at", null)
         .order("sort_order");
       if (err) throw err;
       return data ?? [];
@@ -156,6 +159,16 @@ function BookingPage() {
     if (loading || !guestChecked) return;
     if (!session && !guest) navigate({ to: "/", replace: true });
   }, [loading, guestChecked, session, guest, navigate]);
+
+  // Barbers land on their Panel after signing in (admins keep full access).
+  const accessQuery = useQuery({
+    queryKey: ["panel-access", session?.user.id],
+    enabled: !!session,
+    queryFn: getPanelAccess,
+  });
+  useEffect(() => {
+    if (accessQuery.data?.role === "barbeiro") navigate({ to: "/painel", replace: true });
+  }, [accessQuery.data, navigate]);
 
   useEffect(() => {
     if (session || !guest) return;
