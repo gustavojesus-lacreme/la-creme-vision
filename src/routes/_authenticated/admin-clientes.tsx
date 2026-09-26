@@ -37,7 +37,7 @@ function AdminClientsPage() {
   async function doDelete(c: ClientRow) {
     const res = await del({ data: { clientId: c.id } }).catch(() => ({ ok: false as const, error: "Não foi possível excluir." }));
     setConfirm(null);
-    setMsg(res.ok ? (res.archived ? `${c.name} foi arquivado. O histórico de agendamentos foi mantido.` : `${c.name} foi excluído.`) : res.error);
+    setMsg(res.ok ? `${c.name} foi excluído definitivamente.` : res.error);
     qc.invalidateQueries({ queryKey: ["admin-clients"] });
   }
   async function doRestore(c: ClientRow) {
@@ -91,13 +91,13 @@ function AdminClientsPage() {
         {confirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
             <div className={`${card} w-full max-w-sm space-y-3`}>
-              <p className="text-base font-bold text-card-foreground">Tem certeza que deseja excluir este cliente?</p>
+              <p className="text-base font-bold text-card-foreground">Excluir este cliente definitivamente?</p>
               <p className="text-sm text-foreground/80">
-                {confirm.name}. Se houver agendamentos no histórico, o cadastro será arquivado: o histórico fica guardado e a conta não consegue mais entrar nem agendar.
+                {confirm.name}: o cadastro, a conta de acesso e os agendamentos dele serão removidos. Esta ação não poderá ser desfeita.
               </p>
               <div className="flex gap-2">
-                <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirm)}>Sim, excluir</button>
-                <button className={`${btnOutline} flex-1`} onClick={() => setConfirm(null)}>Não, voltar</button>
+                <button className="min-h-12 flex-1 rounded-md bg-destructive px-4 text-base font-bold text-destructive-foreground" onClick={() => doDelete(confirm)}>Excluir definitivamente</button>
+                <button className={`${btnOutline} flex-1`} onClick={() => setConfirm(null)}>Cancelar</button>
               </div>
             </div>
           </div>

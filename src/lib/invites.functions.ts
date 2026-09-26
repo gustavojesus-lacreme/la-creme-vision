@@ -110,7 +110,7 @@ export const acceptBarberInvite = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-// Removes a barber. With appointment history the profile is archived (history kept); otherwise it is deleted.
+// Permanently removes a barber, their appointments, invites and barber access.
 export const deleteBarber = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ barberId: z.string().uuid() }).parse(d))
@@ -120,28 +120,23 @@ export const deleteBarber = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: barber } = await supabaseAdmin.from("barbers").select("user_id").eq("id", data.barberId).maybeSingle();
     if (!barber) return { ok: false as const, error: "Barbeiro não encontrado." };
-    const { count } = await supabaseAdmin
-      .from("appointments")
-      .select("id", { count: "exact", head: true })
-      .eq("barber_id", data.barberId);
     await supabaseAdmin.from("barber_invites").delete().eq("barber_id", data.barberId);
-
-    let archived = false;
-    if ((count ?? 0) > 0) {
-      const { error } = await supabaseAdmin
-        .from("barbers")
-        .update({ active: false, archived_at: new Date().toISOString(), user_id: null })
-        .eq("id", data.barberId);
-      if (error) return { ok: false as const, error: "Não foi possível excluir." };
-      archived = true;
-    } else {
-      const { error } = await supabaseAdmin.from("barbers").delete().eq("id", data.barberId);
-      if (error) return { ok: false as const, error: "Não foi possível excluir." };
+    const { error: apptErr } = await supabaseAdmin.from("appointments").delete().eq("barber_id", data.barberId);
+    if (apptErr) return { ok: false as const, error: "Não foi possível excluir os agendamentos do barbeiro." };
+    const { error } = await supabaseAdmin.from("barbers").delete().eq("id", data.barberId);
+    if (error) return { ok: false as const, error: "Não foi possível excluir." };
+    const uid = barber.user_id;
+    if (uid) {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", uid).eq("role", "barbeiro");
+      const { data: rest } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", uid);
+      // A login that was only for this barber is removed too; an admin keeps their account.
+      if (!rest?.some((r) => r.role === "admin") && uid !== context.userId) {
+        const { count } = await supabaseAdmin.from("appointments").select("id", { count: "exact", head: true }).eq("user_id", uid);
+        if ((count ?? 0) > 0) await supabaseAdmin.from("appointments").delete().eq("user_id", uid);
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
+        await supabaseAdmin.from("profiles").delete().eq("id", uid);
+        await supabaseAdmin.auth.admin.deleteUser(uid);
+      }
     }
-    // The person's login loses barber access (admins keep admin access).
-    if (barber.user_id) {
-      await supabaseAdmin.from("user_roles").delete().eq("user_id", barber.user_id).eq("role", "barbeiro");
-      await supabaseAdmin.from("user_roles").upsert({ user_id: barber.user_id, role: "user" }, { onConflict: "user_id,role" });
-    }
-    return { ok: true as const, archived };
+    return { ok: true as const };
   });
