@@ -19,6 +19,7 @@ import {
   type ServiceCombo,
   weekdayOf,
   type BusyInterval,
+  formatBarberServices,
 } from "@/lib/booking";
 
 export const Route = createFileRoute("/agendar")({
