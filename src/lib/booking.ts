@@ -120,3 +120,10 @@ export function formatDuration(min: number) {
   if (!h) return `${m} min`;
   return m ? `${h}h ${m}min` : `${h}h`;
 }
+
+/** "Corte, Barba e Luzes" a partir dos serviços habilitados do barbeiro. */
+export function formatBarberServices(serviceIds: string[], services: { id: string; name: string }[] | undefined) {
+  const names = serviceIds.map((id) => services?.find((s) => s.id === id)?.name).filter(Boolean) as string[];
+  if (!names.length) return "Nenhum serviço definido";
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+}
