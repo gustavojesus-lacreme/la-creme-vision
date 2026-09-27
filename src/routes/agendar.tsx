@@ -19,6 +19,7 @@ import {
   type ServiceCombo,
   weekdayOf,
   type BusyInterval,
+  formatBarberServices,
 } from "@/lib/booking";
 
 export const Route = createFileRoute("/agendar")({
@@ -102,7 +103,7 @@ function BookingPage() {
       // Mesma regra de is_barber_bookable no banco: ativo, não arquivado, conta vinculada e aprovado.
       const { data, error: err } = await supabase
         .from("barbers")
-        .select("id, name, specialty")
+        .select("id, name, service_ids")
         .eq("active", true)
         .is("archived_at", null)
         .not("user_id", "is", null)
@@ -401,7 +402,7 @@ function BookingPage() {
                 }`}
               >
                 <span className="block text-base font-bold text-card-foreground">{item.name}</span>
-                <span className="block text-sm text-foreground/70">{item.specialty}</span>
+                <span className="block text-sm text-foreground/70">{formatBarberServices(item.service_ids, servicesQuery.data)}</span>
               </button>
             ))}
           </div>

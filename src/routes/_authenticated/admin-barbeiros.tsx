@@ -7,6 +7,8 @@ import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
 import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
+import { formatBarberServices } from "@/lib/booking";
+import QRCode from "qrcode";
 
 export const Route = createFileRoute("/_authenticated/admin-barbeiros")({
   head: () => ({
@@ -160,7 +162,11 @@ function AdminBarbersPage() {
     copy(b.id, data.token);
   }
 
-  const serviceName = (id: string) => servicesQuery.data?.find((s) => s.id === id)?.name;
+  const [qr, setQr] = useState<{ barber: Barber; token: string; img: string } | null>(null);
+  async function showQr(b: Barber, token: string) {
+    const img = await QRCode.toDataURL(linkFor(token), { width: 512, margin: 2 });
+    setQr({ barber: b, token, img });
+  }
 
   return (
     <div className="min-h-svh bg-background">
@@ -230,6 +236,20 @@ function AdminBarbersPage() {
                 </div>
               </div>
             )}
+            {qr && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" onClick={() => setQr(null)}>
+                <div className={`${card} w-full max-w-sm space-y-3 text-center`} onClick={(e) => e.stopPropagation()}>
+                  <p className="text-base font-bold text-card-foreground">Convite de {qr.barber.name}</p>
+                  <img src={qr.img} alt={`QR Code do convite de ${qr.barber.name}`} className="mx-auto w-full max-w-64 rounded-md bg-background" />
+                  <p className="text-xs text-foreground/70">Uso único. Se gerar um novo link, este QR Code deixa de funcionar.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a className={`${btnPrimary} flex items-center justify-center`} href={qr.img} download={`convite-${qr.barber.name.replace(/\s+/g, "-").toLowerCase()}.png`}>Baixar QR Code</a>
+                    <button className={btnOutline} onClick={() => copy(qr.barber.id, qr.token)}>{copied === qr.barber.id ? "Link copiado" : "Copiar link"}</button>
+                  </div>
+                  <button className="text-sm font-semibold text-foreground/70 underline" onClick={() => setQr(null)}>Fechar</button>
+                </div>
+              </div>
+            )}
             {delMsg && <div className={`${card} text-sm font-semibold text-foreground`}>{delMsg}</div>}
             {confirmDel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
@@ -253,11 +273,9 @@ function AdminBarbersPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-base font-bold text-card-foreground">{b.name}</p>
-                        <p className="text-sm text-foreground/70">{b.whatsapp || "WhatsApp não informado"}</p>
+                        <p className="text-sm text-foreground/70">{formatBarberServices(b.service_ids, servicesQuery.data)}</p>
+                        <p className="mt-1 text-sm text-foreground/70">{b.whatsapp || "WhatsApp não informado"}</p>
                         {b.email && <p className="truncate text-sm text-foreground/70">{b.email}</p>}
-                        <p className="mt-1 text-sm text-foreground/70">
-                          {b.service_ids.map(serviceName).filter(Boolean).join(", ") || "Nenhum serviço definido"}
-                        </p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <span className="rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
@@ -278,7 +296,10 @@ function AdminBarbersPage() {
                       <button className={`${btnOutline} text-destructive`} onClick={() => { setDelMsg(null); setConfirmDel(b); }}>Excluir</button>
                       {pending && (
                         invite ? (
-                          <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => copy(b.id, invite.token)}>Copiar link de convite</button>
+                          <>
+                            <button className={btnOutline} onClick={() => copy(b.id, invite.token)}>Copiar link de convite</button>
+                            <button className={btnOutline} onClick={() => showQr(b, invite.token)}>Gerar QR Code</button>
+                          </>
                         ) : (
                           <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => generate(b)}>Gerar link de convite</button>
                         )
