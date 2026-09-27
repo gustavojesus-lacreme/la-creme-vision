@@ -1,0 +1,1 @@
+UPDATE public.profiles p SET whatsapp = b.whatsapp FROM public.barbers b WHERE b.user_id = p.id AND coalesce(p.whatsapp,'') = '' AND coalesce(b.whatsapp,'') <> '';
