@@ -6,7 +6,7 @@ async function loadInvite(token: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("barber_invites")
-    .select("id, barber_id, expires_at, used_at, barbers(name, last_name, user_id, archived_at)")
+    .select("id, barber_id, expires_at, used_at, barbers(name, last_name, whatsapp, user_id, archived_at)")
     .eq("token", token)
     .maybeSingle();
   if (!data || data.barbers?.archived_at) return { status: "invalid" as const };
@@ -59,13 +59,14 @@ export const acceptBarberInvite = createServerFn({ method: "POST" })
     const full = invite.barbers?.name ?? "";
     const last = invite.barbers?.last_name ?? "";
     const first = last && full.endsWith(last) ? full.slice(0, -last.length).trim() : full;
+    const whatsapp = (invite.barbers?.whatsapp ?? "").trim();
 
     let uid: string | null = null;
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
-      user_metadata: { first_name: first, last_name: last },
+      user_metadata: { first_name: first, last_name: last, whatsapp },
     });
     if (created?.user) {
       uid = created.user.id;
@@ -103,7 +104,10 @@ export const acceptBarberInvite = createServerFn({ method: "POST" })
     }
     await supabaseAdmin.from("user_roles").upsert({ user_id: uid, role: "barbeiro" }, { onConflict: "user_id,role" });
     await supabaseAdmin.from("user_roles").delete().eq("user_id", uid).eq("role", "user");
-    await supabaseAdmin.from("profiles").update({ archived_at: null }).eq("id", uid);
+    // Keep the account's profile in sync with the barber profile created by the admin.
+    await supabaseAdmin
+      .from("profiles")
+      .upsert({ id: uid, first_name: first, last_name: last, ...(whatsapp ? { whatsapp } : {}), archived_at: null }, { onConflict: "id" });
     await supabaseAdmin.auth.admin.updateUserById(uid, { ban_duration: "none" });
     // Invalidate any other pending links for this barber.
     await supabaseAdmin.from("barber_invites").delete().eq("barber_id", invite.barber_id).is("used_at", null);
