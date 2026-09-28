@@ -117,6 +117,16 @@ function BookingPage() {
     refetchInterval: 30000,
   });
 
+  // Só datas; tipo e observação da ausência nunca chegam ao cliente.
+  const absencesQuery = useQuery({
+    queryKey: ["barber-absences-public"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_barber_absences_public");
+      return data ?? [];
+    },
+    refetchInterval: 60000,
+  });
+
   const hoursQuery = useQuery({
     queryKey: ["business_hours"],
     queryFn: async () => {
@@ -400,7 +410,9 @@ function BookingPage() {
             </p>
           )}
           <div className="grid gap-2">
-            {compatibleBarbers.map((item) => (
+            {compatibleBarbers.map((item) => {
+              const away = activeAbsence(absencesQuery.data, item.id, dateStr || undefined);
+              return (
               <button
                 key={item.id}
                 type="button"
@@ -410,8 +422,14 @@ function BookingPage() {
                 }`}
               >
                 <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                {away && (
+                  <span className="mt-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-foreground/60">
+                    Indisponível até {formatDayShort(away.ends_on)}
+                  </span>
+                )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
 
