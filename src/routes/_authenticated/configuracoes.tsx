@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Clock, Coffee, CalendarOff, Scissors, Layers, Users, Contact, BadgeCheck,
-  ListChecks, Bell, SlidersHorizontal, ChevronRight, QrCode, type LucideIcon,
+  ListChecks, Bell, SlidersHorizontal, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
@@ -116,4 +116,3 @@ function SettingsPage() {
   );
 }
 
-export { QrCode as _unused };
