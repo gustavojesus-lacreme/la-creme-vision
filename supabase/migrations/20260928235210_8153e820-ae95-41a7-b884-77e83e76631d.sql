@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.block_absent_booking() FROM PUBLIC, anon, authenticated;
