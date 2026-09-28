@@ -8,6 +8,7 @@ import { isBarberAdmin } from "@/lib/admin";
 import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
 import { formatBarberServices } from "@/lib/booking";
+import { activeAbsence, formatDayShort, returnDay, todaySP, type Absence } from "@/lib/absences";
 import QRCode from "qrcode";
 import { useEffect } from "react";
 
@@ -84,6 +85,17 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data } = await supabase.from("services").select("id, name").eq("active", true).order("sort_order");
       return data ?? [];
+    },
+  });
+  const absencesQuery = useQuery({
+    queryKey: ["admin-absences"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("barber_absences")
+        .select("id, barber_id, kind, starts_on, ends_on, note")
+        .gte("ends_on", todaySP());
+      return (data ?? []) as Absence[];
     },
   });
 
