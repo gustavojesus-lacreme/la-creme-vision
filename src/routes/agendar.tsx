@@ -7,6 +7,7 @@ import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
 import { readGuest, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
+import { activeAbsence, formatDayShort } from "@/lib/absences";
 import {
   buildAvailableSlots,
   formatDateLong,
