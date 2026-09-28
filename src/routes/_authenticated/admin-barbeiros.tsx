@@ -242,20 +242,6 @@ function AdminBarbersPage() {
                 </div>
               </div>
             )}
-            {qr && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" onClick={() => setQr(null)}>
-                <div className={`${card} w-full max-w-sm space-y-3 text-center`} onClick={(e) => e.stopPropagation()}>
-                  <p className="text-base font-bold text-card-foreground">Convite de {qr.barber.name}</p>
-                  <img src={qr.img} alt={`QR Code do convite de ${qr.barber.name}`} className="mx-auto w-full max-w-64 rounded-md bg-background" />
-                  <p className="text-xs text-foreground/70">Uso único. Se gerar um novo link, este QR Code deixa de funcionar.</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <a className={`${btnPrimary} flex items-center justify-center`} href={qr.img} download={`convite-${qr.barber.name.replace(/\s+/g, "-").toLowerCase()}.png`}>Baixar QR Code</a>
-                    <button className={btnOutline} onClick={() => copy(qr.barber.id, qr.token)}>{copied === qr.barber.id ? "Link copiado" : "Copiar link"}</button>
-                  </div>
-                  <button className="text-sm font-semibold text-foreground/70 underline" onClick={() => setQr(null)}>Fechar</button>
-                </div>
-              </div>
-            )}
             {delMsg && <div className={`${card} text-sm font-semibold text-foreground`}>{delMsg}</div>}
             {confirmDel && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
@@ -302,10 +288,7 @@ function AdminBarbersPage() {
                       <button className={`${btnOutline} text-destructive`} onClick={() => { setDelMsg(null); setConfirmDel(b); }}>Excluir</button>
                       {pending && (
                         invite ? (
-                          <>
-                            <button className={btnOutline} onClick={() => copy(b.id, invite.token)}>Copiar link de convite</button>
-                            <button className={btnOutline} onClick={() => showQr(b, invite.token)}>Gerar QR Code</button>
-                          </>
+                          <button className={btnOutline} onClick={() => copy(b.id, invite.token)}>Copiar link de convite</button>
                         ) : (
                           <button className={`${btnOutline} col-span-2 sm:col-span-1`} onClick={() => generate(b)}>Gerar link de convite</button>
                         )
