@@ -326,6 +326,25 @@ function AdminBarbersPage() {
                 )}
               </div>
             </div>
+
+            <div className={`${card} space-y-3 text-center`}>
+              <p className="text-base font-bold text-card-foreground">QR Code para clientes</p>
+              <p className="text-sm text-foreground/70">
+                Aponta para a página inicial do aplicativo. O cliente pode entrar, criar cadastro ou continuar como visitante.
+              </p>
+              {clientQr && (
+                <img src={clientQr} alt="QR Code da página inicial da LA CREME BARBER" className="mx-auto w-full max-w-64 rounded-md bg-background" />
+              )}
+              <p className="break-all text-sm text-brand">{publicUrl}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {clientQr ? (
+                  <a className={`${btnPrimary} flex items-center justify-center`} href={clientQr} download="qrcode-lacreme-barber.png">Baixar QR Code</a>
+                ) : (
+                  <button disabled className={btnPrimary}>Baixar QR Code</button>
+                )}
+                <button className={btnOutline} onClick={copyPublicUrl}>{copiedUrl ? "Endereço copiado" : "Copiar endereço"}</button>
+              </div>
+            </div>
           </>
         )}
       </main>
