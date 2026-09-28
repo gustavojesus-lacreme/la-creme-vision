@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authenticated/admin-barbeiros'
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
+import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_authenticated/meus-agendamentos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
@@ -60,6 +61,11 @@ const AuthenticatedAdminServicosRoute =
     path: '/admin-servicos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
+  id: '/ausencias',
+  path: '/ausencias',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/admin-barbeiros'
     | '/admin-clientes'
     | '/admin-servicos'
+    | '/ausencias'
     | '/configuracoes'
     | '/meus-agendamentos'
     | '/minha-conta'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/admin-barbeiros'
     | '/admin-clientes'
     | '/admin-servicos'
+    | '/ausencias'
     | '/configuracoes'
     | '/meus-agendamentos'
     | '/minha-conta'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-barbeiros'
     | '/_authenticated/admin-clientes'
     | '/_authenticated/admin-servicos'
+    | '/_authenticated/ausencias'
     | '/_authenticated/configuracoes'
     | '/_authenticated/meus-agendamentos'
     | '/_authenticated/minha-conta'
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminServicosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ausencias': {
+      id: '/_authenticated/ausencias'
+      path: '/ausencias'
+      fullPath: '/ausencias'
+      preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -292,6 +311,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminBarbeirosRoute: typeof AuthenticatedAdminBarbeirosRoute
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
+  AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedMeusAgendamentosRoute: typeof AuthenticatedMeusAgendamentosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
@@ -302,6 +322,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminBarbeirosRoute: AuthenticatedAdminBarbeirosRoute,
   AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
+  AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedMeusAgendamentosRoute: AuthenticatedMeusAgendamentosRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
