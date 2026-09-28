@@ -9,6 +9,7 @@ import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
 import { formatBarberServices } from "@/lib/booking";
 import QRCode from "qrcode";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin-barbeiros")({
   head: () => ({
@@ -162,10 +163,15 @@ function AdminBarbersPage() {
     copy(b.id, data.token);
   }
 
-  const [qr, setQr] = useState<{ barber: Barber; token: string; img: string } | null>(null);
-  async function showQr(b: Barber, token: string) {
-    const img = await QRCode.toDataURL(linkFor(token), { width: 512, margin: 2 });
-    setQr({ barber: b, token, img });
+  const [clientQr, setClientQr] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const publicUrl = publicAppOrigin();
+  useEffect(() => {
+    QRCode.toDataURL(publicUrl, { width: 512, margin: 2 }).then(setClientQr).catch(() => {});
+  }, [publicUrl]);
+  function copyPublicUrl() {
+    navigator.clipboard?.writeText(publicUrl).catch(() => {});
+    setCopiedUrl(true);
   }
 
   return (
