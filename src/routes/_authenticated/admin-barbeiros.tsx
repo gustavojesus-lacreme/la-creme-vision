@@ -8,6 +8,7 @@ import { isBarberAdmin } from "@/lib/admin";
 import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
 import { formatBarberServices } from "@/lib/booking";
+import { activeAbsence, formatDayShort, returnDay, todaySP, type Absence } from "@/lib/absences";
 import QRCode from "qrcode";
 import { useEffect } from "react";
 
@@ -84,6 +85,17 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data } = await supabase.from("services").select("id, name").eq("active", true).order("sort_order");
       return data ?? [];
+    },
+  });
+  const absencesQuery = useQuery({
+    queryKey: ["admin-absences"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("barber_absences")
+        .select("id, barber_id, kind, starts_on, ends_on, note")
+        .gte("ends_on", todaySP());
+      return (data ?? []) as Absence[];
     },
   });
 
@@ -260,23 +272,39 @@ function AdminBarbersPage() {
                 const pending = !b.user_id;
                 const awaitingApproval = !!b.user_id && !b.approved_at;
                 const invite = invitesQuery.data?.find((i) => i.barber_id === b.id);
+                const absence = activeAbsence(absencesQuery.data, b.id);
+                const status = pending
+                  ? { label: "Aguardando cadastro", sub: "Convite ainda não utilizado", tone: "gold" }
+                  : awaitingApproval
+                    ? { label: "Pendente de ativação", sub: "Aguardando sua aprovação", tone: "gold" }
+                    : !b.active
+                      ? { label: "Desativado", sub: "Não recebe agendamentos", tone: "muted" }
+                      : absence
+                        ? {
+                            label: absence.kind === "ferias" ? "Em férias" : "Ausente",
+                            sub: `Retorno em ${formatDayShort(returnDay(absence.ends_on))}`,
+                            tone: "gold",
+                          }
+                        : { label: "Ativo", sub: "Disponível para novos agendamentos", tone: "brand" };
+                const badgeCls =
+                  status.tone === "brand"
+                    ? "border-brand/30 bg-brand/10 text-brand"
+                    : status.tone === "gold"
+                      ? "border-gold/50 bg-gold/10 text-foreground"
+                      : "border-border bg-secondary text-foreground/60";
                 return (
                   <div key={b.id} className={card}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-base font-bold text-card-foreground">{b.name}</p>
-                        <p className="text-sm text-foreground/70">{formatBarberServices(b.service_ids, servicesQuery.data)}</p>
-                        <p className="mt-1 text-sm text-foreground/70">{b.whatsapp || "WhatsApp não informado"}</p>
-                        {b.email && <p className="truncate text-sm text-foreground/70">{b.email}</p>}
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <span className="rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
-                          {pending ? "Aguardando cadastro" : awaitingApproval ? "🟡 Pendente de ativação" : !b.active ? "⚪ Desativado" : "🟢 Ativo"}
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-card-foreground">{b.name}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${badgeCls}`}>
+                          {status.label}
                         </span>
-                        {pending && (
-                          <span className="rounded-md border border-gold px-2 py-1 text-xs font-bold text-gold">AGUARDANDO CADASTRO</span>
-                        )}
+                        <span className="text-xs text-foreground/60">{status.sub}</span>
                       </div>
+                      <p className="mt-2 text-sm text-foreground/70">{formatBarberServices(b.service_ids, servicesQuery.data)}</p>
+                      <p className="mt-1 text-sm text-foreground/70">{b.whatsapp || "WhatsApp não informado"}</p>
+                      {b.email && <p className="truncate text-sm text-foreground/70">{b.email}</p>}
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <button className={btnOutline} onClick={() => open(b)}>Editar</button>

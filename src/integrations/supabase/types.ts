@@ -83,6 +83,44 @@ export type Database = {
           },
         ]
       }
+      barber_absences: {
+        Row: {
+          barber_id: string
+          created_at: string
+          ends_on: string
+          id: string
+          kind: string
+          note: string
+          starts_on: string
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          ends_on: string
+          id?: string
+          kind: string
+          note?: string
+          starts_on: string
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          ends_on?: string
+          id?: string
+          kind?: string
+          note?: string
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_absences_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barber_invites: {
         Row: {
           barber_id: string
@@ -303,6 +341,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_barber_absences_public: {
+        Args: never
+        Returns: {
+          barber_id: string
+          ends_on: string
+          starts_on: string
+        }[]
+      }
       get_busy_slots: {
         Args: { _barber_id: string; _day: string }
         Returns: {

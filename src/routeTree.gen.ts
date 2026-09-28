@@ -16,6 +16,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authenticated/admin-barbeiros'
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
+import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_authenticated/meus-agendamentos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
@@ -59,6 +61,17 @@ const AuthenticatedAdminServicosRoute =
     path: '/admin-servicos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
+  id: '/ausencias',
+  path: '/ausencias',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeusAgendamentosRoute =
   AuthenticatedMeusAgendamentosRouteImport.update({
     id: '/meus-agendamentos',
@@ -93,6 +106,8 @@ export interface FileRoutesByFullPath {
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -106,6 +121,8 @@ export interface FileRoutesByTo {
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/painel': typeof AuthenticatedPainelRoute
@@ -121,6 +138,8 @@ export interface FileRoutesById {
   '/_authenticated/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
+  '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
@@ -136,6 +155,8 @@ export interface FileRouteTypes {
     | '/admin-barbeiros'
     | '/admin-clientes'
     | '/admin-servicos'
+    | '/ausencias'
+    | '/configuracoes'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
@@ -149,6 +170,8 @@ export interface FileRouteTypes {
     | '/admin-barbeiros'
     | '/admin-clientes'
     | '/admin-servicos'
+    | '/ausencias'
+    | '/configuracoes'
     | '/meus-agendamentos'
     | '/minha-conta'
     | '/painel'
@@ -163,6 +186,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-barbeiros'
     | '/_authenticated/admin-clientes'
     | '/_authenticated/admin-servicos'
+    | '/_authenticated/ausencias'
+    | '/_authenticated/configuracoes'
     | '/_authenticated/meus-agendamentos'
     | '/_authenticated/minha-conta'
     | '/_authenticated/painel'
@@ -230,6 +255,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminServicosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ausencias': {
+      id: '/_authenticated/ausencias'
+      path: '/ausencias'
+      fullPath: '/ausencias'
+      preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meus-agendamentos': {
       id: '/_authenticated/meus-agendamentos'
       path: '/meus-agendamentos'
@@ -272,6 +311,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminBarbeirosRoute: typeof AuthenticatedAdminBarbeirosRoute
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
+  AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedMeusAgendamentosRoute: typeof AuthenticatedMeusAgendamentosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
@@ -281,6 +322,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminBarbeirosRoute: AuthenticatedAdminBarbeirosRoute,
   AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
+  AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedMeusAgendamentosRoute: AuthenticatedMeusAgendamentosRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
