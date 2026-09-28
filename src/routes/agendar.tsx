@@ -19,7 +19,6 @@ import {
   type ServiceCombo,
   weekdayOf,
   type BusyInterval,
-  formatBarberServices,
 } from "@/lib/booking";
 
 export const Route = createFileRoute("/agendar")({
@@ -218,10 +217,14 @@ function BookingPage() {
         return !s || !isServiceBlocked(s, nextSel);
       });
     });
-  const barber = barbersQuery.data?.find((b) => b.id === barberId) ?? null;
+  // Mostra só barbeiros habilitados para TODOS os serviços selecionados.
+  const compatibleBarbers = (barbersQuery.data ?? []).filter((b) =>
+    serviceIds.every((id) => (b.service_ids ?? []).includes(id)),
+  );
+  const barber = compatibleBarbers.find((b) => b.id === barberId) ?? null;
   useEffect(() => {
-    if (barberId && barbersQuery.data && !barbersQuery.data.some((b) => b.id === barberId)) setBarberId(null);
-  }, [barberId, barbersQuery.data]);
+    if (barberId && barbersQuery.data && !compatibleBarbers.some((b) => b.id === barberId)) setBarberId(null);
+  }, [barberId, barbersQuery.data, compatibleBarbers]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
   const slots = useMemo(() => {
@@ -391,8 +394,13 @@ function BookingPage() {
 
         <section className="space-y-2">
           <h2 className="text-base font-bold uppercase text-brand">2. Barbeiro</h2>
+          {barbersQuery.data && compatibleBarbers.length === 0 && (
+            <p className="text-base text-foreground/70">
+              Nenhum barbeiro disponível para os serviços escolhidos.
+            </p>
+          )}
           <div className="grid gap-2">
-            {barbersQuery.data?.map((item) => (
+            {compatibleBarbers.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -402,7 +410,6 @@ function BookingPage() {
                 }`}
               >
                 <span className="block text-base font-bold text-card-foreground">{item.name}</span>
-                <span className="block text-sm text-foreground/70">{formatBarberServices(item.service_ids, servicesQuery.data)}</span>
               </button>
             ))}
           </div>
