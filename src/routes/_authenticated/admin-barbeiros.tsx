@@ -93,7 +93,7 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("barber_absences")
-        .select("id, barber_id, kind, starts_on, ends_on, note")
+        .select("id, barber_id, kind, starts_on, ends_on, note, starts_time")
         .gte("ends_on", todaySP());
       return (data ?? []) as Absence[];
     },
