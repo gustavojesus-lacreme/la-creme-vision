@@ -17,8 +17,11 @@ import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
+import { Route as AuthenticatedConfigGeraisRouteImport } from './routes/_authenticated/config-gerais'
 import { Route as AuthenticatedConfigHorariosRouteImport } from './routes/_authenticated/config-horarios'
 import { Route as AuthenticatedConfigIntervalosRouteImport } from './routes/_authenticated/config-intervalos'
+import { Route as AuthenticatedConfigNotificacoesRouteImport } from './routes/_authenticated/config-notificacoes'
+import { Route as AuthenticatedConfigRegrasRouteImport } from './routes/_authenticated/config-regras'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedEstoqueRouteImport } from './routes/_authenticated/estoque'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -70,6 +73,12 @@ const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
   path: '/ausencias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfigGeraisRoute =
+  AuthenticatedConfigGeraisRouteImport.update({
+    id: '/config-gerais',
+    path: '/config-gerais',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConfigHorariosRoute =
   AuthenticatedConfigHorariosRouteImport.update({
     id: '/config-horarios',
@@ -80,6 +89,18 @@ const AuthenticatedConfigIntervalosRoute =
   AuthenticatedConfigIntervalosRouteImport.update({
     id: '/config-intervalos',
     path: '/config-intervalos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfigNotificacoesRoute =
+  AuthenticatedConfigNotificacoesRouteImport.update({
+    id: '/config-notificacoes',
+    path: '/config-notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfigRegrasRoute =
+  AuthenticatedConfigRegrasRouteImport.update({
+    id: '/config-regras',
+    path: '/config-regras',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfiguracoesRoute =
@@ -133,8 +154,11 @@ export interface FileRoutesByFullPath {
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
+  '/config-regras': typeof AuthenticatedConfigRegrasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -152,8 +176,11 @@ export interface FileRoutesByTo {
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
+  '/config-regras': typeof AuthenticatedConfigRegrasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -173,8 +200,11 @@ export interface FileRoutesById {
   '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
+  '/_authenticated/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/_authenticated/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/_authenticated/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/_authenticated/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
+  '/_authenticated/config-regras': typeof AuthenticatedConfigRegrasRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/estoque': typeof AuthenticatedEstoqueRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -194,8 +224,11 @@ export interface FileRouteTypes {
     | '/admin-clientes'
     | '/admin-servicos'
     | '/ausencias'
+    | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
+    | '/config-notificacoes'
+    | '/config-regras'
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
@@ -213,8 +246,11 @@ export interface FileRouteTypes {
     | '/admin-clientes'
     | '/admin-servicos'
     | '/ausencias'
+    | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
+    | '/config-notificacoes'
+    | '/config-regras'
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
@@ -233,8 +269,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-clientes'
     | '/_authenticated/admin-servicos'
     | '/_authenticated/ausencias'
+    | '/_authenticated/config-gerais'
     | '/_authenticated/config-horarios'
     | '/_authenticated/config-intervalos'
+    | '/_authenticated/config-notificacoes'
+    | '/_authenticated/config-regras'
     | '/_authenticated/configuracoes'
     | '/_authenticated/estoque'
     | '/_authenticated/financeiro'
@@ -312,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/config-gerais': {
+      id: '/_authenticated/config-gerais'
+      path: '/config-gerais'
+      fullPath: '/config-gerais'
+      preLoaderRoute: typeof AuthenticatedConfigGeraisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/config-horarios': {
       id: '/_authenticated/config-horarios'
       path: '/config-horarios'
@@ -324,6 +370,20 @@ declare module '@tanstack/react-router' {
       path: '/config-intervalos'
       fullPath: '/config-intervalos'
       preLoaderRoute: typeof AuthenticatedConfigIntervalosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/config-notificacoes': {
+      id: '/_authenticated/config-notificacoes'
+      path: '/config-notificacoes'
+      fullPath: '/config-notificacoes'
+      preLoaderRoute: typeof AuthenticatedConfigNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/config-regras': {
+      id: '/_authenticated/config-regras'
+      path: '/config-regras'
+      fullPath: '/config-regras'
+      preLoaderRoute: typeof AuthenticatedConfigRegrasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/configuracoes': {
@@ -390,8 +450,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
+  AuthenticatedConfigGeraisRoute: typeof AuthenticatedConfigGeraisRoute
   AuthenticatedConfigHorariosRoute: typeof AuthenticatedConfigHorariosRoute
   AuthenticatedConfigIntervalosRoute: typeof AuthenticatedConfigIntervalosRoute
+  AuthenticatedConfigNotificacoesRoute: typeof AuthenticatedConfigNotificacoesRoute
+  AuthenticatedConfigRegrasRoute: typeof AuthenticatedConfigRegrasRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedEstoqueRoute: typeof AuthenticatedEstoqueRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -405,8 +468,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
+  AuthenticatedConfigGeraisRoute: AuthenticatedConfigGeraisRoute,
   AuthenticatedConfigHorariosRoute: AuthenticatedConfigHorariosRoute,
   AuthenticatedConfigIntervalosRoute: AuthenticatedConfigIntervalosRoute,
+  AuthenticatedConfigNotificacoesRoute: AuthenticatedConfigNotificacoesRoute,
+  AuthenticatedConfigRegrasRoute: AuthenticatedConfigRegrasRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedEstoqueRoute: AuthenticatedEstoqueRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,

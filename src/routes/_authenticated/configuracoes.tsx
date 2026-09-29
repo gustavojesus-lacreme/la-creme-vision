@@ -25,15 +25,15 @@ type Item = {
   icon: LucideIcon;
   title: string;
   desc: string;
-  to?: "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-clientes";
+  to?: "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
 };
 
 const groups: { title: string; items: Item[] }[] = [
   {
     title: "Operação",
     items: [
-      { icon: Clock, title: "Horários de funcionamento", desc: "Defina os dias e horários em que a barbearia funciona" },
-      { icon: Coffee, title: "Intervalos e almoço", desc: "Configure os períodos de pausa e disponibilidade" },
+      { icon: Clock, title: "Horários de funcionamento", desc: "Defina os dias e horários em que a barbearia funciona", to: "/config-horarios" },
+      { icon: Coffee, title: "Intervalos e almoço", desc: "Configure os períodos de pausa e disponibilidade", to: "/config-intervalos" },
       { icon: CalendarOff, title: "Ausências dos barbeiros", desc: "Gerencie férias, atestados, emergências e ausências", to: "/ausencias" },
     ],
   },
@@ -49,15 +49,15 @@ const groups: { title: string; items: Item[] }[] = [
     items: [
       { icon: Users, title: "Barbeiros", desc: "Equipe, convites, ativação e QR Code para clientes", to: "/admin-barbeiros" },
       { icon: Contact, title: "Clientes", desc: "Consulte e gerencie os clientes cadastrados", to: "/admin-clientes" },
-      { icon: BadgeCheck, title: "Planos", desc: "Planos e assinaturas para clientes" },
+      { icon: BadgeCheck, title: "Planos", desc: "Planos e assinaturas para clientes", to: "/config-planos" },
     ],
   },
   {
     title: "Sistema",
     items: [
-      { icon: ListChecks, title: "Regras de agendamento", desc: "Antecedência, cancelamento e limites" },
-      { icon: Bell, title: "Notificações", desc: "Avisos para clientes e barbeiros" },
-      { icon: SlidersHorizontal, title: "Configurações gerais", desc: "Dados da barbearia e preferências" },
+      { icon: ListChecks, title: "Regras de agendamento", desc: "Antecedência, cancelamento e limites", to: "/config-regras" },
+      { icon: Bell, title: "Notificações", desc: "Avisos para clientes e barbeiros", to: "/config-notificacoes" },
+      { icon: SlidersHorizontal, title: "Configurações gerais", desc: "Dados da barbearia e preferências", to: "/config-gerais" },
     ],
   },
 ];
