@@ -43,7 +43,7 @@ const label = "block min-w-0 space-y-1 text-sm font-semibold text-foreground";
 const btn = "min-h-12 rounded-md bg-brand px-4 text-base font-bold text-brand-foreground disabled:opacity-50";
 const btnGhost = "min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-foreground";
 
-type Barber = { id: string; name: string };
+type Barber = { id: string; name: string; team_role?: string; commission_plan_pct?: number | null };
 
 function useFinanceData(range: { from: string; to: string }, enabled: boolean) {
   const iso = rangeToIso(range);
@@ -70,7 +70,7 @@ function FinancePage() {
 
   const barbers = useQuery({
     queryKey: ["fin-barbers"], enabled: isAdmin,
-    queryFn: async () => ((await supabase.from("barbers").select("id, name").order("sort_order")).data ?? []) as Barber[],
+    queryFn: async () => ((await supabase.from("barbers").select("id, name, team_role, commission_plan_pct").order("sort_order")).data ?? []) as Barber[],
   });
   const methods = useQuery({
     queryKey: ["fin-methods"], enabled: isAdmin,
@@ -426,7 +426,9 @@ function SaleForm({ barbers, methods, settings, onDone }: { barbers: Barber[]; m
   const feePct = Number(methods.find((m) => m.id === v.method)?.fee_percent ?? 0);
   const paidV = Math.max(amount - toCents(v.discount), 0);
   const feeV = Math.round((paidV * feePct) / 100);
-  const commPct = !v.seller ? 0 : Number(v.category === "produto" ? settings?.commission_product_pct ?? 30 : settings?.commission_plan_pct ?? 50);
+  const sellerB = barbers.find((b) => b.id === v.seller);
+  const earns = !!sellerB && (sellerB.team_role === "barbeiro" || sellerB.team_role === "lider");
+  const commPct = !earns ? 0 : Number(v.category === "produto" ? settings?.commission_product_pct ?? 30 : sellerB?.commission_plan_pct ?? settings?.commission_plan_pct ?? 50);
   const commission = Math.round(((paidV - feeV) * commPct) / 100);
   async function save() {
     setErr(null);
@@ -463,7 +465,7 @@ function SaleForm({ barbers, methods, settings, onDone }: { barbers: Barber[]; m
       <label className={label}><span>Cliente</span><input className={input} value={v.client} onChange={(e) => setV({ ...v, client: e.target.value })} /></label>
       <label className={label}><span>Quem vendeu</span><select className={input} value={v.seller} onChange={(e) => setV({ ...v, seller: e.target.value })}><option value="">Administrador</option>{barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
       <label className={label}><span>Observação</span><input className={input} value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} /></label>
-      <p className="text-sm text-foreground/70">Pago {brl(paidV)} · Taxa {brl(feeV)} ({pct(feePct)}) · Líquido {brl(paidV - feeV)}<br />Comissão: <b>{brl(commission)}</b> {v.seller ? `(${pct(commPct)} do líquido)` : "(100% para a barbearia)"}</p>
+      <p className="text-sm text-foreground/70">Pago {brl(paidV)} · Taxa {brl(feeV)} ({pct(feePct)}) · Líquido {brl(paidV - feeV)}<br />Comissão: <b>{brl(commission)}</b> {earns ? `(${pct(commPct)} do líquido, prévia)` : "(sem comissão · 100% para a barbearia)"}</p>
       {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
       <button type="button" disabled={saving} onClick={save} className={`${btn} w-full`}>{saving ? "Salvando..." : "Salvar venda"}</button>
     </section>
