@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_cancel_deadline() FROM PUBLIC, anon, authenticated;
