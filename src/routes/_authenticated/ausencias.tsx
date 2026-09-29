@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -97,14 +97,6 @@ function AbsencesPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  const [lStart, setLStart] = useState("");
-  const [lEnd, setLEnd] = useState("");
-  const [lMsg, setLMsg] = useState<string | null>(null);
-  useEffect(() => {
-    setLStart(hhmm(settingsQuery.data?.lunch_start ?? null));
-    setLEnd(hhmm(settingsQuery.data?.lunch_end ?? null));
-  }, [settingsQuery.data]);
-
   const barberOf = (id: string) => barbersQuery.data?.find((b) => b.id === id);
   const nameOf = (id: string) => barberOf(id)?.name ?? "Você";
   const who = (uid: string | null, barberIdOf: string) => {
@@ -175,16 +167,6 @@ function AbsencesPage() {
     if (editing === id) resetForm();
     qc.invalidateQueries({ queryKey: ["admin-absences"] });
     qc.invalidateQueries({ queryKey: ["barber-day"] });
-  }
-
-  async function saveLunch() {
-    setLMsg(null);
-    const { error: err } = await supabase
-      .from("operation_settings")
-      .update({ lunch_start: lStart || null, lunch_end: lEnd || null })
-      .eq("id", 1);
-    setLMsg(err ? friendlyError(err.message) : "Almoço padrão salvo.");
-    qc.invalidateQueries({ queryKey: ["operation-settings"] });
   }
 
   const today = todaySP();
