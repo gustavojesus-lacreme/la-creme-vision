@@ -231,6 +231,138 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_entries: {
+        Row: {
+          amount_cents: number
+          appointment_id: string | null
+          barber_id: string | null
+          category: string
+          client_name: string
+          commission_barber_id: string | null
+          commission_cents: number
+          commission_paid_at: string | null
+          commission_status: string
+          created_at: string
+          description: string
+          discount_cents: number
+          fee_cents: number
+          id: string
+          kind: string
+          note: string
+          occurred_at: string
+          payment_method: string | null
+          received_by: string | null
+          seller_barber_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          appointment_id?: string | null
+          barber_id?: string | null
+          category: string
+          client_name?: string
+          commission_barber_id?: string | null
+          commission_cents?: number
+          commission_paid_at?: string | null
+          commission_status?: string
+          created_at?: string
+          description?: string
+          discount_cents?: number
+          fee_cents?: number
+          id?: string
+          kind: string
+          note?: string
+          occurred_at?: string
+          payment_method?: string | null
+          received_by?: string | null
+          seller_barber_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          appointment_id?: string | null
+          barber_id?: string | null
+          category?: string
+          client_name?: string
+          commission_barber_id?: string | null
+          commission_cents?: number
+          commission_paid_at?: string | null
+          commission_status?: string
+          created_at?: string
+          description?: string
+          discount_cents?: number
+          fee_cents?: number
+          id?: string
+          kind?: string
+          note?: string
+          occurred_at?: string
+          payment_method?: string | null
+          received_by?: string | null
+          seller_barber_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entries_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_commission_barber_id_fkey"
+            columns: ["commission_barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_payment_method_fkey"
+            columns: ["payment_method"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_seller_barber_id_fkey"
+            columns: ["seller_barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          active: boolean
+          fee_percent: number
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          fee_percent?: number
+          id: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          fee_percent?: number
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           archived_at: string | null
@@ -347,6 +479,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_appointment: {
+        Args: {
+          _appointment_id: string
+          _discount_cents?: number
+          _method: string
+        }
+        Returns: undefined
+      }
       get_barber_absences_public: {
         Args: never
         Returns: {

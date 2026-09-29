@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { formatDateLong, formatTime } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
+import { brl, toCents } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   validateSearch: (s: Record<string, unknown>): { ver?: string } =>
@@ -62,7 +64,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, customer_first_name, customer_last_name, services(name), barbers(name)",
+          "id, starts_at, ends_at, status, services_label, total_price_cents, customer_first_name, customer_last_name, services(name), barbers(name)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
@@ -75,10 +77,45 @@ function BarberPanel() {
     },
   });
 
+  const methodsQuery = useQuery({
+    queryKey: ["panel-methods"],
+    enabled: access != null && !pending,
+    queryFn: async () => (await supabase.from("payment_methods").select("id, label").eq("active", true).order("sort_order")).data ?? [],
+  });
+  const [paying, setPaying] = useState<string | null>(null);
+  const [method, setMethod] = useState("pix");
+  const [discount, setDiscount] = useState("");
+  const [payError, setPayError] = useState<string | null>(null);
+  const [payBusy, setPayBusy] = useState(false);
+
   async function setStatus(id: string, status: string) {
+    if (status === "finalizado") {
+      setPaying(id);
+      setPayError(null);
+      setDiscount("");
+      setMethod(methodsQuery.data?.[0]?.id ?? "pix");
+      return;
+    }
     await supabase.from("appointments").update({ status }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
   }
+
+  async function confirmPayment() {
+    if (!paying) return;
+    setPayBusy(true);
+    setPayError(null);
+    const { error } = await supabase.rpc("finalize_appointment", {
+      _appointment_id: paying,
+      _method: method,
+      _discount_cents: toCents(discount),
+    });
+    setPayBusy(false);
+    if (error) return setPayError(error.message || "Não foi possível finalizar.");
+    setPaying(null);
+    queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-entries"] });
+  }
+  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null } | undefined;
 
   return (
     <div className="min-h-svh bg-background">
@@ -167,6 +204,37 @@ function BarberPanel() {
           })}
         </div>
       </main>
+      {paying && (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md space-y-3 rounded-lg bg-card p-4">
+            <h2 className="text-lg font-bold text-card-foreground">Finalizar e registrar pagamento</h2>
+            {payingItem?.total_price_cents != null && (
+              <p className="text-base text-foreground">Valor: <b>{brl(payingItem.total_price_cents - toCents(discount))}</b></p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {methodsQuery.data?.map((m) => (
+                <button key={m.id} type="button" onClick={() => setMethod(m.id)}
+                  className={`min-h-12 rounded-md border px-2 text-sm font-semibold ${method === m.id ? "border-brand bg-secondary text-brand" : "border-input text-foreground"}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <label className="block space-y-1 text-sm font-semibold text-foreground">
+              <span>Desconto (R$, opcional)</span>
+              <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)}
+                className="min-h-12 w-full rounded-md border border-input bg-background px-3 text-base" />
+            </label>
+            {payError && <p className="text-sm font-semibold text-destructive">{payError}</p>}
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setPaying(null)} className="min-h-12 rounded-md border border-input text-sm font-semibold">Voltar</button>
+              <button type="button" disabled={payBusy} onClick={confirmPayment}
+                className="min-h-12 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">
+                {payBusy ? "Salvando..." : "Confirmar pagamento"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

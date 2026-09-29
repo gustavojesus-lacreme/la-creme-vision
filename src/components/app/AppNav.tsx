@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, CalendarOff, User, LogOut, Scissors, Settings, LayoutList } from "lucide-react";
+import { CalendarPlus, CalendarCheck, CalendarOff, User, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -23,12 +23,14 @@ export function AppNav() {
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
-  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList };
+  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList, Wallet, Package };
   const navItems =
     access?.role === "admin"
       ? [
           painel,
           ...items,
+          { to: "/financeiro" as const, label: "Financeiro", icon: Wallet },
+          { to: "/estoque" as const, label: "Estoque", icon: Package },
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
         ]
       : access?.role === "barbeiro"
