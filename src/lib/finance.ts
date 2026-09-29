@@ -31,7 +31,13 @@ export type Entry = {
   commission_cents: number;
   commission_status: "nenhuma" | "pendente" | "paga";
   commission_paid_at: string | null;
+  product_id?: string | null;
+  quantity?: number;
+  refunded_at?: string | null;
 };
+
+/** Vendas estornadas ficam no histórico, mas não entram em nenhum total. */
+export const isCounted = (e: Entry) => !e.refunded_at;
 
 export type PaymentMethod = { id: string; label: string; fee_percent: number; active: boolean; sort_order: number };
 
@@ -92,7 +98,8 @@ function add(a: Agg, e: Entry) {
 }
 const aggOf = (l: Entry[]) => { const a = emptyAgg(); l.forEach((e) => add(a, e)); return a; };
 
-export function summarize(entries: Entry[]) {
+export function summarize(all: Entry[]) {
+  const entries = all.filter(isCounted);
   const inc = entries.filter((e) => e.kind === "entrada");
   const out = entries.filter((e) => e.kind === "saida");
   const t = aggOf(inc);
@@ -131,7 +138,7 @@ export type BarberPerf = {
 export const attributedTo = (e: Entry) => (e.category === "servico" ? e.barber_id : e.seller_barber_id);
 
 export function barberPerf(entries: Entry[], barbers: { id: string; name: string }[]): BarberPerf[] {
-  const inc = entries.filter((e) => e.kind === "entrada");
+  const inc = entries.filter((e) => e.kind === "entrada" && isCounted(e));
   return barbers.map((b) => {
     const mine = inc.filter((e) => attributedTo(e) === b.id);
     const comm = inc.filter((e) => e.commission_barber_id === b.id && e.commission_cents > 0);
@@ -150,7 +157,7 @@ export function barberPerf(entries: Entry[], barbers: { id: string; name: string
 }
 
 export function adminTotals(entries: Entry[]) {
-  return aggOf(entries.filter((e) => e.kind === "entrada" && !attributedTo(e)));
+  return aggOf(entries.filter((e) => e.kind === "entrada" && isCounted(e) && !attributedTo(e)));
 }
 
 export const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
