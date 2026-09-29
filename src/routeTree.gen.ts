@@ -17,6 +17,8 @@ import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
+import { Route as AuthenticatedConfigHorariosRouteImport } from './routes/_authenticated/config-horarios'
+import { Route as AuthenticatedConfigIntervalosRouteImport } from './routes/_authenticated/config-intervalos'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedEstoqueRouteImport } from './routes/_authenticated/estoque'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -68,6 +70,18 @@ const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
   path: '/ausencias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfigHorariosRoute =
+  AuthenticatedConfigHorariosRouteImport.update({
+    id: '/config-horarios',
+    path: '/config-horarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfigIntervalosRoute =
+  AuthenticatedConfigIntervalosRouteImport.update({
+    id: '/config-intervalos',
+    path: '/config-intervalos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -119,6 +133,8 @@ export interface FileRoutesByFullPath {
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/config-horarios': typeof AuthenticatedConfigHorariosRoute
+  '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -136,6 +152,8 @@ export interface FileRoutesByTo {
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/config-horarios': typeof AuthenticatedConfigHorariosRoute
+  '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -155,6 +173,8 @@ export interface FileRoutesById {
   '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
+  '/_authenticated/config-horarios': typeof AuthenticatedConfigHorariosRoute
+  '/_authenticated/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/estoque': typeof AuthenticatedEstoqueRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -174,6 +194,8 @@ export interface FileRouteTypes {
     | '/admin-clientes'
     | '/admin-servicos'
     | '/ausencias'
+    | '/config-horarios'
+    | '/config-intervalos'
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
@@ -191,6 +213,8 @@ export interface FileRouteTypes {
     | '/admin-clientes'
     | '/admin-servicos'
     | '/ausencias'
+    | '/config-horarios'
+    | '/config-intervalos'
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
@@ -209,6 +233,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-clientes'
     | '/_authenticated/admin-servicos'
     | '/_authenticated/ausencias'
+    | '/_authenticated/config-horarios'
+    | '/_authenticated/config-intervalos'
     | '/_authenticated/configuracoes'
     | '/_authenticated/estoque'
     | '/_authenticated/financeiro'
@@ -286,6 +312,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/config-horarios': {
+      id: '/_authenticated/config-horarios'
+      path: '/config-horarios'
+      fullPath: '/config-horarios'
+      preLoaderRoute: typeof AuthenticatedConfigHorariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/config-intervalos': {
+      id: '/_authenticated/config-intervalos'
+      path: '/config-intervalos'
+      fullPath: '/config-intervalos'
+      preLoaderRoute: typeof AuthenticatedConfigIntervalosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -350,6 +390,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
+  AuthenticatedConfigHorariosRoute: typeof AuthenticatedConfigHorariosRoute
+  AuthenticatedConfigIntervalosRoute: typeof AuthenticatedConfigIntervalosRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedEstoqueRoute: typeof AuthenticatedEstoqueRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -363,6 +405,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
+  AuthenticatedConfigHorariosRoute: AuthenticatedConfigHorariosRoute,
+  AuthenticatedConfigIntervalosRoute: AuthenticatedConfigIntervalosRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedEstoqueRoute: AuthenticatedEstoqueRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
