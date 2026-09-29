@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           barber_id: string
           created_at: string
+          created_by: string | null
           ends_on: string
           ends_time: string | null
           id: string
@@ -94,10 +95,13 @@ export type Database = {
           note: string
           starts_on: string
           starts_time: string | null
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
           barber_id: string
           created_at?: string
+          created_by?: string | null
           ends_on: string
           ends_time?: string | null
           id?: string
@@ -105,10 +109,13 @@ export type Database = {
           note?: string
           starts_on: string
           starts_time?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           barber_id?: string
           created_at?: string
+          created_by?: string | null
           ends_on?: string
           ends_time?: string | null
           id?: string
@@ -116,6 +123,8 @@ export type Database = {
           note?: string
           starts_on?: string
           starts_time?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -339,6 +348,30 @@ export type Database = {
           },
         ]
       }
+      operation_settings: {
+        Row: {
+          id: number
+          lunch_end: string | null
+          lunch_start: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          lunch_end?: string | null
+          lunch_start?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          lunch_end?: string | null
+          lunch_start?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       payment_methods: {
         Row: {
           active: boolean
@@ -492,6 +525,7 @@ export type Database = {
         Returns: {
           barber_id: string
           ends_on: string
+          is_vacation: boolean
           starts_on: string
         }[]
       }
