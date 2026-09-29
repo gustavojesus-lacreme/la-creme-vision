@@ -37,7 +37,10 @@ type Barber = {
   approved_at: string | null;
   service_ids: string[];
   sort_order: number;
+  color: string;
 };
+
+const BARBER_COLORS = ["#2563eb", "#16a34a", "#7f1d1d", "#9333ea", "#ea580c", "#0891b2", "#db2777", "#65a30d", "#475569"];
 
 const card = "rounded-lg border border-border bg-card p-4";
 const input =
@@ -60,7 +63,7 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("barbers")
-        .select("id, name, last_name, whatsapp, email, active, user_id, approved_at, service_ids, sort_order")
+        .select("id, name, last_name, whatsapp, email, active, user_id, approved_at, service_ids, sort_order, color")
         .is("archived_at", null)
         .order("sort_order");
       if (error) throw error;
@@ -105,6 +108,7 @@ function AdminBarbersPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [active, setActive] = useState(true);
+  const [color, setColor] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState("");
@@ -117,6 +121,7 @@ function AdminBarbersPage() {
     setWhatsapp(b === "new" ? "" : b.whatsapp);
     setServiceIds(b === "new" ? [] : b.service_ids);
     setActive(b === "new" ? true : b.active);
+    setColor(b === "new" ? "" : b.color);
   }
 
   async function save() {
@@ -129,6 +134,7 @@ function AdminBarbersPage() {
       whatsapp: whatsapp.trim(),
       service_ids: serviceIds,
       active,
+      color,
     };
     const { error } =
       editing === "new"
@@ -218,6 +224,17 @@ function AdminBarbersPage() {
                     );
                   })}
                 </div>
+                <p className="text-sm font-semibold text-foreground/80">Cor de identificação</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {BARBER_COLORS.map((c) => (
+                    <button key={c} type="button" aria-label={`Cor ${c}`} onClick={() => setColor(c)}
+                      className={`h-9 w-9 rounded-full border-2 ${color === c ? "border-foreground" : "border-border"}`} style={{ backgroundColor: c }} />
+                  ))}
+                  <label className="flex h-9 items-center gap-1 rounded-md border border-input px-2 text-xs font-semibold text-foreground">
+                    Outra <input type="color" value={color || "#475569"} onChange={(e) => setColor(e.target.value)} className="h-6 w-6 border-0 bg-transparent p-0" />
+                  </label>
+                  {color && <button type="button" className="text-xs font-semibold text-foreground/70 underline" onClick={() => setColor("")}>Sem cor</button>}
+                </div>
                 <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
                   <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-5 w-5" /> Barbeiro ativo
                 </label>
@@ -295,7 +312,10 @@ function AdminBarbersPage() {
                 return (
                   <div key={b.id} className={card}>
                     <div className="min-w-0">
-                      <p className="text-base font-bold text-card-foreground">{b.name}</p>
+                      <p className="flex items-center gap-2 text-base font-bold text-card-foreground">
+                        {b.color && <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: b.color }} aria-hidden />}
+                        {b.name}
+                      </p>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${badgeCls}`}>
                           {status.label}
