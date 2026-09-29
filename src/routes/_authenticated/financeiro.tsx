@@ -1,4 +1,5 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { generateFinancePdf, type ReportKind } from "@/lib/finance-pdf";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,8 @@ import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, periodRange, rangeToIso, summarize, toCents,
-  type Entry, type PaymentMethod, type PeriodKey,
+  barberPerf, adminTotals, paid, net, pct,
+  type Entry, type PaymentMethod, type PeriodKey, type CommissionSettings,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
 
@@ -73,9 +75,17 @@ function FinancePage() {
     queryKey: ["fin-methods"], enabled: isAdmin,
     queryFn: async () => ((await supabase.from("payment_methods").select("*").order("sort_order")).data ?? []) as PaymentMethod[],
   });
+  const settings = useQuery({
+    queryKey: ["fin-commission-settings"], enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("operation_settings").select("id, commission_service_pct, commission_product_pct, commission_plan_pct").order("id").limit(1).maybeSingle();
+      if (error) throw error;
+      return data as (CommissionSettings & { id: number }) | null;
+    },
+  });
   const entries = useFinanceData(range, isAdmin);
 
-  const ctx = { entries: entries.data ?? [], barbers: barbers.data ?? [], methods: methods.data ?? [], range };
+  const ctx: Ctx = { entries: entries.data ?? [], barbers: barbers.data ?? [], methods: methods.data ?? [], range, period, setPeriod, settings: settings.data ?? null };
 
   return (
     <div className="min-h-svh bg-background">
@@ -130,7 +140,10 @@ function FinancePage() {
   );
 }
 
-type Ctx = { entries: Entry[]; barbers: Barber[]; methods: PaymentMethod[]; range: { from: string; to: string } };
+type Ctx = {
+  entries: Entry[]; barbers: Barber[]; methods: PaymentMethod[]; range: { from: string; to: string };
+  period: PeriodKey; setPeriod: (p: PeriodKey) => void; settings: (CommissionSettings & { id: number }) | null;
+};
 
 function Stat({ title, value, tone }: { title: string; value: string; tone?: "gold" | "brand" | "neg" }) {
   return (
@@ -151,89 +164,130 @@ function Bar({ label: l, value, max }: { label: string; value: number; max: numb
   );
 }
 
-function barberPerf(entries: Entry[], barbers: Barber[]) {
-  return barbers.map((b) => {
-    const performed = entries.filter((e) => e.kind === "entrada" && e.category === "servico" && e.barber_id === b.id);
-    const sold = (c: string) => entries.filter((e) => e.kind === "entrada" && e.category === c && e.seller_barber_id === b.id);
-    const comm = entries.filter((e) => e.commission_barber_id === b.id);
-    return {
-      ...b,
-      services: performed.length,
-      revenue: performed.reduce((s, e) => s + e.amount_cents - e.discount_cents, 0),
-      products: sold("produto").length,
-      productsValue: sold("produto").reduce((s, e) => s + e.amount_cents - e.discount_cents, 0),
-      plans: sold("plano").length,
-      plansValue: sold("plano").reduce((s, e) => s + e.amount_cents - e.discount_cents, 0),
-      commission: comm.reduce((s, e) => s + e.commission_cents, 0),
-      pending: comm.filter((e) => e.commission_status === "pendente").reduce((s, e) => s + e.commission_cents, 0),
-      paid: comm.filter((e) => e.commission_status === "paga").reduce((s, e) => s + e.commission_cents, 0),
-    };
-  }).filter((p) => p.services + p.products + p.plans > 0);
+function Row({ k, v, bold, tone }: { k: string; v: string; bold?: boolean; tone?: string }) {
+  return (
+    <div className="flex justify-between gap-3 border-b border-border py-1 text-sm last:border-0">
+      <span className={bold ? "font-bold" : "text-foreground/70"}>{k}</span>
+      <span className={`text-right ${bold ? "font-bold" : "font-semibold"} ${tone ?? ""}`}>{v}</span>
+    </div>
+  );
+}
+
+function MethodsTable({ entries, methods }: { entries: Entry[]; methods: PaymentMethod[] }) {
+  const s = summarize(entries);
+  return (
+    <div className="space-y-2">
+      {methods.map((m) => {
+        const v = s.byMethod[m.id];
+        return (
+          <div key={m.id} className="rounded-md border border-border p-2 text-sm">
+            <p className="font-semibold">{m.label} <span className="font-normal text-foreground/60">({v?.count ?? 0})</span></p>
+            <p className="text-foreground/70">Bruto {brl(v?.gross ?? 0)} · Desc. {brl(v?.discounts ?? 0)} · Taxa {brl(v?.fees ?? 0)} · <b className="text-foreground">Líquido {brl(v?.net ?? 0)}</b></p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ResultBlock({ entries, showCount }: { entries: Entry[]; showCount?: boolean }) {
+  const s = summarize(entries);
+  return (
+    <div>
+      {showCount && <Row k="Atendimentos" v={String(s.appointments)} />}
+      <Row k="Faturamento bruto" v={brl(s.gross)} />
+      <Row k="(−) Descontos" v={brl(s.discounts)} />
+      <Row k="(−) Taxas de pagamento" v={brl(s.fees)} />
+      <Row k="(=) Valor líquido" v={brl(s.net)} />
+      <Row k="(−) Comissões" v={brl(s.commissions)} />
+      <Row k="(−) Despesas" v={brl(s.expenses)} />
+      <Row k="= Resultado operacional" v={brl(s.result)} bold tone={s.result < 0 ? "text-destructive" : "text-gold"} />
+    </div>
+  );
+}
+
+function BarberTotals({ entries, barbers }: { entries: Entry[]; barbers: Barber[] }) {
+  const perf = barberPerf(entries, barbers);
+  const adm = adminTotals(entries);
+  const s = summarize(entries);
+  return (
+    <div className="space-y-1">
+      {perf.map((p) => <Row key={p.id} k={p.name} v={brl(p.totals.gross)} />)}
+      <Row k="Administrador (vendas sem barbeiro)" v={brl(adm.gross)} />
+      <Row k="Faturamento geral" v={brl(s.gross)} bold />
+    </div>
+  );
 }
 
 function Summary({ entries, barbers, methods }: Ctx) {
   const s = summarize(entries);
-  const perf = barberPerf(entries, barbers);
-  const adminSold = entries.filter((e) => e.kind === "entrada" && e.category !== "servico" && !e.seller_barber_id)
-    .reduce((t, e) => t + e.amount_cents - e.discount_cents, 0);
-  const maxBarber = Math.max(0, ...perf.map((p) => p.revenue + p.productsValue + p.plansValue));
   const maxCat = Math.max(s.services, s.products, s.plans);
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat title="Faturamento bruto" value={brl(s.gross)} tone="brand" />
         <Stat title="Descontos" value={brl(s.discounts)} />
+        <Stat title="Taxas de pagamento" value={brl(s.fees)} />
         <Stat title="Comissões" value={brl(s.commissions)} />
         <Stat title="Despesas" value={brl(s.expenses)} />
         <Stat title="Resultado operacional" value={brl(s.result)} tone={s.result < 0 ? "neg" : "gold"} />
-        <Stat title="Líquido recebido" value={brl(s.received)} />
       </div>
-      <p className="text-xs text-foreground/60">Resultado operacional = bruto − descontos − comissões − despesas. Líquido recebido = bruto − descontos − taxas.</p>
-
+      <section className={`${card} space-y-1`}>
+        <h2 className="text-base font-bold text-card-foreground">Demonstrativo</h2>
+        <ResultBlock entries={entries} />
+      </section>
       <section className={`${card} space-y-3`}>
-        <h2 className="text-base font-bold text-card-foreground">Faturamento por tipo</h2>
+        <h2 className="text-base font-bold text-card-foreground">Faturamento por tipo (valor pago)</h2>
         <Bar label="Serviços" value={s.services} max={maxCat} />
         <Bar label="Produtos" value={s.products} max={maxCat} />
         <Bar label="Planos" value={s.plans} max={maxCat} />
       </section>
-
       <section className={`${card} space-y-3`}>
         <h2 className="text-base font-bold text-card-foreground">Formas de pagamento</h2>
-        {methods.map((m) => {
-          const v = s.byMethod[m.id] ?? { gross: 0, fee: 0, count: 0 };
-          return (
-            <div key={m.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-border pb-2 text-sm last:border-0">
-              <span className="font-semibold">{m.label} <span className="font-normal text-foreground/60">({v.count})</span></span>
-              <span className="text-foreground/70">Bruto {brl(v.gross)} · Taxa {brl(v.fee)} · <b className="text-foreground">Líquido {brl(v.gross - v.fee)}</b></span>
-            </div>
-          );
-        })}
+        <MethodsTable entries={entries} methods={methods} />
       </section>
-
-      <section className={`${card} space-y-3`}>
+      <section className={`${card} space-y-2`}>
         <h2 className="text-base font-bold text-card-foreground">Faturamento geral da barbearia</h2>
-        {perf.map((p) => <Bar key={p.id} label={p.name} value={p.revenue + p.productsValue + p.plansValue} max={Math.max(maxBarber, adminSold)} />)}
-        <Bar label="Vendido pelo administrador (produtos e planos)" value={adminSold} max={Math.max(maxBarber, adminSold)} />
+        <BarberTotals entries={entries} barbers={barbers} />
         <p className="text-xs text-foreground/60">Serviços contam para quem realizou; produtos e planos para quem vendeu.</p>
       </section>
     </>
   );
 }
 
+function DailyClosing({ barbers, methods }: Pick<Ctx, "barbers" | "methods">) {
+  const [day, setDay] = useState(todaySP());
+  const q = useFinanceData({ from: day, to: day }, true);
+  const list = q.data ?? [];
+  return (
+    <section className={`${card} space-y-3`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-card-foreground">Fechamento do dia</h2>
+        <input type="date" className={`${input} w-auto`} value={day} onChange={(e) => e.target.value && setDay(e.target.value)} />
+      </div>
+      <p className="text-sm text-foreground/70">{formatDay(day)}</p>
+      {q.isLoading ? <p className="text-sm text-foreground/70">Carregando...</p> : (
+        <>
+          <ResultBlock entries={list} showCount />
+          <h3 className="pt-2 text-sm font-bold">Formas de pagamento</h3>
+          <MethodsTable entries={list} methods={methods} />
+          <h3 className="pt-2 text-sm font-bold">Faturamento por barbeiro</h3>
+          <BarberTotals entries={list} barbers={barbers} />
+        </>
+      )}
+    </section>
+  );
+}
+
 function Overview(ctx: Ctx) {
   const [selected, setSelected] = useState("");
   const perf = barberPerf(ctx.entries, ctx.barbers);
-  const today = todaySP();
-  const todayEntries = ctx.entries.filter((e) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(e.occurred_at)) === today);
-  const isToday = ctx.range.from === today && ctx.range.to === today;
-  const d = summarize(todayEntries);
   const sel = perf.find((p) => p.id === selected);
   return (
     <div className="space-y-4">
       <Summary {...ctx} />
-
       <section className={`${card} space-y-3`}>
-        <h2 className="text-base font-bold text-card-foreground">Desempenho por barbeiro</h2>
+        <h2 className="text-base font-bold text-card-foreground">Faturamento por barbeiro</h2>
         {perf.length === 0 && <p className="text-sm text-foreground/70">Sem movimentações de barbeiros no período.</p>}
         <select className={input} value={selected} onChange={(e) => setSelected(e.target.value)}>
           <option value="">Todos os barbeiros</option>
@@ -243,43 +297,21 @@ function Overview(ctx: Ctx) {
           {(sel ? [sel] : perf).map((p) => (
             <div key={p.id} className="rounded-md border border-border p-3">
               <p className="font-bold text-card-foreground">{p.name}</p>
-              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                <dt className="text-foreground/60">Serviços realizados</dt><dd className="text-right font-semibold">{p.services}</dd>
-                <dt className="text-foreground/60">Faturamento gerado</dt><dd className="text-right font-semibold">{brl(p.revenue)}</dd>
-                <dt className="text-foreground/60">Produtos vendidos</dt><dd className="text-right font-semibold">{p.products} · {brl(p.productsValue)}</dd>
-                <dt className="text-foreground/60">Planos vendidos</dt><dd className="text-right font-semibold">{p.plans} · {brl(p.plansValue)}</dd>
-                <dt className="text-foreground/60">Comissão gerada</dt><dd className="text-right font-semibold">{brl(p.commission)}</dd>
-                <dt className="text-foreground/60">Comissão pendente</dt><dd className="text-right font-semibold text-gold">{brl(p.pending)}</dd>
-                <dt className="text-foreground/60">Comissão paga</dt><dd className="text-right font-semibold">{brl(p.paid)}</dd>
-              </dl>
+              <p className="text-xs text-foreground/60">{p.services} serviço(s) · {p.products} produto(s) · {p.plans} plano(s)</p>
+              <div className="mt-2">
+                <Row k="Faturamento bruto" v={brl(p.totals.gross)} />
+                <Row k="Descontos" v={brl(p.totals.discounts)} />
+                <Row k="Taxas" v={brl(p.totals.fees)} />
+                <Row k="Valor líquido" v={brl(p.totals.net)} />
+                <Row k="Comissão" v={brl(p.commission)} />
+                <Row k="Comissão pendente" v={brl(p.pending)} tone="text-gold" />
+                <Row k="Comissão paga" v={brl(p.paid)} />
+              </div>
             </div>
           ))}
         </div>
       </section>
-
-      <section className={`${card} space-y-2`}>
-        <h2 className="text-base font-bold text-card-foreground">Fechamento do dia — {formatDay(today)}</h2>
-        {!ctx.range.to || ctx.range.to < today || ctx.range.from > today ? (
-          <p className="text-sm text-foreground/70">Selecione "Hoje" ou um período que inclua hoje para ver o fechamento.</p>
-        ) : (
-          <>
-            {!isToday && <p className="text-xs text-foreground/60">Mostrando apenas os lançamentos de hoje.</p>}
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-              <dt className="text-foreground/60">Atendimentos</dt><dd className="text-right font-semibold">{d.appointments}</dd>
-              <dt className="text-foreground/60">Total recebido</dt><dd className="text-right font-semibold">{brl(d.gross - d.discounts)}</dd>
-              {ctx.methods.map((m) => (
-                <Fragment key={m.id}><dt className="text-foreground/60">{m.label}</dt><dd className="text-right font-semibold">{brl(d.byMethod[m.id]?.gross ?? 0)}</dd></Fragment>
-              ))}
-              <dt className="text-foreground/60">Comissões geradas</dt><dd className="text-right font-semibold">{brl(d.commissions)}</dd>
-              <dt className="text-foreground/60">Despesas do dia</dt><dd className="text-right font-semibold">{brl(d.expenses)}</dd>
-              <dt className="font-bold">Resultado do dia</dt><dd className="text-right font-bold text-gold">{brl(d.result)}</dd>
-            </dl>
-            {barberPerf(todayEntries, ctx.barbers).map((p) => (
-              <p key={p.id} className="text-sm text-foreground/80">{p.name}: {brl(p.revenue + p.productsValue + p.plansValue)}</p>
-            ))}
-          </>
-        )}
-      </section>
+      <DailyClosing barbers={ctx.barbers} methods={ctx.methods} />
     </div>
   );
 }
@@ -303,18 +335,24 @@ function EntryRow({ e, barbers, methods, children }: { e: Entry; barbers: Barber
           {e.appointment_id && <p className="text-xs text-foreground/60">Ligado a um agendamento</p>}
           {e.note && <p className="break-words text-xs text-foreground/60">{e.note}</p>}
         </div>
-        <div className="shrink-0 text-right">
-          <p className={`font-bold ${e.kind === "entrada" ? "text-brand" : "text-destructive"}`}>{e.kind === "entrada" ? "+" : "−"}{brl(e.amount_cents - e.discount_cents)}</p>
-          {e.discount_cents > 0 && <p className="text-xs text-foreground/60">desc. {brl(e.discount_cents)}</p>}
-          {e.fee_cents > 0 && <p className="text-xs text-foreground/60">taxa {brl(e.fee_cents)}</p>}
-        </div>
+        <p className={`shrink-0 font-bold ${e.kind === "entrada" ? "text-brand" : "text-destructive"}`}>{e.kind === "entrada" ? "+" : "−"}{brl(e.kind === "entrada" ? paid(e) : e.amount_cents)}</p>
       </div>
+      {e.kind === "entrada" && (
+        <dl className="mt-2 grid grid-cols-2 gap-x-3 text-xs text-foreground/70 sm:grid-cols-3">
+          <div>Original: <b>{brl(e.amount_cents)}</b></div>
+          <div>Desconto: <b>{brl(e.discount_cents)}</b></div>
+          <div>Pago: <b>{brl(paid(e))}</b></div>
+          <div>Taxa ({pct(e.fee_percent)}): <b>{brl(e.fee_cents)}</b></div>
+          <div>Líquido: <b>{brl(net(e))}</b></div>
+          <div>Comissão ({pct(e.commission_percent)}): <b>{brl(e.commission_cents)}</b></div>
+        </dl>
+      )}
       {children}
     </div>
   );
 }
 
-function Movements({ entries, barbers, methods }: Ctx) {
+function Movements({ entries, barbers, methods, settings }: Ctx) {
   const qc = useQueryClient();
   const [f, setF] = useState({ kind: "", category: "", barber: "", seller: "", method: "" });
   const [adding, setAdding] = useState(false);
@@ -322,13 +360,13 @@ function Movements({ entries, barbers, methods }: Ctx) {
     (!f.kind || e.kind === f.kind) && (!f.category || e.category === f.category) &&
     (!f.barber || e.barber_id === f.barber) && (!f.method || e.payment_method === f.method) &&
     (!f.seller || (f.seller === "admin" ? e.kind === "entrada" && e.category !== "servico" && !e.seller_barber_id : e.seller_barber_id === f.seller)));
-  const totalIn = list.filter((e) => e.kind === "entrada").reduce((s, e) => s + e.amount_cents - e.discount_cents, 0);
+  const totalIn = list.filter((e) => e.kind === "entrada").reduce((s, e) => s + paid(e), 0);
   const totalOut = list.filter((e) => e.kind === "saida").reduce((s, e) => s + e.amount_cents, 0);
   const cats = [...Object.entries(INCOME_CATEGORIES), ...EXPENSE_CATEGORIES.map((c) => [c, c] as const)];
   return (
     <div className="space-y-4">
       <button type="button" className={`${btn} w-full`} onClick={() => setAdding(!adding)}>+ Registrar venda de produto ou plano</button>
-      {adding && <SaleForm barbers={barbers} methods={methods} onDone={() => { setAdding(false); qc.invalidateQueries({ queryKey: ["fin-entries"] }); }} />}
+      {adding && <SaleForm barbers={barbers} methods={methods} settings={settings} onDone={() => { setAdding(false); qc.invalidateQueries({ queryKey: ["fin-entries"] }); }} />}
       <section className={`${card} grid gap-2 sm:grid-cols-2`}>
         <select className={input} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="">Entradas e saídas</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select>
         <select className={input} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}><option value="">Todas as categorias</option>{cats.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
@@ -347,15 +385,21 @@ function Movements({ entries, barbers, methods }: Ctx) {
   );
 }
 
-function SaleForm({ barbers, methods, onDone }: { barbers: Barber[]; methods: PaymentMethod[]; onDone: () => void }) {
+function SaleForm({ barbers, methods, settings, onDone }: { barbers: Barber[]; methods: PaymentMethod[]; settings: Ctx["settings"]; onDone: () => void }) {
   const [v, setV] = useState({ category: "produto", description: "", amount: "", discount: "", method: "pix", client: "", seller: "", date: todaySP(), note: "" });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const amount = toCents(v.amount);
-  const commission = !v.seller ? 0 : Math.round(Math.max(amount - toCents(v.discount), 0) * (v.category === "produto" ? 0.3 : 0.5));
+  // Prévia apenas; o valor oficial é calculado e gravado pelo banco.
+  const feePct = Number(methods.find((m) => m.id === v.method)?.fee_percent ?? 0);
+  const paidV = Math.max(amount - toCents(v.discount), 0);
+  const feeV = Math.round((paidV * feePct) / 100);
+  const commPct = !v.seller ? 0 : Number(v.category === "produto" ? settings?.commission_product_pct ?? 30 : settings?.commission_plan_pct ?? 50);
+  const commission = Math.round(((paidV - feeV) * commPct) / 100);
   async function save() {
     setErr(null);
     if (!v.description.trim() || amount <= 0) return setErr("Informe descrição e valor.");
+    if (toCents(v.discount) > amount || toCents(v.discount) < 0) return setErr("Desconto inválido.");
     setSaving(true);
     const { error } = await supabase.from("financial_entries").insert({
       kind: "entrada", category: v.category, description: v.description.trim(), amount_cents: amount,
@@ -387,7 +431,7 @@ function SaleForm({ barbers, methods, onDone }: { barbers: Barber[]; methods: Pa
       <label className={label}><span>Cliente</span><input className={input} value={v.client} onChange={(e) => setV({ ...v, client: e.target.value })} /></label>
       <label className={label}><span>Quem vendeu</span><select className={input} value={v.seller} onChange={(e) => setV({ ...v, seller: e.target.value })}><option value="">Administrador</option>{barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
       <label className={label}><span>Observação</span><input className={input} value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} /></label>
-      <p className="text-sm text-foreground/70">Comissão: <b>{brl(commission)}</b> {v.seller ? `(${v.category === "produto" ? "30%" : "50%"})` : "(100% para a barbearia)"}</p>
+      <p className="text-sm text-foreground/70">Pago {brl(paidV)} · Taxa {brl(feeV)} ({pct(feePct)}) · Líquido {brl(paidV - feeV)}<br />Comissão: <b>{brl(commission)}</b> {v.seller ? `(${pct(commPct)} do líquido)` : "(100% para a barbearia)"}</p>
       {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
       <button type="button" disabled={saving} onClick={save} className={`${btn} w-full`}>{saving ? "Salvando..." : "Salvar venda"}</button>
     </section>
@@ -398,28 +442,53 @@ function Commissions({ entries, barbers, methods }: Ctx) {
   const qc = useQueryClient();
   const [barber, setBarber] = useState("");
   const [status, setStatus] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
   const list = entries.filter((e) => e.commission_cents > 0 && (!barber || e.commission_barber_id === barber) && (!status || e.commission_status === status));
-  const pending = list.filter((e) => e.commission_status === "pendente").reduce((s, e) => s + e.commission_cents, 0);
-  const paid = list.filter((e) => e.commission_status === "paga").reduce((s, e) => s + e.commission_cents, 0);
+  const perf = barberPerf(entries, barbers).filter((p) => p.commission > 0 && (!barber || p.id === barber));
   async function mark(ids: string[], st: "paga" | "pendente") {
     if (ids.length === 0) return;
-    await supabase.from("financial_entries").update({ commission_status: st, commission_paid_at: st === "paga" ? new Date().toISOString() : null }).in("id", ids);
+    setMsg(null);
+    const { error } = await supabase.from("financial_entries").update({ commission_status: st, commission_paid_at: st === "paga" ? new Date().toISOString() : null }).in("id", ids);
+    if (error) setMsg("Não foi possível atualizar a comissão.");
     qc.invalidateQueries({ queryKey: ["fin-entries"] });
   }
   const name = (id: string | null) => barbers.find((b) => b.id === id)?.name ?? "—";
+  const comm = (l: Entry[], c: string) => l.filter((e) => e.category === c);
   return (
     <div className="space-y-4">
       <section className={`${card} grid gap-2 sm:grid-cols-2`}>
         <select className={input} value={barber} onChange={(e) => setBarber(e.target.value)}><option value="">Todos os barbeiros</option>{barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
         <select className={input} value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Todas</option><option value="pendente">Pendentes</option><option value="paga">Pagas</option></select>
       </section>
-      <div className="grid grid-cols-3 gap-2">
-        <Stat title="Gerada" value={brl(pending + paid)} />
-        <Stat title="Pendente" value={brl(pending)} tone="gold" />
-        <Stat title="Paga" value={brl(paid)} tone="brand" />
-      </div>
-      <p className="text-xs text-foreground/60">Serviços 50% · Produtos 30% · Plano vendido pelo barbeiro 50% · Plano vendido pelo administrador 100% para a barbearia.</p>
-      {pending > 0 && <button type="button" className={`${btn} w-full`} onClick={() => mark(list.filter((e) => e.commission_status === "pendente").map((e) => e.id), "paga")}>Marcar todas as pendentes da lista como pagas</button>}
+      <p className="text-xs text-foreground/60">A comissão é calculada sobre o valor líquido (valor pago − taxa da forma de pagamento), com o percentual gravado em cada lançamento. Plano vendido pelo administrador: 100% para a barbearia.</p>
+      {perf.map((p) => {
+        const mine = entries.filter((e) => e.commission_barber_id === p.id && e.commission_cents > 0);
+        const gross = mine.reduce((s, e) => s + e.amount_cents, 0);
+        const disc = mine.reduce((s, e) => s + e.discount_cents, 0);
+        const fees = mine.reduce((s, e) => s + e.fee_cents, 0);
+        return (
+          <section key={p.id} className={`${card} space-y-1`}>
+            <h2 className="text-base font-bold text-card-foreground">{p.name}</h2>
+            <p className="text-xs text-foreground/60">
+              Serviços: {comm(mine, "servico").length} · Produtos: {comm(mine, "produto").length} · Planos: {comm(mine, "plano").length}
+            </p>
+            <Row k="Valor bruto" v={brl(gross)} />
+            <Row k="Descontos" v={brl(disc)} />
+            <Row k="Taxas" v={brl(fees)} />
+            <Row k="Base líquida" v={brl(p.commissionBase)} />
+            <Row k="Percentual" v={[...new Set(mine.map((e) => pct(e.commission_percent)))].join(" / ")} />
+            <Row k="Comissão gerada" v={brl(p.commission)} bold />
+            <Row k="Pendente" v={brl(p.pending)} tone="text-gold" />
+            <Row k="Paga" v={brl(p.paid)} />
+            {p.pending > 0 && (
+              <button type="button" className={`${btn} mt-2 w-full`} onClick={() => mark(mine.filter((e) => e.commission_status === "pendente").map((e) => e.id), "paga")}>
+                Marcar pendentes de {p.name} como pagas
+              </button>
+            )}
+          </section>
+        );
+      })}
+      {msg && <p className="text-sm font-semibold text-destructive">{msg}</p>}
       {list.length === 0 && <p className="text-base text-foreground/70">Nenhuma comissão no período.</p>}
       <div className="grid gap-3">
         {list.map((e) => (
@@ -515,49 +584,167 @@ function Expenses({ entries, barbers, methods }: Ctx) {
   );
 }
 
+const REPORT_KINDS: { key: ReportKind; label: string; period: PeriodKey }[] = [
+  { key: "diario", label: "Diário", period: "hoje" },
+  { key: "semanal", label: "Semanal", period: "semana" },
+  { key: "mensal", label: "Mensal", period: "mes" },
+  { key: "personalizado", label: "Personalizado", period: "personalizado" },
+];
+
 function Reports(ctx: Ctx) {
+  const kind: ReportKind =
+    ctx.period === "hoje" || ctx.period === "ontem" ? "diario"
+    : ctx.period === "semana" ? "semanal"
+    : ctx.period === "mes" || ctx.period === "mes_anterior" ? "mensal" : "personalizado";
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const s = summarize(ctx.entries);
+  async function pdf() {
+    setBusy(true); setErr(null);
+    try { await generateFinancePdf({ kind, range: ctx.range, entries: ctx.entries, barbers: ctx.barbers, methods: ctx.methods }); }
+    catch { setErr("Não foi possível gerar o PDF."); }
+    setBusy(false);
+  }
+  const perf = barberPerf(ctx.entries, ctx.barbers);
+  const list = (o: Record<string, { count: number; paid: number }>) => Object.entries(o);
   return (
-    <div className="space-y-4" id="relatorio-financeiro">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-foreground/70">Use os botões de período acima: Hoje (diário), Esta semana, Este mês ou Personalizado.</p>
-        <button type="button" className={btnGhost} onClick={() => window.print()}>Imprimir / salvar PDF</button>
-      </div>
-      <Summary {...ctx} />
+    <div className="space-y-4">
+      <section className={`${card} space-y-3`}>
+        <h2 className="text-base font-bold text-card-foreground">Tipo de relatório</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {REPORT_KINDS.map((r) => (
+            <button key={r.key} type="button" onClick={() => ctx.setPeriod(r.period)}
+              className={`min-h-11 rounded-md border px-2 text-sm font-semibold ${kind === r.key ? "border-brand bg-secondary text-brand" : "border-input text-foreground/80"}`}>{r.label}</button>
+          ))}
+        </div>
+        <button type="button" disabled={busy} onClick={pdf} className={`${btn} w-full`}>{busy ? "Gerando..." : "Gerar PDF"}</button>
+        {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
+      </section>
+      <section className={`${card} space-y-1`}>
+        <h2 className="text-base font-bold text-card-foreground">Resumo</h2>
+        <ResultBlock entries={ctx.entries} showCount={kind === "diario"} />
+      </section>
+      <section className={`${card} space-y-2`}>
+        <h2 className="text-base font-bold text-card-foreground">Formas de pagamento</h2>
+        <MethodsTable entries={ctx.entries} methods={ctx.methods} />
+      </section>
+      <section className={`${card} space-y-1`}>
+        <h2 className="text-base font-bold text-card-foreground">Faturamento por barbeiro</h2>
+        <BarberTotals entries={ctx.entries} barbers={ctx.barbers} />
+      </section>
+      {[["Serviços", s.byService], ["Produtos", s.byProduct], ["Planos", s.byPlan]].map(([t, o]) => {
+        const rows = list(o as Record<string, { count: number; paid: number }>);
+        return rows.length > 0 && (
+          <section key={t as string} className={`${card} space-y-1`}>
+            <h2 className="text-base font-bold text-card-foreground">{t as string}</h2>
+            {rows.map(([k, a]) => <Row key={k} k={`${k} (${a.count})`} v={brl(a.paid)} />)}
+          </section>
+        );
+      })}
+      {Object.keys(s.byExpense).length > 0 && (
+        <section className={`${card} space-y-1`}>
+          <h2 className="text-base font-bold text-card-foreground">Despesas</h2>
+          {Object.entries(s.byExpense).map(([k, v]) => <Row key={k} k={k} v={brl(v)} />)}
+        </section>
+      )}
+      {perf.some((p) => p.commission > 0) && (
+        <section className={`${card} space-y-1`}>
+          <h2 className="text-base font-bold text-card-foreground">Comissões</h2>
+          {perf.filter((p) => p.commission > 0).map((p) => <Row key={p.id} k={p.name} v={brl(p.commission)} />)}
+        </section>
+      )}
     </div>
   );
 }
 
-function Methods({ methods, entries }: Ctx) {
+function Methods({ methods, entries, settings }: Ctx) {
   const qc = useQueryClient();
   const [fees, setFees] = useState<Record<string, string>>({});
-  const s = useMemo(() => summarize(entries), [entries]);
-  async function update(id: string, patch: Partial<PaymentMethod>) {
-    await supabase.from("payment_methods").update(patch).eq("id", id);
+  const [comm, setComm] = useState<Partial<Record<keyof CommissionSettings, string>>>({});
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const s = summarize(entries);
+  const parse = (v: string) => { const n = Number(v.trim().replace(",", ".")); return v.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : null; };
+  const show = (n: number) => String(n).replace(".", ",");
+
+  async function saveAll() {
+    setMsg(null);
+    const feeUpdates: { id: string; fee_percent: number }[] = [];
+    for (const m of methods) {
+      const raw = fees[m.id];
+      if (raw === undefined) continue;
+      const n = parse(raw);
+      if (n === null) return setMsg({ ok: false, text: `Taxa inválida em ${m.label}. Use um valor entre 0 e 100.` });
+      feeUpdates.push({ id: m.id, fee_percent: n });
+    }
+    const commPatch: Partial<CommissionSettings> = {};
+    for (const [k, raw] of Object.entries(comm) as [keyof CommissionSettings, string][]) {
+      const n = parse(raw);
+      if (n === null) return setMsg({ ok: false, text: "Percentual de comissão inválido. Use um valor entre 0 e 100." });
+      commPatch[k] = n;
+    }
+    setSaving(true);
+    try {
+      for (const u of feeUpdates) {
+        const { data, error } = await supabase.from("payment_methods").update({ fee_percent: u.fee_percent }).eq("id", u.id).select("id");
+        if (error || !data?.length) throw new Error();
+      }
+      if (Object.keys(commPatch).length) {
+        if (!settings) throw new Error();
+        const { data, error } = await supabase.from("operation_settings").update(commPatch).eq("id", settings.id).select("id");
+        if (error || !data?.length) throw new Error();
+      }
+      await Promise.all([qc.invalidateQueries({ queryKey: ["fin-methods"] }), qc.invalidateQueries({ queryKey: ["fin-commission-settings"] })]);
+      setFees({}); setComm({});
+      setMsg({ ok: true, text: "Configurações salvas com sucesso." });
+    } catch {
+      setMsg({ ok: false, text: "Não foi possível salvar as configurações." });
+    }
+    setSaving(false);
+  }
+
+  async function toggle(m: PaymentMethod) {
+    const { error } = await supabase.from("payment_methods").update({ active: !m.active }).eq("id", m.id);
+    if (error) setMsg({ ok: false, text: "Não foi possível salvar as configurações." });
     qc.invalidateQueries({ queryKey: ["fin-methods"] });
   }
+
+  const commFields: { key: keyof CommissionSettings; label: string }[] = [
+    { key: "commission_service_pct", label: "Serviços" },
+    { key: "commission_product_pct", label: "Produtos" },
+    { key: "commission_plan_pct", label: "Plano vendido pelo barbeiro" },
+  ];
+
   return (
     <div className="space-y-3">
-      <p className="text-sm text-foreground/70">A taxa é aplicada nos novos lançamentos. Valores do período selecionado nas outras abas.</p>
+      <p className="text-sm text-foreground/70">As taxas e comissões valem para os novos lançamentos. Lançamentos já registrados mantêm os percentuais da época. Valores abaixo referem-se ao período selecionado nas outras abas.</p>
       {methods.map((m) => {
-        const v = s.byMethod[m.id] ?? { gross: 0, fee: 0 };
+        const v = s.byMethod[m.id];
         return (
           <div key={m.id} className={`${card} space-y-3`}>
             <div className="flex items-center justify-between gap-2">
               <p className="font-bold text-card-foreground">{m.label}</p>
-              <button type="button" className={btnGhost} onClick={() => update(m.id, { active: !m.active })}>{m.active ? "Desativar" : "Ativar"}</button>
+              <button type="button" className={btnGhost} onClick={() => toggle(m)}>{m.active ? "Desativar" : "Ativar"}</button>
             </div>
             {!m.active && <p className="text-xs font-semibold uppercase text-foreground/50">Desativada</p>}
-            <div className="flex items-end gap-2">
-              <label className={`${label} flex-1`}><span>Taxa (%)</span>
-                <input inputMode="decimal" className={input} value={fees[m.id] ?? String(m.fee_percent).replace(".", ",")} onChange={(e) => setFees({ ...fees, [m.id]: e.target.value })} />
-              </label>
-              <button type="button" className={btn} onClick={() => update(m.id, { fee_percent: parseFloat((fees[m.id] ?? String(m.fee_percent)).replace(",", ".")) || 0 })}>Salvar</button>
-            </div>
-            <p className="text-sm text-foreground/70">Bruto {brl(v.gross)} · Taxa {brl(v.fee)} · <b className="text-foreground">Líquido {brl(v.gross - v.fee)}</b></p>
+            <label className={label}><span>Taxa (%)</span>
+              <input inputMode="decimal" className={input} value={fees[m.id] ?? show(m.fee_percent)} onChange={(e) => setFees({ ...fees, [m.id]: e.target.value })} />
+            </label>
+            <p className="text-sm text-foreground/70">{v?.count ?? 0} lanç. · Bruto {brl(v?.gross ?? 0)} · Desc. {brl(v?.discounts ?? 0)} · Taxa {brl(v?.fees ?? 0)} · <b className="text-foreground">Líquido {brl(v?.net ?? 0)}</b></p>
           </div>
         );
       })}
+      <div className={`${card} space-y-3`}>
+        <p className="font-bold text-card-foreground">Comissões (% sobre o valor líquido)</p>
+        {commFields.map((f) => (
+          <label key={f.key} className={label}><span>{f.label}</span>
+            <input inputMode="decimal" className={input} value={comm[f.key] ?? show(Number(settings?.[f.key] ?? 0))} onChange={(e) => setComm({ ...comm, [f.key]: e.target.value })} />
+          </label>
+        ))}
+        <p className="text-xs text-foreground/60">Plano ou produto vendido pelo administrador: 100% para a barbearia.</p>
+      </div>
+      {msg && <p className={`text-sm font-semibold ${msg.ok ? "text-brand" : "text-destructive"}`}>{msg.text}</p>}
+      <button type="button" disabled={saving} className={`${btn} w-full`} onClick={saveAll}>{saving ? "Salvando..." : "Salvar"}</button>
     </div>
   );
 }
-
