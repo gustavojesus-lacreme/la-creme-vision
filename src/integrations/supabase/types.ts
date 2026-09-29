@@ -177,6 +177,8 @@ export type Database = {
           approved_at: string | null
           archived_at: string | null
           color: string
+          commission_plan_pct: number | null
+          commission_service_pct: number | null
           created_at: string
           email: string | null
           id: string
@@ -185,6 +187,7 @@ export type Database = {
           service_ids: string[]
           sort_order: number
           specialty: string
+          team_role: string
           user_id: string | null
           whatsapp: string
         }
@@ -193,6 +196,8 @@ export type Database = {
           approved_at?: string | null
           archived_at?: string | null
           color?: string
+          commission_plan_pct?: number | null
+          commission_service_pct?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -201,6 +206,7 @@ export type Database = {
           service_ids?: string[]
           sort_order?: number
           specialty?: string
+          team_role?: string
           user_id?: string | null
           whatsapp?: string
         }
@@ -209,6 +215,8 @@ export type Database = {
           approved_at?: string | null
           archived_at?: string | null
           color?: string
+          commission_plan_pct?: number | null
+          commission_service_pct?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -217,6 +225,7 @@ export type Database = {
           service_ids?: string[]
           sort_order?: number
           specialty?: string
+          team_role?: string
           user_id?: string | null
           whatsapp?: string
         }
@@ -835,6 +844,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      barber_commissionable: { Args: { _barber_id: string }; Returns: boolean }
       finalize_appointment: {
         Args: {
           _appointment_id: string
