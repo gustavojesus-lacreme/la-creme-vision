@@ -144,7 +144,7 @@ export async function generateFinancePdf(opts: {
   table(["Data/hora", "Descrição", "Forma", "Pago", "Taxa", "Líquido", "Comissão"],
     rows.map((e) => [
       new Date(e.occurred_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
-      `${e.kind === "saida" ? "Despesa · " : ""}${e.description || e.category}${e.kind === "entrada" ? ` · ${name(e.category === "servico" ? e.barber_id : e.seller_barber_id)}` : ""}`,
+      `${e.refunded_at ? "ESTORNADO · " : ""}${e.kind === "saida" ? "Despesa · " : ""}${e.description || e.category}${e.kind === "entrada" ? ` · ${name(e.category === "servico" ? e.barber_id : e.seller_barber_id)}` : ""}`,
       mLabel(e.payment_method),
       e.kind === "saida" ? `-${brl(e.amount_cents)}` : brl(paid(e)),
       e.kind === "saida" ? "—" : `${brl(e.fee_cents)} (${pct(e.fee_percent)})`,

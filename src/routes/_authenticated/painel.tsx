@@ -65,7 +65,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, total_price_cents, customer_first_name, customer_last_name, services(name), barbers(name)",
+          "id, starts_at, ends_at, status, services_label, total_price_cents, customer_first_name, customer_last_name, barber_id, services(name), barbers(name, color)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
@@ -84,6 +84,14 @@ function BarberPanel() {
     queryFn: async () => (await supabase.from("payment_methods").select("id, label").eq("active", true).order("sort_order")).data ?? [],
   });
   const [paying, setPaying] = useState<string | null>(null);
+  const productsQuery = useQuery({
+    queryKey: ["panel-products", paying],
+    enabled: !!paying,
+    queryFn: async () => (await supabase.rpc("get_sellable_products")).data ?? [],
+  });
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [pick, setPick] = useState("");
+  const [colorFilter, setColorFilter] = useState("");
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
@@ -94,6 +102,8 @@ function BarberPanel() {
       setPaying(id);
       setPayError(null);
       setDiscount("");
+      setCart({});
+      setPick("");
       setMethod(methodsQuery.data?.[0]?.id ?? "pix");
       return;
     }
@@ -109,13 +119,40 @@ function BarberPanel() {
       _appointment_id: paying,
       _method: method,
       _discount_cents: toCents(discount),
+      _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
     });
     setPayBusy(false);
     if (error) return setPayError(error.message || "Não foi possível finalizar.");
     setPaying(null);
     queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
     queryClient.invalidateQueries({ queryKey: ["fin-entries"] });
+    queryClient.invalidateQueries({ queryKey: ["stock"] });
   }
+  const products = productsQuery.data ?? [];
+  const productsTotal = Object.entries(cart).reduce((s, [id, q]) => s + (products.find((p) => p.id === id)?.price_cents ?? 0) * q, 0);
+  function addProduct() {
+    const p = products.find((x) => x.id === pick);
+    if (!p) return;
+    const q = (cart[p.id] ?? 0) + 1;
+    if (q > p.stock) return setPayError(`Estoque insuficiente de ${p.name}: disponível ${p.stock}.`);
+    setPayError(null);
+    setCart({ ...cart, [p.id]: q });
+  }
+  function changeQty(id: string, delta: number) {
+    const p = products.find((x) => x.id === id);
+    const q = (cart[id] ?? 0) + delta;
+    if (p && q > p.stock) return setPayError(`Estoque insuficiente de ${p.name}: disponível ${p.stock}.`);
+    setPayError(null);
+    const next = { ...cart };
+    if (q <= 0) delete next[id]; else next[id] = q;
+    setCart(next);
+  }
+  type BarberRef = { name: string; color?: string | null } | null;
+  const legend = !barberFilter
+    ? Array.from(new Map((appointmentsQuery.data ?? []).map((a) => [a.barber_id, (a.barbers as BarberRef)])).entries())
+        .filter(([, b]) => b)
+    : [];
+  const shown = (appointmentsQuery.data ?? []).filter((a) => !colorFilter || a.barber_id === colorFilter);
   const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null } | undefined;
 
   return (
@@ -167,11 +204,27 @@ function BarberPanel() {
 
         {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} />}
 
+        {legend.length > 1 && (
+          <div className="flex flex-wrap items-center gap-2" aria-label="Legenda e filtro por barbeiro">
+            <button type="button" onClick={() => setColorFilter("")}
+              className={`min-h-9 rounded-full border px-3 text-xs font-semibold ${!colorFilter ? "border-brand text-brand" : "border-input text-foreground/70"}`}>Todos</button>
+            {legend.map(([id, b]) => (
+              <button key={id} type="button" onClick={() => setColorFilter(colorFilter === id ? "" : id)}
+                className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold ${colorFilter === id ? "border-brand text-brand" : "border-input text-foreground/80"}`}>
+                <span className="h-2.5 w-2.5 rounded-full border border-border" style={{ backgroundColor: b?.color || "transparent" }} />
+                {b?.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="grid gap-3">
-          {appointmentsQuery.data?.map((item) => {
+          {shown.map((item) => {
             const when = new Date(item.starts_at);
+            const bc = !barberFilter ? (item.barbers as BarberRef)?.color : null;
             return (
-              <div key={item.id} className="rounded-lg border border-border bg-card p-4">
+              <div key={item.id} className="rounded-lg border border-border bg-card p-4"
+                style={bc ? { borderLeftColor: bc, borderLeftWidth: 4 } : undefined}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-base font-bold text-card-foreground">
@@ -209,10 +262,40 @@ function BarberPanel() {
       </main>
       {paying && (
         <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md space-y-3 rounded-lg bg-card p-4">
+          <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
             <h2 className="text-lg font-bold text-card-foreground">Finalizar e registrar pagamento</h2>
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="text-sm font-semibold text-foreground">Adicionar produto</p>
+              <div className="flex gap-2">
+                <select value={pick} onChange={(e) => setPick(e.target.value)}
+                  className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="">{productsQuery.isLoading ? "Carregando..." : products.length ? "Escolha um produto" : "Nenhum produto disponível"}</option>
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.name} — {brl(p.price_cents)} ({p.stock} em estoque)</option>)}
+                </select>
+                <button type="button" onClick={addProduct} disabled={!pick}
+                  className="min-h-11 shrink-0 rounded-md border border-brand px-3 text-sm font-bold text-brand disabled:opacity-50">Adicionar</button>
+              </div>
+              {Object.entries(cart).map(([id, q]) => {
+                const p = products.find((x) => x.id === id);
+                return (
+                  <div key={id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="min-w-0 truncate">{p?.name} — {brl((p?.price_cents ?? 0) * q)}</span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      <button type="button" aria-label="Diminuir" onClick={() => changeQty(id, -1)} className="h-9 w-9 rounded-md border border-input">−</button>
+                      <span className="w-6 text-center font-bold">{q}</span>
+                      <button type="button" aria-label="Aumentar" onClick={() => changeQty(id, 1)} className="h-9 w-9 rounded-md border border-input">+</button>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
             {payingItem?.total_price_cents != null && (
-              <p className="text-base text-foreground">Valor: <b>{brl(payingItem.total_price_cents - toCents(discount))}</b></p>
+              <div className="space-y-0.5 text-sm text-foreground">
+                <p className="flex justify-between"><span>Serviços</span><span>{brl(payingItem.total_price_cents)}</span></p>
+                {toCents(discount) > 0 && <p className="flex justify-between"><span>Desconto (serviços)</span><span>−{brl(toCents(discount))}</span></p>}
+                <p className="flex justify-between"><span>Produtos</span><span>{brl(productsTotal)}</span></p>
+                <p className="flex justify-between border-t border-border pt-1 text-base font-bold"><span>TOTAL</span><span>{brl(payingItem.total_price_cents - toCents(discount) + productsTotal)}</span></p>
+              </div>
             )}
             <div className="grid grid-cols-2 gap-2">
               {methodsQuery.data?.map((m) => (
@@ -223,7 +306,7 @@ function BarberPanel() {
               ))}
             </div>
             <label className="block space-y-1 text-sm font-semibold text-foreground">
-              <span>Desconto (R$, opcional)</span>
+              <span>Desconto nos serviços (R$, opcional)</span>
               <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)}
                 className="min-h-12 w-full rounded-md border border-input bg-background px-3 text-base" />
             </label>
