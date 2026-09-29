@@ -1,0 +1,2 @@
+ALTER TABLE public.financial_entries DROP CONSTRAINT financial_entries_appointment_id_key;
+CREATE UNIQUE INDEX financial_entries_service_per_appointment ON public.financial_entries(appointment_id) WHERE appointment_id IS NOT NULL AND category = 'servico';
