@@ -26,14 +26,15 @@ export function BarberDayGrid({ barberId }: { barberId: string }) {
     queryFn: async () => {
       const start = new Date(`${day}T00:00:00-03:00`).toISOString();
       const end = new Date(new Date(`${day}T00:00:00-03:00`).getTime() + 86400000).toISOString();
-      const [hours, appts, abs, settings] = await Promise.all([
-        supabase.from("business_hours").select("opens_at, closes_at, closed").eq("weekday", weekdayOf(day)).maybeSingle(),
+      const [hours, periods, appts, abs, settings] = await Promise.all([
+        supabase.from("business_hours").select("closed").eq("weekday", weekdayOf(day)).maybeSingle(),
+        supabase.from("business_periods").select("opens_at, closes_at").eq("weekday", weekdayOf(day)).order("opens_at"),
         supabase.from("appointments").select("starts_at, ends_at, customer_first_name, status").eq("barber_id", barberId)
           .neq("status", "cancelado").gte("starts_at", start).lt("starts_at", end),
         supabase.from("barber_absences").select("kind, starts_time, ends_time").eq("barber_id", barberId).lte("starts_on", day).gte("ends_on", day),
         supabase.from("operation_settings").select("lunch_start, lunch_end").eq("id", 1).maybeSingle(),
       ]);
-      return { hours: hours.data, appts: appts.data ?? [], abs: abs.data ?? [], settings: settings.data };
+      return { hours: hours.data, periods: periods.data ?? [], appts: appts.data ?? [], abs: abs.data ?? [], settings: settings.data };
     },
   });
 
@@ -41,10 +42,10 @@ export function BarberDayGrid({ barberId }: { barberId: string }) {
   let rows: Array<{ t: number; cell: Cell }> = [];
   let closed = false;
   if (d) {
-    if (!d.hours || d.hours.closed || !d.hours.opens_at || !d.hours.closes_at) closed = true;
+    if (!d.hours || d.hours.closed || d.periods.length === 0) closed = true;
     else {
       const ownLunch = d.abs.some((a) => a.kind === "almoco");
-      for (let t = toMin(d.hours.opens_at); t < toMin(d.hours.closes_at); t += 30) {
+      for (const per of d.periods) for (let t = toMin(per.opens_at); t < toMin(per.closes_at); t += 30) {
         const e = t + 30;
         const ap = d.appts.find((a) => spMinutes(a.starts_at) < e && spMinutes(a.ends_at) > t);
         const ab = d.abs.find((a) => !a.starts_time || (toMin(a.starts_time) < e && toMin(a.ends_time!) > t));

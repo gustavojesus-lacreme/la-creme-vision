@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -97,14 +97,6 @@ function AbsencesPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  const [lStart, setLStart] = useState("");
-  const [lEnd, setLEnd] = useState("");
-  const [lMsg, setLMsg] = useState<string | null>(null);
-  useEffect(() => {
-    setLStart(hhmm(settingsQuery.data?.lunch_start ?? null));
-    setLEnd(hhmm(settingsQuery.data?.lunch_end ?? null));
-  }, [settingsQuery.data]);
-
   const barberOf = (id: string) => barbersQuery.data?.find((b) => b.id === id);
   const nameOf = (id: string) => barberOf(id)?.name ?? "Você";
   const who = (uid: string | null, barberIdOf: string) => {
@@ -175,16 +167,6 @@ function AbsencesPage() {
     if (editing === id) resetForm();
     qc.invalidateQueries({ queryKey: ["admin-absences"] });
     qc.invalidateQueries({ queryKey: ["barber-day"] });
-  }
-
-  async function saveLunch() {
-    setLMsg(null);
-    const { error: err } = await supabase
-      .from("operation_settings")
-      .update({ lunch_start: lStart || null, lunch_end: lEnd || null })
-      .eq("id", 1);
-    setLMsg(err ? friendlyError(err.message) : "Almoço padrão salvo.");
-    qc.invalidateQueries({ queryKey: ["operation-settings"] });
   }
 
   const today = todaySP();
@@ -287,15 +269,10 @@ function AbsencesPage() {
             <section className={`${card} space-y-3`}>
               <h2 className="text-base font-bold text-card-foreground">Almoço padrão da barbearia</h2>
               {isAdmin ? (
-                <>
-                  <p className="text-sm text-foreground/70">Aplicado a todos os barbeiros, exceto nos dias em que o barbeiro registrar o próprio almoço. Deixe em branco para não usar.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className={label}><span>Início</span><input type="time" className={input} value={lStart} onChange={(e) => setLStart(e.target.value)} /></label>
-                    <label className={label}><span>Fim</span><input type="time" className={input} value={lEnd} onChange={(e) => setLEnd(e.target.value)} /></label>
-                  </div>
-                  {lMsg && <p className="text-sm font-semibold text-foreground">{lMsg}</p>}
-                  <button type="button" onClick={saveLunch} className="min-h-12 w-full rounded-md border border-brand px-4 text-base font-bold text-brand">Salvar almoço padrão</button>
-                </>
+                <p className="text-sm text-foreground/70">
+                  {settingsQuery.data?.lunch_start ? `${hhmm(settingsQuery.data.lunch_start)} às ${hhmm(settingsQuery.data.lunch_end ?? null)}. ` : "Não definido. "}
+                  <Link to="/config-intervalos" className="font-semibold text-brand underline">Alterar em Intervalos e almoço</Link>
+                </p>
               ) : (
                 <p className="text-sm text-foreground/70">
                   {settingsQuery.data?.lunch_start

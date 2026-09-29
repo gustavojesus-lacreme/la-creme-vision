@@ -9,7 +9,6 @@ import { readGuest, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
 import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
-  buildAvailableSlots,
   formatDateLong,
   formatPrice,
   formatTime,
@@ -19,7 +18,6 @@ import {
   formatDuration,
   type ServiceCombo,
   weekdayOf,
-  type BusyInterval,
 } from "@/lib/booking";
 
 export const Route = createFileRoute("/agendar")({
@@ -128,6 +126,12 @@ function BookingPage() {
     refetchInterval: 60000,
   });
 
+  const publicSettingsQuery = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => (await supabase.rpc("get_public_settings")).data?.[0] ?? null,
+  });
+  const publicInfo = publicSettingsQuery.data;
+
   const hoursQuery = useQuery({
     queryKey: ["business_hours"],
     queryFn: async () => {
@@ -154,17 +158,22 @@ function BookingPage() {
     },
   });
 
+  const durationForSlots = calculateTotals(
+    (servicesQuery.data ?? []).filter((sv) => serviceIds.includes(sv.id)),
+    combosQuery.data ?? [],
+  ).durationMinutes;
+  // Fonte única de disponibilidade (horários, almoço, bloqueios, ausências, agenda, regras).
   const busyQuery = useQuery({
-    queryKey: ["busy", barberId, dateStr],
-    enabled: !!barberId,
+    queryKey: ["available-slots", barberId, dateStr, durationForSlots],
+    enabled: !!barberId && durationForSlots > 0,
     queryFn: async () => {
-      if (!barberId) return [] as BusyInterval[];
-      const { data, error: err } = await supabase.rpc("get_busy_slots", {
-        _barber_id: barberId,
+      const { data, error: err } = await supabase.rpc("get_available_slots", {
+        _barber_id: barberId!,
         _day: dateStr,
+        _duration: durationForSlots,
       });
       if (err) throw err;
-      return (data ?? []) as BusyInterval[];
+      return (data ?? []).map((r) => new Date(r.starts_at));
     },
     refetchInterval: 30000,
     refetchOnWindowFocus: true,
@@ -240,17 +249,7 @@ function BookingPage() {
   }, [barberId, barbersQuery.data, compatibleBarbers]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
 
-  const slots = useMemo(() => {
-    if (!service || !dayHours || dayHours.closed || !dayHours.opens_at || !dayHours.closes_at)
-      return [];
-    return buildAvailableSlots({
-      dateStr,
-      opensAt: dayHours.opens_at,
-      closesAt: dayHours.closes_at,
-      durationMinutes: service.duration_minutes,
-      busy: busyQuery.data ?? [],
-    });
-  }, [service, dayHours, dateStr, busyQuery.data]);
+  const slots = service ? (busyQuery.data ?? []) : [];
 
   const clientLabel = `${firstName} ${lastName}`.trim() || "Visitante";
 
@@ -536,6 +535,15 @@ function BookingPage() {
             Confirmar agendamento
           </button>
         </section>
+        {publicInfo && (publicInfo.shop_whatsapp || publicInfo.shop_email || publicInfo.shop_address || publicInfo.shop_public_info) && (
+          <footer className="space-y-1 border-t border-border pt-4 text-sm text-foreground/70">
+            <p className="font-bold text-foreground">{publicInfo.shop_name}</p>
+            {publicInfo.shop_address && <p>{publicInfo.shop_address}</p>}
+            {publicInfo.shop_whatsapp && <p>WhatsApp: {publicInfo.shop_whatsapp}</p>}
+            {publicInfo.shop_email && <p>{publicInfo.shop_email}</p>}
+            {publicInfo.shop_public_info && <p className="whitespace-pre-line">{publicInfo.shop_public_info}</p>}
+          </footer>
+        )}
       </main>
     </div>
   );
