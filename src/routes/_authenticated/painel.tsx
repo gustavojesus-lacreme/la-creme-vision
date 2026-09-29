@@ -83,6 +83,7 @@ function BarberPanel() {
     enabled: access != null && !pending,
     queryFn: async () => (await supabase.from("payment_methods").select("id, label").eq("active", true).order("sort_order")).data ?? [],
   });
+  const [paying, setPaying] = useState<string | null>(null);
   const productsQuery = useQuery({
     queryKey: ["panel-products", paying],
     enabled: !!paying,
@@ -91,7 +92,6 @@ function BarberPanel() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [pick, setPick] = useState("");
   const [colorFilter, setColorFilter] = useState("");
-  const [paying, setPaying] = useState<string | null>(null);
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
