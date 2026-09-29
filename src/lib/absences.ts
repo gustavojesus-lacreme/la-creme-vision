@@ -4,7 +4,20 @@ export const ABSENCE_KINDS = {
   saude: "Ausência por motivo de saúde",
   emergencia: "Emergência",
   ausente: "Ausente",
+  almoco: "Almoço",
+  pausa: "Pausa/intervalo",
+  indisponivel: "Indisponibilidade temporária",
 } as const;
+
+/** Tipos operacionais: por padrão são de horário parcial. */
+export const PARTIAL_KINDS: AbsenceKind[] = ["almoco", "pausa", "indisponivel"];
+
+/** Rótulo de status interno (admin) para ausência de dia inteiro. */
+export function statusLabel(kind: AbsenceKind): string {
+  if (kind === "ferias") return "Em férias";
+  if (kind === "ausente") return "Ausente";
+  return "Indisponível";
+}
 
 export type AbsenceKind = keyof typeof ABSENCE_KINDS;
 
@@ -15,6 +28,7 @@ export type Absence = {
   starts_on: string;
   ends_on: string;
   note: string;
+  starts_time?: string | null;
 };
 
 export function todaySP(): string {
@@ -37,11 +51,11 @@ export function returnDay(ends_on: string): string {
   return dt.toISOString().slice(0, 10);
 }
 
-/** Ausência ativa hoje (se houver). */
-export function activeAbsence<T extends { barber_id: string; starts_on: string; ends_on: string }>(
+/** Ausência de dia inteiro ativa no dia (se houver). */
+export function activeAbsence<T extends { barber_id: string; starts_on: string; ends_on: string; starts_time?: string | null }>(
   list: T[] | undefined,
   barberId: string,
   day = todaySP(),
 ): T | undefined {
-  return list?.find((a) => a.barber_id === barberId && a.starts_on <= day && a.ends_on >= day);
+  return list?.find((a) => !a.starts_time && a.barber_id === barberId && a.starts_on <= day && a.ends_on >= day);
 }

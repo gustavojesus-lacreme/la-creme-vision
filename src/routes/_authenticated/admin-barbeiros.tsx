@@ -8,7 +8,7 @@ import { isBarberAdmin } from "@/lib/admin";
 import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
 import { formatBarberServices } from "@/lib/booking";
-import { activeAbsence, formatDayShort, returnDay, todaySP, type Absence } from "@/lib/absences";
+import { activeAbsence, statusLabel, formatDayShort, returnDay, todaySP, type Absence } from "@/lib/absences";
 import QRCode from "qrcode";
 import { useEffect } from "react";
 
@@ -93,7 +93,7 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("barber_absences")
-        .select("id, barber_id, kind, starts_on, ends_on, note")
+        .select("id, barber_id, kind, starts_on, ends_on, note, starts_time")
         .gte("ends_on", todaySP());
       return (data ?? []) as Absence[];
     },
@@ -281,7 +281,7 @@ function AdminBarbersPage() {
                       ? { label: "Desativado", sub: "Não recebe agendamentos", tone: "muted" }
                       : absence
                         ? {
-                            label: absence.kind === "ferias" ? "Em férias" : "Ausente",
+                            label: statusLabel(absence.kind),
                             sub: `Retorno em ${formatDayShort(returnDay(absence.ends_on))}`,
                             tone: "gold",
                           }
