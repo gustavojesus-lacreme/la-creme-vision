@@ -274,11 +274,13 @@ export type Database = {
           commission_barber_id: string | null
           commission_cents: number
           commission_paid_at: string | null
+          commission_percent: number
           commission_status: string
           created_at: string
           description: string
           discount_cents: number
           fee_cents: number
+          fee_percent: number
           id: string
           kind: string
           note: string
@@ -297,11 +299,13 @@ export type Database = {
           commission_barber_id?: string | null
           commission_cents?: number
           commission_paid_at?: string | null
+          commission_percent?: number
           commission_status?: string
           created_at?: string
           description?: string
           discount_cents?: number
           fee_cents?: number
+          fee_percent?: number
           id?: string
           kind: string
           note?: string
@@ -320,11 +324,13 @@ export type Database = {
           commission_barber_id?: string | null
           commission_cents?: number
           commission_paid_at?: string | null
+          commission_percent?: number
           commission_status?: string
           created_at?: string
           description?: string
           discount_cents?: number
           fee_cents?: number
+          fee_percent?: number
           id?: string
           kind?: string
           note?: string
@@ -402,6 +408,9 @@ export type Database = {
       operation_settings: {
         Row: {
           cancel_min_hours: number | null
+          commission_plan_pct: number
+          commission_product_pct: number
+          commission_service_pct: number
           id: number
           lunch_end: string | null
           lunch_start: string | null
@@ -424,6 +433,9 @@ export type Database = {
         }
         Insert: {
           cancel_min_hours?: number | null
+          commission_plan_pct?: number
+          commission_product_pct?: number
+          commission_service_pct?: number
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
@@ -446,6 +458,9 @@ export type Database = {
         }
         Update: {
           cancel_min_hours?: number | null
+          commission_plan_pct?: number
+          commission_product_pct?: number
+          commission_service_pct?: number
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
