@@ -101,8 +101,6 @@ export function summarize(entries: Entry[]) {
   for (const e of inc) add((byMethod[e.payment_method ?? "outro"] ??= emptyAgg()), e);
   const byCategory: Record<string, Agg> = {};
   for (const e of inc) add((byCategory[e.category] ??= emptyAgg()), e);
-  const byService: Record<string, Agg> = {};
-  for (const e of inc.filter((x) => x.category !== "servico" ? false : true)) add((byService[e.description || "Atendimento"] ??= emptyAgg()), e);
   const byItem = (c: string) => { const r: Record<string, Agg> = {}; for (const e of inc.filter((x) => x.category === c)) add((r[e.description || c] ??= emptyAgg()), e); return r; };
   const byExpense: Record<string, number> = {};
   for (const e of out) byExpense[e.category] = (byExpense[e.category] ?? 0) + e.amount_cents;
@@ -117,7 +115,7 @@ export function summarize(entries: Entry[]) {
     products: byCategory["produto"]?.paid ?? 0,
     plans: byCategory["plano"]?.paid ?? 0,
     appointments: inc.filter((e) => e.appointment_id).length,
-    byMethod, byCategory, byService, byProduct: byItem("produto"), byPlan: byItem("plano"), byExpense,
+    byMethod, byCategory, byService: byItem("servico"), byProduct: byItem("produto"), byPlan: byItem("plano"), byExpense,
   };
 }
 
