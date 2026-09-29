@@ -240,6 +240,30 @@ export type Database = {
         }
         Relationships: []
       }
+      business_periods: {
+        Row: {
+          closes_at: string
+          created_at: string
+          id: string
+          opens_at: string
+          weekday: number
+        }
+        Insert: {
+          closes_at: string
+          created_at?: string
+          id?: string
+          opens_at: string
+          weekday: number
+        }
+        Update: {
+          closes_at?: string
+          created_at?: string
+          id?: string
+          opens_at?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
       financial_entries: {
         Row: {
           amount_cents: number
@@ -348,25 +372,97 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          audience: string
+          enabled: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          audience: string
+          enabled?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          enabled?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       operation_settings: {
         Row: {
+          cancel_min_hours: number | null
           id: number
           lunch_end: string | null
           lunch_start: string | null
+          max_advance_days: number | null
+          min_advance_minutes: number
+          reschedule_block_saturday: boolean
+          reschedule_cutoff_time: string | null
+          reschedule_cutoff_weekday: number | null
+          reschedule_extra_fee_cents: number
+          reschedule_per_week: number
+          shop_address: string
+          shop_email: string
+          shop_name: string
+          shop_public_info: string
+          shop_whatsapp: string
+          slot_step_minutes: number
+          tolerance_minutes: number
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          cancel_min_hours?: number | null
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
+          max_advance_days?: number | null
+          min_advance_minutes?: number
+          reschedule_block_saturday?: boolean
+          reschedule_cutoff_time?: string | null
+          reschedule_cutoff_weekday?: number | null
+          reschedule_extra_fee_cents?: number
+          reschedule_per_week?: number
+          shop_address?: string
+          shop_email?: string
+          shop_name?: string
+          shop_public_info?: string
+          shop_whatsapp?: string
+          slot_step_minutes?: number
+          tolerance_minutes?: number
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          cancel_min_hours?: number | null
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
+          max_advance_days?: number | null
+          min_advance_minutes?: number
+          reschedule_block_saturday?: boolean
+          reschedule_cutoff_time?: string | null
+          reschedule_cutoff_weekday?: number | null
+          reschedule_extra_fee_cents?: number
+          reschedule_per_week?: number
+          shop_address?: string
+          shop_email?: string
+          shop_name?: string
+          shop_public_info?: string
+          shop_whatsapp?: string
+          slot_step_minutes?: number
+          tolerance_minutes?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -393,6 +489,87 @@ export type Database = {
           id?: string
           label?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      plan_items: {
+        Row: {
+          id: string
+          plan_id: string
+          quantity: number
+          service_id: string
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          quantity: number
+          service_id: string
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          quantity?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          active: boolean
+          auto_renew: boolean
+          compensation_weeks: number
+          created_at: string
+          description: string
+          id: string
+          max_uses_per_week: number | null
+          name: string
+          price_cents: number
+          updated_at: string
+          usage_rules: string
+          validity_days: number
+        }
+        Insert: {
+          active?: boolean
+          auto_renew?: boolean
+          compensation_weeks?: number
+          created_at?: string
+          description?: string
+          id?: string
+          max_uses_per_week?: number | null
+          name: string
+          price_cents: number
+          updated_at?: string
+          usage_rules?: string
+          validity_days: number
+        }
+        Update: {
+          active?: boolean
+          auto_renew?: boolean
+          compensation_weeks?: number
+          created_at?: string
+          description?: string
+          id?: string
+          max_uses_per_week?: number | null
+          name?: string
+          price_cents?: number
+          updated_at?: string
+          usage_rules?: string
+          validity_days?: number
         }
         Relationships: []
       }
@@ -520,6 +697,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_available_slots: {
+        Args: { _barber_id: string; _day: string; _duration: number }
+        Returns: {
+          starts_at: string
+        }[]
+      }
       get_barber_absences_public: {
         Args: never
         Returns: {
@@ -534,6 +717,19 @@ export type Database = {
         Returns: {
           ends_at: string
           starts_at: string
+        }[]
+      }
+      get_public_settings: {
+        Args: never
+        Returns: {
+          max_advance_days: number
+          min_advance_minutes: number
+          shop_address: string
+          shop_email: string
+          shop_name: string
+          shop_public_info: string
+          shop_whatsapp: string
+          slot_step_minutes: number
         }[]
       }
       has_role: {
