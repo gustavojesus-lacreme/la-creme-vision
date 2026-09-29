@@ -166,6 +166,8 @@ function BookingPage() {
       if (err) throw err;
       return (data ?? []) as BusyInterval[];
     },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
