@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { formatDateLong, formatTime } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
+import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/painel")({
@@ -163,6 +164,8 @@ function BarberPanel() {
             <p className="text-base text-foreground/80">Nenhum agendamento a partir de hoje.</p>
           </div>
         )}
+
+        {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} />}
 
         <div className="grid gap-3">
           {appointmentsQuery.data?.map((item) => {

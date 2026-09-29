@@ -83,6 +83,7 @@ function AbsencesPage() {
     queryFn: async () => (await supabase.from("operation_settings").select("lunch_start, lunch_end").eq("id", 1).maybeSingle()).data,
   });
 
+  const meQuery = useQuery({ queryKey: ["me-id"], queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null });
   const [editing, setEditing] = useState<string | null>(null);
   const [barberId, setBarberId] = useState("");
   const [kind, setKind] = useState<AbsenceKind>("almoco");
@@ -108,7 +109,7 @@ function AbsencesPage() {
   const nameOf = (id: string) => barberOf(id)?.name ?? "Você";
   const who = (uid: string | null, barberIdOf: string) => {
     if (!uid) return "—";
-    if (ownBarberId) return uid === access?.userId ? "Você" : "Administração";
+    if (ownBarberId) return uid === meQuery.data ? "Você" : "Administração";
     return barberOf(barberIdOf)?.user_id === uid ? "Próprio barbeiro" : "Administração";
   };
 
