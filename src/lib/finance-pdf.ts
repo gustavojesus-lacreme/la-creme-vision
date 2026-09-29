@@ -91,12 +91,12 @@ export async function generateFinancePdf(opts: {
   table(["Item", "Valor"], [
     ...(kind === "diario" ? [["Atendimentos", String(s.appointments)]] : []),
     ["Faturamento bruto", brl(s.gross)],
-    ["(−) Descontos", brl(s.discounts)],
+    ["(-) Descontos", brl(s.discounts)],
     ["(=) Valor pago pelos clientes", brl(s.paid)],
-    ["(−) Taxas de pagamento", brl(s.fees)],
+    ["(-) Taxas de pagamento", brl(s.fees)],
     ["(=) Valor líquido", brl(s.net)],
-    ["(−) Comissões", brl(s.commissions)],
-    ["(−) Despesas", brl(s.expenses)],
+    ["(-) Comissões", brl(s.commissions)],
+    ["(-) Despesas", brl(s.expenses)],
   ], ["Resultado operacional", brl(s.result)]);
 
   if (kind !== "diario") {
@@ -146,14 +146,14 @@ export async function generateFinancePdf(opts: {
       new Date(e.occurred_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
       `${e.kind === "saida" ? "Despesa · " : ""}${e.description || e.category}${e.kind === "entrada" ? ` · ${name(e.category === "servico" ? e.barber_id : e.seller_barber_id)}` : ""}`,
       mLabel(e.payment_method),
-      e.kind === "saida" ? `−${brl(e.amount_cents)}` : brl(paid(e)),
+      e.kind === "saida" ? `-${brl(e.amount_cents)}` : brl(paid(e)),
       e.kind === "saida" ? "—" : `${brl(e.fee_cents)} (${pct(e.fee_percent)})`,
       e.kind === "saida" ? "—" : brl(net(e)),
       e.kind === "saida" ? "—" : brl(e.commission_cents),
     ]), undefined, 3);
 
   section("RESULTADO FINAL");
-  table(["Item", "Valor"], [["Valor líquido", brl(s.net)], ["(−) Comissões", brl(s.commissions)], ["(−) Despesas", brl(s.expenses)]],
+  table(["Item", "Valor"], [["Valor líquido", brl(s.net)], ["(-) Comissões", brl(s.commissions)], ["(-) Despesas", brl(s.expenses)]],
     ["Resultado operacional", brl(s.result)]);
 
   // Rodapé em todas as páginas
