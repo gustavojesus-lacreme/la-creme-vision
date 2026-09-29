@@ -36,8 +36,9 @@ function MyAppointments() {
   });
 
   async function cancel(id: string) {
-    await supabase.from("appointments").update({ status: "cancelado" }).eq("id", id);
+    const { error } = await supabase.from("appointments").update({ status: "cancelado" }).eq("id", id);
     setPendingCancelId(null);
+    if (error) window.alert(error.message.includes("antecedência") ? error.message : "Não foi possível cancelar. Fale com a barbearia.");
     queryClient.invalidateQueries({ queryKey: ["my-appointments"] });
   }
 

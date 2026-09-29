@@ -126,6 +126,12 @@ function BookingPage() {
     refetchInterval: 60000,
   });
 
+  const publicSettingsQuery = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => (await supabase.rpc("get_public_settings")).data?.[0] ?? null,
+  });
+  const publicInfo = publicSettingsQuery.data;
+
   const hoursQuery = useQuery({
     queryKey: ["business_hours"],
     queryFn: async () => {
@@ -529,6 +535,15 @@ function BookingPage() {
             Confirmar agendamento
           </button>
         </section>
+        {publicInfo && (publicInfo.shop_whatsapp || publicInfo.shop_email || publicInfo.shop_address || publicInfo.shop_public_info) && (
+          <footer className="space-y-1 border-t border-border pt-4 text-sm text-foreground/70">
+            <p className="font-bold text-foreground">{publicInfo.shop_name}</p>
+            {publicInfo.shop_address && <p>{publicInfo.shop_address}</p>}
+            {publicInfo.shop_whatsapp && <p>WhatsApp: {publicInfo.shop_whatsapp}</p>}
+            {publicInfo.shop_email && <p>{publicInfo.shop_email}</p>}
+            {publicInfo.shop_public_info && <p className="whitespace-pre-line">{publicInfo.shop_public_info}</p>}
+          </footer>
+        )}
       </main>
     </div>
   );
