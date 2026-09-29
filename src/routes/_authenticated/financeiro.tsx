@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
 import {
-  EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, net, periodRange, rangeToIso, summarize, toCents,
+  EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, periodRange, rangeToIso, summarize, toCents,
   type Entry, type PaymentMethod, type PeriodKey,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
@@ -268,7 +268,7 @@ function Overview(ctx: Ctx) {
               <dt className="text-foreground/60">Atendimentos</dt><dd className="text-right font-semibold">{d.appointments}</dd>
               <dt className="text-foreground/60">Total recebido</dt><dd className="text-right font-semibold">{brl(d.gross - d.discounts)}</dd>
               {ctx.methods.map((m) => (
-                <><dt key={m.id + "t"} className="text-foreground/60">{m.label}</dt><dd key={m.id + "v"} className="text-right font-semibold">{brl(d.byMethod[m.id]?.gross ?? 0)}</dd></>
+                <Fragment key={m.id}><dt className="text-foreground/60">{m.label}</dt><dd className="text-right font-semibold">{brl(d.byMethod[m.id]?.gross ?? 0)}</dd></Fragment>
               ))}
               <dt className="text-foreground/60">Comissões geradas</dt><dd className="text-right font-semibold">{brl(d.commissions)}</dd>
               <dt className="text-foreground/60">Despesas do dia</dt><dd className="text-right font-semibold">{brl(d.expenses)}</dd>
@@ -284,7 +284,7 @@ function Overview(ctx: Ctx) {
   );
 }
 
-function EntryRow({ e, barbers, methods, children }: { e: Entry; barbers: Barber[]; methods: PaymentMethod[]; children?: React.ReactNode }) {
+function EntryRow({ e, barbers, methods, children }: { e: Entry; barbers: Barber[]; methods: PaymentMethod[]; children?: ReactNode }) {
   const name = (id: string | null) => barbers.find((b) => b.id === id)?.name;
   const when = new Date(e.occurred_at);
   const cat = e.kind === "entrada" ? INCOME_CATEGORIES[e.category] ?? e.category : e.category;
@@ -561,4 +561,3 @@ function Methods({ methods, entries }: Ctx) {
   );
 }
 
-export { net };
