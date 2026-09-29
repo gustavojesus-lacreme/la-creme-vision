@@ -334,6 +334,11 @@ function EntryRow({ e, barbers, methods, children }: { e: Entry; barbers: Barber
           {e.kind === "entrada" && e.category !== "servico" && <p className="text-xs text-foreground/60">Vendido por: {name(e.seller_barber_id) ?? "Administrador"}</p>}
           {e.appointment_id && <p className="text-xs text-foreground/60">Ligado a um agendamento</p>}
           {e.note && <p className="break-words text-xs text-foreground/60">{e.note}</p>}
+          {e.refunded_at && (
+            <p className="mt-1 inline-block rounded-full border border-destructive/40 px-2 py-0.5 text-[11px] font-bold uppercase text-destructive">
+              Estornado em {new Date(e.refunded_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })} · fora dos totais
+            </p>
+          )}
         </div>
         <p className={`shrink-0 font-bold ${e.kind === "entrada" ? "text-brand" : "text-destructive"}`}>{e.kind === "entrada" ? "+" : "−"}{brl(e.kind === "entrada" ? paid(e) : e.amount_cents)}</p>
       </div>
@@ -356,11 +361,19 @@ function Movements({ entries, barbers, methods, settings }: Ctx) {
   const qc = useQueryClient();
   const [f, setF] = useState({ kind: "", category: "", barber: "", seller: "", method: "" });
   const [adding, setAdding] = useState(false);
+  const [confirmRefund, setConfirmRefund] = useState<string | null>(null);
+  const [refundErr, setRefundErr] = useState<string | null>(null);
+  async function refund(id: string) {
+    const { error } = await supabase.rpc("refund_product_sale", { _entry_id: id, _note: "" });
+    setConfirmRefund(null);
+    if (error) return setRefundErr(error.message || "Não foi possível estornar.");
+    qc.invalidateQueries({ queryKey: ["fin-entries"] });
+  }
   const list = entries.filter((e) =>
     (!f.kind || e.kind === f.kind) && (!f.category || e.category === f.category) &&
     (!f.barber || e.barber_id === f.barber) && (!f.method || e.payment_method === f.method) &&
     (!f.seller || (f.seller === "admin" ? e.kind === "entrada" && e.category !== "servico" && !e.seller_barber_id : e.seller_barber_id === f.seller)));
-  const totalIn = list.filter((e) => e.kind === "entrada").reduce((s, e) => s + paid(e), 0);
+  const totalIn = list.filter((e) => e.kind === "entrada" && isCounted(e)).reduce((s, e) => s + paid(e), 0);
   const totalOut = list.filter((e) => e.kind === "saida").reduce((s, e) => s + e.amount_cents, 0);
   const cats = [...Object.entries(INCOME_CATEGORIES), ...EXPENSE_CATEGORIES.map((c) => [c, c] as const)];
   return (
@@ -380,7 +393,23 @@ function Movements({ entries, barbers, methods, settings }: Ctx) {
         <Stat title="Saldo" value={brl(totalIn - totalOut)} tone="gold" />
       </div>
       {list.length === 0 && <p className="text-base text-foreground/70">Nenhuma movimentação.</p>}
-      <div className="grid gap-3">{list.map((e) => <EntryRow key={e.id} e={e} barbers={barbers} methods={methods} />)}</div>
+      {refundErr && <p className="text-sm font-semibold text-destructive">{refundErr}</p>}
+      <div className="grid gap-3">{list.map((e) => (
+        <EntryRow key={e.id} e={e} barbers={barbers} methods={methods}>
+          {e.product_id && !e.refunded_at && (
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+              {confirmRefund === e.id ? (
+                <>
+                  <button type="button" className={`${btnGhost} text-destructive`} onClick={() => refund(e.id)}>Sim, estornar e devolver ao estoque</button>
+                  <button type="button" className={btnGhost} onClick={() => setConfirmRefund(null)}>Não</button>
+                </>
+              ) : (
+                <button type="button" className={`${btnGhost} text-destructive`} onClick={() => { setRefundErr(null); setConfirmRefund(e.id); }}>Estornar venda</button>
+              )}
+            </div>
+          )}
+        </EntryRow>
+      ))}</div>
     </div>
   );
 }
