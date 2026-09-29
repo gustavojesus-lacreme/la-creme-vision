@@ -350,7 +350,9 @@ function EntryRow({ e, barbers, methods, children }: { e: Entry; barbers: Barber
           <div>Pago: <b>{brl(paid(e))}</b></div>
           <div>Taxa ({pct(e.fee_percent)}): <b>{brl(e.fee_cents)}</b></div>
           <div>Líquido: <b>{brl(net(e))}</b></div>
-          <div>Comissão ({pct(e.commission_percent)}): <b>{brl(e.commission_cents)}</b></div>
+          {e.commission_barber_id
+            ? <div>Comissão ({pct(e.commission_percent)}): <b>{brl(e.commission_cents)}</b></div>
+            : <div>Sem comissão · líquido da barbearia</div>}
         </dl>
       )}
       {children}

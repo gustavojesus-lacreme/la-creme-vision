@@ -38,7 +38,17 @@ type Barber = {
   service_ids: string[];
   sort_order: number;
   color: string;
+  team_role: string;
+  commission_service_pct: number | null;
+  commission_plan_pct: number | null;
 };
+
+const TEAM_ROLES = [
+  { v: "barbeiro", l: "Barbeiro" }, { v: "lider", l: "Líder" },
+  { v: "administrador", l: "Administrador" }, { v: "dono", l: "Dono/Proprietário" },
+];
+const hasCommission = (r: string) => r === "barbeiro" || r === "lider";
+const pctStr = (n: number | null) => (n == null ? "" : String(n).replace(".", ","));
 
 const BARBER_COLORS = ["#2563eb", "#16a34a", "#7f1d1d", "#9333ea", "#ea580c", "#0891b2", "#db2777", "#65a30d", "#475569"];
 
@@ -63,7 +73,7 @@ function AdminBarbersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("barbers")
-        .select("id, name, last_name, whatsapp, email, active, user_id, approved_at, service_ids, sort_order, color")
+        .select("id, name, last_name, whatsapp, email, active, user_id, approved_at, service_ids, sort_order, color, team_role, commission_service_pct, commission_plan_pct")
         .is("archived_at", null)
         .order("sort_order");
       if (error) throw error;
@@ -109,6 +119,9 @@ function AdminBarbersPage() {
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [active, setActive] = useState(true);
   const [color, setColor] = useState("");
+  const [teamRole, setTeamRole] = useState("barbeiro");
+  const [commService, setCommService] = useState("");
+  const [commPlan, setCommPlan] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState("");
@@ -122,13 +135,23 @@ function AdminBarbersPage() {
     setServiceIds(b === "new" ? [] : b.service_ids);
     setActive(b === "new" ? true : b.active);
     setColor(b === "new" ? "" : b.color);
+    setTeamRole(b === "new" ? "barbeiro" : b.team_role);
+    setCommService(b === "new" ? "" : pctStr(b.commission_service_pct));
+    setCommPlan(b === "new" ? "" : pctStr(b.commission_plan_pct));
   }
 
   async function save() {
     if (!firstName.trim()) return setErr("Informe o nome.");
     if (!lastName.trim()) return setErr("Informe o sobrenome.");
     if (!whatsapp.trim()) return setErr("Informe o WhatsApp.");
+    const parsePct = (v: string) => (v.trim() === "" ? null : Number(v.replace(",", ".")));
+    const cs = hasCommission(teamRole) ? parsePct(commService) : null;
+    const cp = hasCommission(teamRole) ? parsePct(commPlan) : null;
+    for (const n of [cs, cp]) if (n != null && (!Number.isFinite(n) || n < 0 || n > 100)) return setErr("Comissão deve ficar entre 0 e 100%.");
     const payload = {
+      team_role: teamRole,
+      commission_service_pct: cs,
+      commission_plan_pct: cp,
       name: `${firstName.trim()} ${lastName.trim()}`,
       last_name: lastName.trim(),
       whatsapp: whatsapp.trim(),
@@ -238,7 +261,23 @@ function AdminBarbersPage() {
                 <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
                   <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-5 w-5" /> Barbeiro ativo
                 </label>
-                <p className="text-sm text-foreground/70">Função: Barbeiro</p>
+                <label className="block space-y-1 text-sm font-semibold text-foreground/80">
+                  <span>Perfil na equipe</span>
+                  <select className={input} value={teamRole} onChange={(e) => setTeamRole(e.target.value)}>
+                    {TEAM_ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
+                  </select>
+                </label>
+                {hasCommission(teamRole) ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block space-y-1 text-sm font-semibold text-foreground/80"><span>Comissão serviço (%)</span>
+                      <input className={input} inputMode="decimal" placeholder="Padrão geral" value={commService} onChange={(e) => setCommService(e.target.value)} /></label>
+                    <label className="block space-y-1 text-sm font-semibold text-foreground/80"><span>Comissão plano (%)</span>
+                      <input className={input} inputMode="decimal" placeholder="Padrão geral" value={commPlan} onChange={(e) => setCommPlan(e.target.value)} /></label>
+                    <p className="col-span-2 text-xs text-foreground/60">Em branco usa o percentual geral do Financeiro. Produtos usam a comissão de cada produto.</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-foreground/60">Este perfil não recebe comissão. O valor líquido fica com a barbearia.</p>
+                )}
                 {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
                 <div className="flex gap-2">
                   <button className={btnPrimary} onClick={save}>Salvar</button>
