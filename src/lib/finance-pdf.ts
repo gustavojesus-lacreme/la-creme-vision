@@ -83,7 +83,7 @@ export async function generateFinancePdf(opts: {
   const table = (head: string[], body: (string | number)[][], foot?: (string | number)[], rightFrom = 1) => {
     const colStyles: Record<number, { halign: "right" }> = {};
     for (let i = rightFrom; i < head.length; i++) colStyles[i] = { halign: "right" };
-    autoTable(doc, { ...base, startY: y, head: [head], body: body.map((r) => r.map(String)), foot: foot ? [foot.map(String)] : undefined, showFoot: "lastPage", columnStyles: colStyles });
+    autoTable(doc, { ...base, startY: y, head: [head], body: body.map((r) => r.map(String)), ...(foot ? { foot: [foot.map(String)] } : {}), showFoot: "lastPage", columnStyles: colStyles });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
   };
 
