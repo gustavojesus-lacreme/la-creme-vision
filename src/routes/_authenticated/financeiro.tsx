@@ -9,6 +9,7 @@ import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, periodRange, rangeToIso, summarize, toCents,
   barberPerf, adminTotals, paid, net, pct,
   type Entry, type PaymentMethod, type PeriodKey, type CommissionSettings,
+  isCounted,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
 
