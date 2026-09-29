@@ -235,8 +235,8 @@ function MoveForm({ products, kinds }: { products: Product[]; kinds: string[] })
     if (!qty || qty <= 0) return setErr("Informe uma quantidade maior que zero.");
     setBusy(true);
     const { error } = await supabase.rpc("register_stock_movement", {
-      _product_id: p.id, _kind: v.kind, _quantity: qty,
-      _unit_cost_cents: isEntry && v.cost ? toCents(v.cost) : undefined, _note: v.note.trim(),
+      _product_id: p.id, _kind: v.kind, _quantity: qty, _note: v.note.trim(),
+      ...(isEntry && v.cost ? { _unit_cost_cents: toCents(v.cost) } : {}),
     });
     setBusy(false);
     if (error) return setErr(error.message || "Não foi possível registrar.");
