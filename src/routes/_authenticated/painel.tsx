@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { formatDateLong, formatTime } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
+import { brl, toCents } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   validateSearch: (s: Record<string, unknown>): { ver?: string } =>
@@ -62,7 +64,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, customer_first_name, customer_last_name, services(name), barbers(name)",
+          "id, starts_at, ends_at, status, services_label, total_price_cents, customer_first_name, customer_last_name, services(name), barbers(name)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
