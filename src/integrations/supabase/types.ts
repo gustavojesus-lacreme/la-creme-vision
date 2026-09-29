@@ -176,6 +176,7 @@ export type Database = {
           active: boolean
           approved_at: string | null
           archived_at: string | null
+          color: string
           created_at: string
           email: string | null
           id: string
@@ -191,6 +192,7 @@ export type Database = {
           active?: boolean
           approved_at?: string | null
           archived_at?: string | null
+          color?: string
           created_at?: string
           email?: string | null
           id?: string
@@ -206,6 +208,7 @@ export type Database = {
           active?: boolean
           approved_at?: string | null
           archived_at?: string | null
+          color?: string
           created_at?: string
           email?: string | null
           id?: string
@@ -286,7 +289,11 @@ export type Database = {
           note: string
           occurred_at: string
           payment_method: string | null
+          product_id: string | null
+          quantity: number
           received_by: string | null
+          refunded_at: string | null
+          refunded_by: string | null
           seller_barber_id: string | null
           updated_at: string
         }
@@ -311,7 +318,11 @@ export type Database = {
           note?: string
           occurred_at?: string
           payment_method?: string | null
+          product_id?: string | null
+          quantity?: number
           received_by?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           seller_barber_id?: string | null
           updated_at?: string
         }
@@ -336,7 +347,11 @@ export type Database = {
           note?: string
           occurred_at?: string
           payment_method?: string | null
+          product_id?: string | null
+          quantity?: number
           received_by?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           seller_barber_id?: string | null
           updated_at?: string
         }
@@ -367,6 +382,13 @@ export type Database = {
             columns: ["payment_method"]
             isOneToOne: false
             referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -588,6 +610,51 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          commission_pct: number
+          cost_cents: number
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          price_cents: number
+          sku: string
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          commission_pct?: number
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          price_cents?: number
+          sku?: string
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          commission_pct?: number
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          price_cents?: number
+          sku?: string
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           archived_at: string | null
@@ -681,6 +748,70 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_movements: {
+        Row: {
+          appointment_id: string | null
+          balance_after: number
+          created_at: string
+          created_by: string | null
+          financial_entry_id: string | null
+          id: string
+          kind: string
+          note: string
+          product_id: string
+          quantity: number
+          unit_cost_cents: number | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          balance_after?: number
+          created_at?: string
+          created_by?: string | null
+          financial_entry_id?: string | null
+          id?: string
+          kind: string
+          note?: string
+          product_id: string
+          quantity: number
+          unit_cost_cents?: number | null
+        }
+        Update: {
+          appointment_id?: string | null
+          balance_after?: number
+          created_at?: string
+          created_by?: string | null
+          financial_entry_id?: string | null
+          id?: string
+          kind?: string
+          note?: string
+          product_id?: string
+          quantity?: number
+          unit_cost_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_financial_entry_id_fkey"
+            columns: ["financial_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -709,6 +840,7 @@ export type Database = {
           _appointment_id: string
           _discount_cents?: number
           _method: string
+          _products?: Json
         }
         Returns: undefined
       }
@@ -747,6 +879,17 @@ export type Database = {
           slot_step_minutes: number
         }[]
       }
+      get_sellable_products: {
+        Args: never
+        Returns: {
+          category: string
+          id: string
+          low: boolean
+          name: string
+          price_cents: number
+          stock: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -755,6 +898,20 @@ export type Database = {
         Returns: boolean
       }
       is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
+      refund_product_sale: {
+        Args: { _entry_id: string; _note?: string }
+        Returns: undefined
+      }
+      register_stock_movement: {
+        Args: {
+          _kind: string
+          _note?: string
+          _product_id: string
+          _quantity: number
+          _unit_cost_cents?: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "barbeiro"
