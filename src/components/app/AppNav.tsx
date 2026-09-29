@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, LogOut, Scissors, Settings, LayoutList } from "lucide-react";
+import { CalendarPlus, CalendarCheck, CalendarOff, User, LogOut, Scissors, Settings, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -32,7 +32,7 @@ export function AppNav() {
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
         ]
       : access?.role === "barbeiro"
-        ? [painel, items[1], items[2]]
+        ? [painel, items[1], { to: "/ausencias" as const, label: "Bloquear agenda", icon: CalendarOff }, items[2]]
         : access?.role === "barbeiro_pendente"
           ? [painel, items[2]]
         : items;

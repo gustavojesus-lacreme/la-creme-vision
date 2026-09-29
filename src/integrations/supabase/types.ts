@@ -88,28 +88,34 @@ export type Database = {
           barber_id: string
           created_at: string
           ends_on: string
+          ends_time: string | null
           id: string
           kind: string
           note: string
           starts_on: string
+          starts_time: string | null
         }
         Insert: {
           barber_id: string
           created_at?: string
           ends_on: string
+          ends_time?: string | null
           id?: string
           kind: string
           note?: string
           starts_on: string
+          starts_time?: string | null
         }
         Update: {
           barber_id?: string
           created_at?: string
           ends_on?: string
+          ends_time?: string | null
           id?: string
           kind?: string
           note?: string
           starts_on?: string
+          starts_time?: string | null
         }
         Relationships: [
           {
