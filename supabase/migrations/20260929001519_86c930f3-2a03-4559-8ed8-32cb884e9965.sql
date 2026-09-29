@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.validate_absence() FROM PUBLIC, anon, authenticated;
