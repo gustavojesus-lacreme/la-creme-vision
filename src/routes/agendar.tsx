@@ -7,7 +7,7 @@ import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
 import { readGuest, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
-import { activeAbsence, formatDayShort } from "@/lib/absences";
+import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
   buildAvailableSlots,
   formatDateLong,
@@ -278,7 +278,14 @@ function BookingPage() {
 
     if (insertError) {
       barbersQuery.refetch();
-      setError("Não foi possível confirmar. Confira o barbeiro e o horário e tente novamente.");
+      busyQuery.refetch();
+      absencesQuery.refetch();
+      setSlot(null);
+      setError(
+        insertError.message.includes("acabou de ficar indisponível")
+          ? "Este horário acabou de ficar indisponível. Escolha outro horário."
+          : "Não foi possível confirmar. Confira o barbeiro e o horário e tente novamente.",
+      );
     } else {
       setConfirmed({
         when: slot,
@@ -425,7 +432,9 @@ function BookingPage() {
                 <span className="block text-base font-bold text-card-foreground">{item.name}</span>
                 {away && (
                   <span className="mt-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-foreground/60">
-                    Indisponível até {formatDayShort(away.ends_on)}
+                    {away.is_vacation
+                      ? `Em férias · Retorno em ${formatDayShort(returnDay(away.ends_on))}`
+                      : `Indisponível até ${formatDayShort(away.ends_on)}`}
                   </span>
                 )}
               </button>
