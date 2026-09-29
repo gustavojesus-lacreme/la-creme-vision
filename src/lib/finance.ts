@@ -17,6 +17,9 @@ export type Entry = {
   amount_cents: number;
   discount_cents: number;
   fee_cents: number;
+  fee_percent: number;
+  commission_percent: number;
+  received_by?: string | null;
   payment_method: string | null;
   occurred_at: string;
   client_name: string;
@@ -77,32 +80,83 @@ export const brl = (cents: number) =>
 
 export const toCents = (v: string) => Math.round(parseFloat(v.replace(/\./g, "").replace(",", ".") || "0") * 100);
 
-export const net = (e: Entry) => e.amount_cents - e.discount_cents - e.fee_cents;
+/** Ordem oficial: original → desconto → pago → taxa → líquido → comissão. Valores gravados na transação. */
+export const paid = (e: Entry) => e.amount_cents - e.discount_cents;
+export const net = (e: Entry) => paid(e) - e.fee_cents;
+
+type Agg = { count: number; gross: number; discounts: number; paid: number; fees: number; net: number; commission: number };
+const emptyAgg = (): Agg => ({ count: 0, gross: 0, discounts: 0, paid: 0, fees: 0, net: 0, commission: 0 });
+function add(a: Agg, e: Entry) {
+  a.count += 1; a.gross += e.amount_cents; a.discounts += e.discount_cents; a.paid += paid(e);
+  a.fees += e.fee_cents; a.net += net(e); a.commission += e.commission_cents;
+}
+const aggOf = (l: Entry[]) => { const a = emptyAgg(); l.forEach((e) => add(a, e)); return a; };
 
 export function summarize(entries: Entry[]) {
   const inc = entries.filter((e) => e.kind === "entrada");
   const out = entries.filter((e) => e.kind === "saida");
-  const sum = (l: Entry[], f: (e: Entry) => number) => l.reduce((s, e) => s + f(e), 0);
-  const gross = sum(inc, (e) => e.amount_cents);
-  const discounts = sum(inc, (e) => e.discount_cents);
-  const fees = sum(inc, (e) => e.fee_cents);
-  const commissions = sum(inc, (e) => e.commission_cents);
-  const expenses = sum(out, (e) => e.amount_cents);
-  const byCat = (c: string) => sum(inc.filter((e) => e.category === c), (e) => e.amount_cents - e.discount_cents);
-  const byMethod: Record<string, { gross: number; fee: number; count: number }> = {};
-  for (const e of inc) {
-    const k = e.payment_method ?? "outro";
-    byMethod[k] ??= { gross: 0, fee: 0, count: 0 };
-    byMethod[k].gross += e.amount_cents - e.discount_cents;
-    byMethod[k].fee += e.fee_cents;
-    byMethod[k].count += 1;
-  }
+  const t = aggOf(inc);
+  const expenses = out.reduce((s, e) => s + e.amount_cents, 0);
+  const byMethod: Record<string, Agg> = {};
+  for (const e of inc) add((byMethod[e.payment_method ?? "outro"] ??= emptyAgg()), e);
+  const byCategory: Record<string, Agg> = {};
+  for (const e of inc) add((byCategory[e.category] ??= emptyAgg()), e);
+  const byService: Record<string, Agg> = {};
+  for (const e of inc.filter((x) => x.category !== "servico" ? false : true)) add((byService[e.description || "Atendimento"] ??= emptyAgg()), e);
+  const byItem = (c: string) => { const r: Record<string, Agg> = {}; for (const e of inc.filter((x) => x.category === c)) add((r[e.description || c] ??= emptyAgg()), e); return r; };
+  const byExpense: Record<string, number> = {};
+  for (const e of out) byExpense[e.category] = (byExpense[e.category] ?? 0) + e.amount_cents;
   return {
-    gross, discounts, fees, commissions, expenses,
-    result: gross - discounts - commissions - expenses,
-    received: gross - discounts - fees,
-    services: byCat("servico"), products: byCat("produto"), plans: byCat("plano"),
+    ...t,
+    commissions: t.commission,
+    expenses,
+    /** Resultado operacional = líquido − comissões − despesas */
+    result: t.net - t.commission - expenses,
+    received: t.net,
+    services: byCategory["servico"]?.paid ?? 0,
+    products: byCategory["produto"]?.paid ?? 0,
+    plans: byCategory["plano"]?.paid ?? 0,
     appointments: inc.filter((e) => e.appointment_id).length,
-    byMethod,
+    byMethod, byCategory, byService, byProduct: byItem("produto"), byPlan: byItem("plano"), byExpense,
   };
 }
+
+export type BarberPerf = {
+  id: string; name: string;
+  services: number; products: number; plans: number;
+  /** Faturamento atribuído: serviços realizados + produtos/planos vendidos */
+  totals: Agg;
+  commissionBase: number; commission: number; pending: number; paid: number;
+};
+
+/** Serviço conta para quem realizou; produto/plano para quem vendeu. Sem vendedor = administrador. */
+export const attributedTo = (e: Entry) => (e.category === "servico" ? e.barber_id : e.seller_barber_id);
+
+export function barberPerf(entries: Entry[], barbers: { id: string; name: string }[]): BarberPerf[] {
+  const inc = entries.filter((e) => e.kind === "entrada");
+  return barbers.map((b) => {
+    const mine = inc.filter((e) => attributedTo(e) === b.id);
+    const comm = inc.filter((e) => e.commission_barber_id === b.id && e.commission_cents > 0);
+    return {
+      id: b.id, name: b.name,
+      services: mine.filter((e) => e.category === "servico").length,
+      products: mine.filter((e) => e.category === "produto").length,
+      plans: mine.filter((e) => e.category === "plano").length,
+      totals: aggOf(mine),
+      commissionBase: comm.reduce((s, e) => s + net(e), 0),
+      commission: comm.reduce((s, e) => s + e.commission_cents, 0),
+      pending: comm.filter((e) => e.commission_status === "pendente").reduce((s, e) => s + e.commission_cents, 0),
+      paid: comm.filter((e) => e.commission_status === "paga").reduce((s, e) => s + e.commission_cents, 0),
+    };
+  }).filter((p) => p.totals.count > 0 || p.commission > 0);
+}
+
+export function adminTotals(entries: Entry[]) {
+  return aggOf(entries.filter((e) => e.kind === "entrada" && !attributedTo(e)));
+}
+
+export const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+
+export const dayOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
+
+export type CommissionSettings = { commission_service_pct: number; commission_product_pct: number; commission_plan_pct: number };
