@@ -1,8 +1,3 @@
 # Roadmap
-
-- [x] Remover seções e páginas institucionais
-- [x] Abrir direto na tela de agendamento
-- [x] Atualizar serviços, preços e durações oficiais
-- [x] Barbeiro Gustavo Jesus e horários oficiais
-- [x] Login/cadastro, visitante, meus agendamentos e minha conta
-- [x] Validar o fluxo no celular
+- [x] Entrega 1: ausências parciais, bloqueio pelo barbeiro, conflito com agendamentos
+- [ ] Entrega 2: Financeiro (visão geral, movimentações, comissões, despesas, relatórios, formas de pagamento, pagamento ao finalizar por barbeiro/admin, venda manual de produto/plano, Estoque "Em breve") — aguarda validação da entrega 1
