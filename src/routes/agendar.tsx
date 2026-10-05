@@ -223,7 +223,13 @@ function BookingPage() {
   const selectedServices = (servicesQuery.data ?? []).filter((s) => serviceIds.includes(s.id));
   const totals = calculateTotals(selectedServices, combosQuery.data ?? []);
   const appliedPrices = appliedServicePrices(selectedServices, combosQuery.data ?? []);
-  const hints = promoHints(servicesQuery.data ?? [], combosQuery.data ?? []);
+  const triggerIds = selectedServices
+    .filter((s) => ["corte", "barba"].includes(s.name.trim().toLowerCase()))
+    .map((s) => s.id);
+  const hints = promoHints(
+    servicesQuery.data ?? [],
+    (combosQuery.data ?? []).filter((c) => triggerIds.some((t) => c.service_ids.includes(t))),
+  );
   const service =
     selectedServices.length > 0
       ? {
@@ -418,7 +424,6 @@ function BookingPage() {
                     <>
                       <span className="text-sm text-foreground/50 line-through">{formatPrice(item.price_cents)}</span>
                       <span className="text-base font-bold text-brand">{formatPrice(hints.get(item.id)!.price)}</span>
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gold">{hints.get(item.id)!.condition}</span>
                     </>
                   ) : (
                     <span className="text-base font-bold text-brand">{formatPrice(item.price_cents)}</span>
