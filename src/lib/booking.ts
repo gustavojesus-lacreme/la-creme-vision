@@ -114,6 +114,28 @@ export function calculateTotals(selected: PricedService[], combos: ServiceCombo[
   return { priceCents, durationMinutes, applied, extras };
 }
 
+/**
+ * Preço aplicado por serviço, derivado de calculateTotals (sem regra nova).
+ * A diferença de cada combinação é exibida no primeiro serviço dela (na ordem da lista),
+ * de modo que a soma dos preços aplicados é sempre igual ao total da combinação.
+ */
+export function appliedServicePrices(
+  orderedSelected: PricedService[],
+  combos: ServiceCombo[],
+): Map<string, number> {
+  const { applied } = calculateTotals(orderedSelected, combos);
+  const out = new Map<string, number>();
+  for (const combo of applied) {
+    const members = orderedSelected.filter((s) => combo.service_ids.includes(s.id));
+    const original = members.reduce((t, s) => t + s.price_cents, 0);
+    const diff = original - combo.price_cents;
+    if (diff === 0 || !members.length) continue;
+    const first = members[0]!;
+    out.set(first.id, Math.max(0, first.price_cents - diff));
+  }
+  return out;
+}
+
 export function formatDuration(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
