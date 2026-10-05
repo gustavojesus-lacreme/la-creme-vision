@@ -135,7 +135,7 @@ function Overview({ products, movements }: { products: Product[]; movements: Mov
 
 function Products({ products, defaultPct }: { products: Product[]; defaultPct: number }) {
   const qc = useQueryClient();
-  const empty = { id: "", name: "", category: "", sku: "", price: "", cost: "", min: "0", commission: String(defaultPct).replace(".", ","), active: true };
+  const empty = { id: "", name: "", category: "", sku: "", price: "", cost: "", min: "0", commission: String(defaultPct).replace(".", ","), active: true, initial: false, initialQty: "" };
   const [f, setF] = useState<typeof empty | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -149,6 +149,8 @@ function Products({ products, defaultPct }: { products: Product[]; defaultPct: n
     if (toCents(f.price) < 0 || toCents(f.cost) < 0) return setErr("Valores inválidos.");
     if (!Number.isFinite(commission) || commission < 0 || commission > 100) return setErr("Comissão deve ficar entre 0 e 100%.");
     if (!Number.isFinite(min) || min < 0) return setErr("Estoque mínimo inválido.");
+    const initialQty = parseInt(f.initialQty || "0", 10);
+    if (!f.id && f.initial && (!initialQty || initialQty <= 0)) return setErr("Informe a quantidade inicial.");
     const row = {
       name: f.name.trim(), category: f.category.trim(), sku: f.sku.trim(), price_cents: toCents(f.price), cost_cents: toCents(f.cost),
       min_stock: min, commission_pct: commission, active: f.active,
@@ -157,10 +159,19 @@ function Products({ products, defaultPct }: { products: Product[]; defaultPct: n
     const { data, error } = f.id
       ? await supabase.from("products").update(row).eq("id", f.id).select("id")
       : await supabase.from("products").insert(row).select("id");
+    if (error || !data?.length) { setBusy(false); return setErr("Não foi possível salvar o produto."); }
+    let extra = "";
+    if (!f.id && f.initial) {
+      const { error: mErr } = await supabase.rpc("register_stock_movement", {
+        _product_id: data[0]!.id, _kind: "entrada", _quantity: initialQty, _unit_cost_cents: row.cost_cents, _note: "Estoque inicial",
+      });
+      extra = mErr
+        ? " Mas a entrada inicial falhou: registre-a na aba Entrada."
+        : ` Entrada inicial: +${initialQty} un. × ${brl(row.cost_cents)} = ${brl(initialQty * row.cost_cents)}.`;
+    }
     setBusy(false);
-    if (error || !data?.length) return setErr("Não foi possível salvar o produto.");
     setF(null);
-    setMsg("Produto salvo com sucesso.");
+    setMsg(`Produto salvo com sucesso.${extra}`);
     qc.invalidateQueries({ queryKey: ["stock"] });
   }
   return (
@@ -174,11 +185,23 @@ function Products({ products, defaultPct }: { products: Product[]; defaultPct: n
             <label className={label}><span>Categoria</span><input className={input} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} /></label>
             <label className={label}><span>SKU/código (opcional)</span><input className={input} value={f.sku} onChange={(e) => setF({ ...f, sku: e.target.value })} /></label>
             <label className={label}><span>Preço de venda (R$)</span><input inputMode="decimal" className={input} value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></label>
-            <label className={label}><span>Custo (R$)</span><input inputMode="decimal" className={input} value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} /></label>
+            <label className={label}><span>Custo unitário (R$)</span><input inputMode="decimal" className={input} value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} /></label>
             <label className={label}><span>Estoque mínimo</span><input inputMode="numeric" className={input} value={f.min} onChange={(e) => setF({ ...f, min: e.target.value.replace(/\D/g, "") })} /></label>
             <label className={label}><span>Comissão (%)</span><input inputMode="decimal" className={input} value={f.commission} onChange={(e) => setF({ ...f, commission: e.target.value })} /></label>
           </div>
-          {!f.id && <p className="text-xs text-foreground/70">O estoque começa em 0. Use a aba "Entrada" para lançar as unidades.</p>}
+          {!f.id && (
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
+                <input type="checkbox" className="h-5 w-5" checked={f.initial} onChange={(e) => setF({ ...f, initial: e.target.checked })} /> Registrar estoque inicial
+              </label>
+              {f.initial ? (
+                <>
+                  <label className={label}><span>Quantidade inicial</span><input inputMode="numeric" className={input} value={f.initialQty} onChange={(e) => setF({ ...f, initialQty: e.target.value.replace(/\D/g, "") })} /></label>
+                  <p className="text-sm text-foreground/70">Entrada automática: {parseInt(f.initialQty || "0", 10)} un. × {brl(toCents(f.cost))} = <b>{brl(parseInt(f.initialQty || "0", 10) * toCents(f.cost))}</b></p>
+                </>
+              ) : <p className="text-xs text-foreground/70">Sem estoque inicial, o produto começa em 0. Use a aba "Entrada" depois.</p>}
+            </div>
+          )}
           <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
             <input type="checkbox" className="h-5 w-5" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> Produto ativo
           </label>
@@ -211,7 +234,7 @@ function Products({ products, defaultPct }: { products: Product[]; defaultPct: n
             </dl>
             <button type="button" className={`${btnGhost} mt-3`} onClick={() => { setMsg(null); setErr(null); setF({
               id: p.id, name: p.name, category: p.category, sku: p.sku, price: cents(p.price_cents), cost: cents(p.cost_cents),
-              min: String(p.min_stock), commission: String(p.commission_pct).replace(".", ","), active: p.active,
+              min: String(p.min_stock), commission: String(p.commission_pct).replace(".", ","), active: p.active, initial: false, initialQty: "",
             }); }}>Editar</button>
           </div>
         ))}
@@ -264,7 +287,7 @@ function MoveForm({ products, kinds }: { products: Product[]; kinds: string[] })
       )}
       <div className="grid grid-cols-2 gap-2">
         <label className={label}><span>Quantidade</span><input inputMode="numeric" className={input} value={v.qty} onChange={(e) => setV({ ...v, qty: e.target.value.replace(/\D/g, "") })} /></label>
-        {isEntry && <label className={label}><span>Custo unitário (R$)</span><input inputMode="decimal" className={input} value={v.cost} onChange={(e) => setV({ ...v, cost: e.target.value })} /></label>}
+        {isEntry && <label className={label}><span>Custo unitário (R$) · último preenchido</span><input inputMode="decimal" className={input} value={v.cost} onChange={(e) => setV({ ...v, cost: e.target.value })} /></label>}
       </div>
       <label className={label}><span>Observação (opcional)</span><input className={input} value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} /></label>
       {p && <p className="text-sm text-foreground/70">Estoque atual: <b>{p.stock}</b></p>}

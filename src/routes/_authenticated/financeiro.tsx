@@ -1,15 +1,15 @@
 import { useState, type ReactNode } from "react";
-import { generateFinancePdf, type ReportKind } from "@/lib/finance-pdf";
+import { generateFinancePdf, generateProfessionalPdf, type ReportKind } from "@/lib/finance-pdf";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { isBarberAdmin } from "@/lib/admin";
+import { getPanelAccess } from "@/lib/admin";
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, periodRange, rangeToIso, summarize, toCents,
   barberPerf, adminTotals, paid, net, pct,
   type Entry, type PaymentMethod, type PeriodKey, type CommissionSettings,
-  isCounted,
+  isCounted, professionalReport, TEAM_ROLE_LABEL,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
 
@@ -61,19 +61,21 @@ function useFinanceData(range: { from: string; to: string }, enabled: boolean) {
 }
 
 function FinancePage() {
-  const adminQuery = useQuery({ queryKey: ["is-admin"], queryFn: isBarberAdmin });
-  const isAdmin = adminQuery.data === true;
+  const accessQuery = useQuery({ queryKey: ["panel-access-fin"], queryFn: getPanelAccess });
+  const isAdmin = accessQuery.data?.role === "admin";
+  const ownBarberId = accessQuery.data?.role === "barbeiro" ? accessQuery.data.barberId : null;
+  const canSee = isAdmin || !!ownBarberId;
   const [tab, setTab] = useState<Tab>("geral");
   const [period, setPeriod] = useState<PeriodKey>("mes");
   const [custom, setCustom] = useState({ from: todaySP(), to: todaySP() });
   const range = periodRange(period, custom);
 
   const barbers = useQuery({
-    queryKey: ["fin-barbers"], enabled: isAdmin,
+    queryKey: ["fin-barbers", ownBarberId], enabled: canSee,
     queryFn: async () => ((await supabase.from("barbers").select("id, name, team_role, commission_plan_pct").order("sort_order")).data ?? []) as Barber[],
   });
   const methods = useQuery({
-    queryKey: ["fin-methods"], enabled: isAdmin,
+    queryKey: ["fin-methods"], enabled: canSee,
     queryFn: async () => ((await supabase.from("payment_methods").select("*").order("sort_order")).data ?? []) as PaymentMethod[],
   });
   const settings = useQuery({
@@ -84,7 +86,7 @@ function FinancePage() {
       return data as (CommissionSettings & { id: number }) | null;
     },
   });
-  const entries = useFinanceData(range, isAdmin);
+  const entries = useFinanceData(range, canSee);
 
   const ctx: Ctx = { entries: entries.data ?? [], barbers: barbers.data ?? [], methods: methods.data ?? [], range, period, setPeriod, settings: settings.data ?? null };
 
@@ -93,19 +95,20 @@ function FinancePage() {
       <AppNav />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Financeiro</h1>
-        {adminQuery.data === false && <div className={`${card} text-center text-base text-foreground/80`}>Acesso restrito ao administrador.</div>}
-        {isAdmin && (
+        {accessQuery.isFetched && !canSee && <div className={`${card} text-center text-base text-foreground/80`}>Acesso restrito.</div>}
+        {canSee && (
           <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {isAdmin && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {TABS.map((t) => (
                 <button key={t.key} type="button" onClick={() => setTab(t.key)}
                   className={`min-h-11 rounded-md border px-2 text-sm font-semibold ${tab === t.key ? "border-brand bg-secondary text-brand" : "border-input text-foreground/80"}`}>
                   {t.label}
                 </button>
               ))}
-            </div>
+            </div>}
+            {!isAdmin && <p className="text-sm text-foreground/70">Meu relatório: somente os seus dados.</p>}
 
-            {tab !== "pag" && (
+            {(tab !== "pag" || !isAdmin) && (
               <section className={`${card} space-y-3`}>
                 <div className="grid grid-cols-3 gap-2">
                   {PERIODS.map((p) => (
@@ -128,12 +131,13 @@ function FinancePage() {
             )}
 
             {entries.isLoading && tab !== "pag" && <p className="text-base text-foreground/70">Carregando...</p>}
-            {tab === "geral" && <Overview {...ctx} />}
-            {tab === "mov" && <Movements {...ctx} />}
-            {tab === "com" && <Commissions {...ctx} />}
-            {tab === "desp" && <Expenses {...ctx} />}
-            {tab === "rel" && <Reports {...ctx} />}
-            {tab === "pag" && <Methods {...ctx} />}
+            {!isAdmin && ownBarberId && <ProfessionalReport {...ctx} fixedId={ownBarberId} />}
+            {isAdmin && tab === "geral" && <Overview {...ctx} />}
+            {isAdmin && tab === "mov" && <Movements {...ctx} />}
+            {isAdmin && tab === "com" && <Commissions {...ctx} />}
+            {isAdmin && tab === "desp" && <Expenses {...ctx} />}
+            {isAdmin && tab === "rel" && <Reports {...ctx} />}
+            {isAdmin && tab === "pag" && <Methods {...ctx} />}
           </>
         )}
       </main>
@@ -626,6 +630,77 @@ const REPORT_KINDS: { key: ReportKind; label: string; period: PeriodKey }[] = [
 ];
 
 function Reports(ctx: Ctx) {
+  const [mode, setMode] = useState<"geral" | "prof">("geral");
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        {([["geral", "Relatório Geral"], ["prof", "Relatório por profissional"]] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setMode(k)}
+            className={`min-h-12 rounded-md border px-2 text-sm font-bold ${mode === k ? "border-brand bg-secondary text-brand" : "border-input text-foreground/80"}`}>{l}</button>
+        ))}
+      </div>
+      {mode === "geral" ? <GeneralReport {...ctx} /> : <ProfessionalReport {...ctx} />}
+    </div>
+  );
+}
+
+function ProfessionalReport(ctx: Ctx & { fixedId?: string }) {
+  const pros = ctx.barbers.filter((b) => ctx.fixedId ? b.id === ctx.fixedId : (b.team_role === "barbeiro" || b.team_role === "lider"));
+  const [sel, setSel] = useState("");
+  const barber = pros.find((b) => b.id === (ctx.fixedId ?? sel));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const r = barber ? professionalReport(ctx.entries, barber.id) : null;
+  async function pdf() {
+    if (!barber) return;
+    setBusy(true); setErr(null);
+    try { await generateProfessionalPdf({ range: ctx.range, entries: ctx.entries, barber, methods: ctx.methods }); }
+    catch { setErr("Não foi possível gerar o PDF."); }
+    setBusy(false);
+  }
+  return (
+    <div className="space-y-4">
+      {!ctx.fixedId && (
+        <section className={`${card} space-y-2`}>
+          <label className={label}><span>Profissional</span>
+            <select className={input} value={sel} onChange={(e) => setSel(e.target.value)}>
+              <option value="">Selecione</option>
+              {pros.map((b) => <option key={b.id} value={b.id}>{b.name} · {TEAM_ROLE_LABEL[b.team_role ?? ""] ?? "Barbeiro"}</option>)}
+            </select>
+          </label>
+          {pros.length === 0 && <p className="text-sm text-foreground/70">Nenhum barbeiro ou líder cadastrado.</p>}
+        </section>
+      )}
+      {barber && r && (
+        <>
+          <section className={`${card} space-y-1`}>
+            <h2 className="text-base font-bold text-card-foreground">{barber.name} · {TEAM_ROLE_LABEL[barber.team_role ?? ""] ?? "Barbeiro"}</h2>
+            <Row k="Atendimentos" v={String(r.appointments)} />
+            <Row k={`Serviços realizados (${r.services})`} v={brl(r.servicesPaid)} />
+            <Row k={`Produtos vendidos (${r.products})`} v={brl(r.productsPaid)} />
+            <Row k={`Planos vendidos (${r.plans})`} v={brl(r.plansPaid)} />
+            <Row k="Receita gerada (valor pago)" v={brl(r.revenue)} bold />
+            <Row k="Taxas de pagamento relacionadas" v={`−${brl(r.fees)}`} />
+            <Row k="Valor líquido" v={brl(r.net)} />
+          </section>
+          <section className={`${card} space-y-1`}>
+            <h2 className="text-base font-bold text-card-foreground">Comissões</h2>
+            <Row k="Comissão de serviços" v={brl(r.commService)} />
+            <Row k="Comissão de produtos" v={brl(r.commProduct)} />
+            <Row k="Comissão de planos" v={brl(r.commPlan)} />
+            <Row k="Já paga" v={brl(r.paidOut)} />
+            <Row k="Pendente" v={brl(r.pending)} />
+            <Row k="Total de comissão a receber" v={brl(r.commission)} bold />
+          </section>
+          <button type="button" disabled={busy} onClick={pdf} className={`${btn} w-full`}>{busy ? "Gerando..." : "Gerar PDF"}</button>
+          {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function GeneralReport(ctx: Ctx) {
   const kind: ReportKind =
     ctx.period === "hoje" || ctx.period === "ontem" ? "diario"
     : ctx.period === "semana" ? "semanal"
@@ -657,6 +732,13 @@ function Reports(ctx: Ctx) {
       <section className={`${card} space-y-1`}>
         <h2 className="text-base font-bold text-card-foreground">Resumo</h2>
         <ResultBlock entries={ctx.entries} showCount={kind === "diario"} />
+      </section>
+      <section className={`${card} space-y-1`}>
+        <h2 className="text-base font-bold text-card-foreground">Comissões por perfil</h2>
+        {(["barbeiro", "lider"] as const).map((r) => (
+          <Row key={r} k={r === "lider" ? "Comissões de líderes" : "Comissões de barbeiros"}
+            v={brl(ctx.entries.filter((e) => isCounted(e) && e.commission_barber_id && ctx.barbers.find((b) => b.id === e.commission_barber_id)?.team_role === r).reduce((t, e) => t + e.commission_cents, 0))} />
+        ))}
       </section>
       <section className={`${card} space-y-2`}>
         <h2 className="text-base font-bold text-card-foreground">Formas de pagamento</h2>

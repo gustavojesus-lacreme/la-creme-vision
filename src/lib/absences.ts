@@ -1,22 +1,23 @@
+/** Conceito único: Ausente. O "kind" guarda o motivo opcional. */
 export const ABSENCE_KINDS = {
-  ferias: "Férias",
-  atestado: "Atestado médico",
-  saude: "Ausência por motivo de saúde",
-  emergencia: "Emergência",
   ausente: "Ausente",
-  almoco: "Almoço",
-  pausa: "Pausa/intervalo",
-  indisponivel: "Indisponibilidade temporária",
+  ferias: "Ausente · Férias",
+  atestado: "Ausente · Afastamento médico",
+  emergencia: "Ausente · Emergência",
+  almoco: "Almoço (registro antigo)",
 } as const;
 
-/** Tipos operacionais: por padrão são de horário parcial. */
-export const PARTIAL_KINDS: AbsenceKind[] = ["almoco", "pausa", "indisponivel"];
+/** Motivos selecionáveis (Férias só para a administração). */
+export const ABSENCE_REASONS: { kind: AbsenceKind; label: string; adminOnly?: boolean }[] = [
+  { kind: "ausente", label: "Sem motivo" },
+  { kind: "emergencia", label: "Emergência" },
+  { kind: "atestado", label: "Afastamento médico" },
+  { kind: "ferias", label: "Férias", adminOnly: true },
+];
 
 /** Rótulo de status interno (admin) para ausência de dia inteiro. */
 export function statusLabel(kind: AbsenceKind): string {
-  if (kind === "ferias") return "Em férias";
-  if (kind === "ausente") return "Ausente";
-  return "Indisponível";
+  return kind === "ferias" ? "Em férias" : "Ausente";
 }
 
 export type AbsenceKind = keyof typeof ABSENCE_KINDS;

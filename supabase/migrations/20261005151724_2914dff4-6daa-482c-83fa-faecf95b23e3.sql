@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.finalize_appointment(uuid, text, integer, jsonb, jsonb) FROM PUBLIC, anon;

@@ -165,3 +165,26 @@ export const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximum
 export const dayOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
 
 export type CommissionSettings = { commission_service_pct: number; commission_product_pct: number; commission_plan_pct: number };
+
+/** Relatório individual: só lançamentos atribuídos ao profissional ou com comissão dele. Mesma fonte do Financeiro. */
+export function professionalReport(all: Entry[], barberId: string) {
+  const mine = all.filter((e) => e.kind === "entrada" && isCounted(e) && (attributedTo(e) === barberId || e.commission_barber_id === barberId));
+  const cat = (c: string) => mine.filter((e) => e.category === c);
+  const comm = (c: string) => cat(c).filter((e) => e.commission_barber_id === barberId).reduce((s, e) => s + e.commission_cents, 0);
+  const qty = (l: Entry[]) => l.reduce((s, e) => s + (e.quantity && e.quantity > 0 ? e.quantity : 1), 0);
+  const t = aggOf(mine);
+  const own = mine.filter((e) => e.commission_barber_id === barberId);
+  return {
+    entries: mine,
+    appointments: new Set(cat("servico").map((e) => e.appointment_id ?? e.id)).size,
+    services: cat("servico").length, products: qty(cat("produto")), plans: cat("plano").length,
+    servicesPaid: aggOf(cat("servico")).paid, productsPaid: aggOf(cat("produto")).paid, plansPaid: aggOf(cat("plano")).paid,
+    gross: t.gross, discounts: t.discounts, revenue: t.paid, fees: t.fees, net: t.net,
+    commService: comm("servico"), commProduct: comm("produto"), commPlan: comm("plano"),
+    commission: own.reduce((s, e) => s + e.commission_cents, 0),
+    pending: own.filter((e) => e.commission_status === "pendente").reduce((s, e) => s + e.commission_cents, 0),
+    paidOut: own.filter((e) => e.commission_status === "paga").reduce((s, e) => s + e.commission_cents, 0),
+  };
+}
+
+export const TEAM_ROLE_LABEL: Record<string, string> = { barbeiro: "Barbeiro", lider: "Líder", administrador: "Administrador", dono: "Dono/Proprietário" };

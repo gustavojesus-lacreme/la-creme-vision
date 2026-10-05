@@ -1,5 +1,5 @@
 import type { Entry, PaymentMethod } from "./finance";
-import { adminTotals, barberPerf, brl, net, paid, pct, summarize, INCOME_CATEGORIES } from "./finance";
+import { adminTotals, barberPerf, brl, net, paid, pct, summarize, professionalReport, INCOME_CATEGORIES, TEAM_ROLE_LABEL } from "./finance";
 
 export type ReportKind = "diario" | "semanal" | "mensal" | "personalizado";
 
@@ -23,24 +23,16 @@ const PETROL: [number, number, number] = [16, 64, 74];
 const GOLD: [number, number, number] = [184, 146, 74];
 const INK: [number, number, number] = [34, 34, 34];
 
-export async function generateFinancePdf(opts: {
-  kind: ReportKind;
-  range: { from: string; to: string };
-  entries: Entry[];
-  barbers: { id: string; name: string }[];
-  methods: PaymentMethod[];
-}) {
+type Doc = InstanceType<typeof import("jspdf").jsPDF>;
+
+/** Cabeçalho, tabelas e seções no padrão aprovado (compartilhado pelos relatórios). */
+async function setupDoc(title: string, periodText: string) {
   const { jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
-  const { kind, range, entries, barbers, methods } = opts;
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const doc: Doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const M = 16;
-  const s = summarize(entries);
-  const name = (id: string | null) => barbers.find((b) => b.id === id)?.name ?? "Administrador";
-  const mLabel = (id: string | null) => methods.find((m) => m.id === id)?.label ?? id ?? "—";
-  const period = range.from === range.to ? fmtDay(range.from) : `${fmtDay(range.from)} a ${fmtDay(range.to)}`;
   const generated = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 
   // Cabeçalho
@@ -52,17 +44,17 @@ export async function generateFinancePdf(opts: {
   doc.text("LA CREME BARBER", M, 18);
   doc.setFontSize(11);
   doc.setTextColor(...GOLD);
-  doc.text(TITLES[kind], M, 25);
+  doc.text(title, M, 25);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...INK);
   doc.setFontSize(9.5);
-  doc.text(`${kind === "diario" ? "Data" : "Período"}: ${period}`, W - M, 18, { align: "right" });
+  doc.text(periodText, W - M, 18, { align: "right" });
   doc.text(`Gerado em: ${generated}`, W - M, 25, { align: "right" });
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
   doc.line(M, 29, W - M, 29);
 
-  let y = 36;
+  const st = { y: 36 };
   const base = {
     margin: { left: M, right: M, top: 20, bottom: 20 },
     theme: "grid" as const,
@@ -72,20 +64,55 @@ export async function generateFinancePdf(opts: {
     rowPageBreak: "avoid" as const,
     showHead: "everyPage" as const,
   };
-  const section = (title: string) => {
-    if (y > H - 40) { doc.addPage(); y = 20; }
+  const section = (t: string) => {
+    if (st.y > H - 40) { doc.addPage(); st.y = 20; }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(...PETROL);
-    doc.text(title, M, y);
-    y += 2.5;
+    doc.text(t, M, st.y);
+    st.y += 2.5;
   };
   const table = (head: string[], body: (string | number)[][], foot?: (string | number)[], rightFrom = 1) => {
     const colStyles: Record<number, { halign: "right" }> = {};
     for (let i = rightFrom; i < head.length; i++) colStyles[i] = { halign: "right" };
-    autoTable(doc, { ...base, startY: y, head: [head], body: body.map((r) => r.map(String)), ...(foot ? { foot: [foot.map(String)] } : {}), showFoot: "lastPage", columnStyles: colStyles });
-    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+    autoTable(doc, { ...base, startY: st.y, head: [head], body: body.map((r) => r.map(String)), ...(foot ? { foot: [foot.map(String)] } : {}), showFoot: "lastPage", columnStyles: colStyles });
+    st.y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
   };
+  const finish = (fileName: string) => {
+    // Rodapé em todas as páginas
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.3);
+      doc.line(M, H - 12, W - M, H - 12);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(110, 110, 110);
+      doc.text("LA CREME BARBER · Relatório financeiro", M, H - 7);
+      doc.text(`Página ${i} de ${total}`, W - M, H - 7, { align: "right" });
+    }
+
+    doc.save(fileName);
+  };
+  return { section, table, finish };
+}
+
+export async function generateFinancePdf(opts: {
+  kind: ReportKind;
+  range: { from: string; to: string };
+  entries: Entry[];
+  barbers: { id: string; name: string; team_role?: string }[];
+  methods: PaymentMethod[];
+}) {
+  const { kind, range, entries, barbers, methods } = opts;
+  const s = summarize(entries);
+  const name = (id: string | null) => barbers.find((b) => b.id === id)?.name ?? "Administrador";
+  const mLabel = (id: string | null) => methods.find((m) => m.id === id)?.label ?? id ?? "—";
+  const period = range.from === range.to ? fmtDay(range.from) : `${fmtDay(range.from)} a ${fmtDay(range.to)}`;
+  const { section, table, finish } = await setupDoc(TITLES[kind], `${kind === "diario" ? "Data" : "Período"}: ${period}`);
+  const roleComm = (r: string) => entries.filter((e) => !e.refunded_at && e.commission_barber_id && barbers.find((b) => b.id === e.commission_barber_id)?.team_role === r).reduce((t, e) => t + e.commission_cents, 0);
+  const commLider = roleComm("lider");
 
   section("RESUMO");
   table(["Item", "Valor"], [
@@ -95,7 +122,9 @@ export async function generateFinancePdf(opts: {
     ["(=) Valor pago pelos clientes", brl(s.paid)],
     ["(-) Taxas de pagamento", brl(s.fees)],
     ["(=) Valor líquido", brl(s.net)],
-    ["(-) Comissões", brl(s.commissions)],
+    ...(commLider > 0
+      ? [["(-) Comissões de barbeiros", brl(s.commissions - commLider)], ["(-) Comissões de líderes", brl(commLider)]]
+      : [["(-) Comissões", brl(s.commissions)]]),
     ["(-) Despesas", brl(s.expenses)],
   ], ["Resultado operacional", brl(s.result)]);
 
@@ -156,19 +185,67 @@ export async function generateFinancePdf(opts: {
   table(["Item", "Valor"], [["Valor líquido", brl(s.net)], ["(-) Comissões", brl(s.commissions)], ["(-) Despesas", brl(s.expenses)]],
     ["Resultado operacional", brl(s.result)]);
 
-  // Rodapé em todas as páginas
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(...GOLD);
-    doc.setLineWidth(0.3);
-    doc.line(M, H - 12, W - M, H - 12);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(110, 110, 110);
-    doc.text("LA CREME BARBER · Relatório financeiro", M, H - 7);
-    doc.text(`Página ${i} de ${total}`, W - M, H - 7, { align: "right" });
-  }
+  finish(reportFileName(kind, range));
+}
 
-  doc.save(reportFileName(kind, range));
+export function professionalFileName(name: string, range: { from: string; to: string }) {
+  const slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return `LA_CREME_BARBER_Relatorio_${slug || "Profissional"}_${range.from}_a_${range.to}.pdf`;
+}
+
+export async function generateProfessionalPdf(opts: {
+  range: { from: string; to: string };
+  entries: Entry[];
+  barber: { id: string; name: string; team_role?: string };
+  methods: PaymentMethod[];
+}) {
+  const { range, entries, barber, methods } = opts;
+  const r = professionalReport(entries, barber.id);
+  const mLabel = (id: string | null) => methods.find((m) => m.id === id)?.label ?? id ?? "—";
+  const period = range.from === range.to ? fmtDay(range.from) : `${fmtDay(range.from)} a ${fmtDay(range.to)}`;
+  const { section, table, finish } = await setupDoc("RELATÓRIO INDIVIDUAL DO PROFISSIONAL", `Período: ${period}`);
+
+  section("PROFISSIONAL");
+  table(["Item", "Valor"], [["Profissional", barber.name], ["Perfil", TEAM_ROLE_LABEL[barber.team_role ?? ""] ?? "Barbeiro"], ["Período", period]], undefined, 2);
+
+  section("PRODUÇÃO");
+  table(["Item", "Qtd.", "Valor pago"], [
+    ["Atendimentos", r.appointments, "—"],
+    ["Serviços", r.services, brl(r.servicesPaid)],
+    ["Produtos", r.products, brl(r.productsPaid)],
+    ["Planos", r.plans, brl(r.plansPaid)],
+  ]);
+
+  section("RESUMO");
+  table(["Item", "Valor"], [
+    ["Faturamento bruto", brl(r.gross)],
+    ["(-) Descontos", brl(r.discounts)],
+    ["(=) Receita relacionada", brl(r.revenue)],
+    ["(-) Taxas relacionadas", brl(r.fees)],
+    ["(=) Valor líquido", brl(r.net)],
+  ]);
+
+  section("COMISSÕES");
+  table(["Tipo", "Valor"], [
+    ["Comissão de serviços", brl(r.commService)],
+    ["Comissão de produtos", brl(r.commProduct)],
+    ["Comissão de planos", brl(r.commPlan)],
+    ["Já paga", brl(r.paidOut)],
+    ["Pendente", brl(r.pending)],
+  ], ["Total de comissão a receber", brl(r.commission)]);
+
+  section("MOVIMENTAÇÕES");
+  const rows = [...r.entries].sort((a, b) => a.occurred_at.localeCompare(b.occurred_at));
+  table(["Data/hora", "Descrição", "Forma", "Pago", "Taxa", "Líquido", "Comissão"],
+    rows.map((e) => [
+      new Date(e.occurred_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
+      e.description || e.category,
+      mLabel(e.payment_method),
+      brl(paid(e)),
+      `${brl(e.fee_cents)} (${pct(e.fee_percent)})`,
+      brl(net(e)),
+      e.commission_barber_id === barber.id ? brl(e.commission_cents) : brl(0),
+    ]), undefined, 3);
+
+  finish(professionalFileName(barber.name, range));
 }

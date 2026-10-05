@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { formatDateLong, formatTime } from "@/lib/booking";
+import { formatDateLong, formatTime, isServiceBlocked } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
@@ -65,7 +65,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, total_price_cents, customer_first_name, customer_last_name, barber_id, services(name), barbers(name, color)",
+          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, services(name), barbers(name, color)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
@@ -89,6 +89,13 @@ function BarberPanel() {
     enabled: !!paying,
     queryFn: async () => (await supabase.rpc("get_sellable_products")).data ?? [],
   });
+  const servicesQuery = useQuery({
+    queryKey: ["panel-services", paying],
+    enabled: !!paying,
+    queryFn: async () => (await supabase.from("services").select("id, name, price_cents").eq("active", true).order("sort_order")).data ?? [],
+  });
+  const [extras, setExtras] = useState<Record<string, number>>({});
+  const [pickSvc, setPickSvc] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [pick, setPick] = useState("");
   const [colorFilter, setColorFilter] = useState("");
@@ -104,6 +111,8 @@ function BarberPanel() {
       setDiscount("");
       setCart({});
       setPick("");
+      setExtras({});
+      setPickSvc("");
       setMethod(methodsQuery.data?.[0]?.id ?? "pix");
       return;
     }
@@ -120,6 +129,7 @@ function BarberPanel() {
       _method: method,
       _discount_cents: toCents(discount),
       _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
+      _services: Object.entries(extras).map(([service_id, quantity]) => ({ service_id, quantity })),
     });
     setPayBusy(false);
     if (error) return setPayError(error.message || "Não foi possível finalizar.");
@@ -153,7 +163,20 @@ function BarberPanel() {
         .filter(([, b]) => b)
     : [];
   const shown = (appointmentsQuery.data ?? []).filter((a) => !colorFilter || a.barber_id === colorFilter);
-  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null } | undefined;
+  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
+  const allServices = servicesQuery.data ?? [];
+  const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
+  const extraSvc = allServices.filter((x) => extras[x.id]);
+  // Corte inclui Pezinho; Barba inclui Bigode (mesma regra do agendamento).
+  const addable = allServices.filter((x) => !isServiceBlocked(x, [...bookedSvc, ...extraSvc]));
+  const extrasTotal = Object.entries(extras).reduce((t, [id, q]) => t + (allServices.find((x) => x.id === id)?.price_cents ?? 0) * q, 0);
+  const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
+  function changeSvc(id: string, delta: number) {
+    const q = (extras[id] ?? 0) + delta;
+    const next = { ...extras };
+    if (q <= 0) delete next[id]; else next[id] = Math.min(q, 20);
+    setExtras(next);
+  }
 
   return (
     <div className="min-h-svh bg-background">
@@ -265,6 +288,29 @@ function BarberPanel() {
           <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
             <h2 className="text-lg font-bold text-card-foreground">Finalizar e registrar pagamento</h2>
             <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="text-sm font-semibold text-foreground">Adicionar serviço</p>
+              <p className="text-xs text-foreground/60">Complementa este atendimento. Não cria novo agendamento nem altera a agenda.</p>
+              <div className="flex gap-2">
+                <select value={pickSvc} onChange={(e) => setPickSvc(e.target.value)}
+                  className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="">{servicesQuery.isLoading ? "Carregando..." : "Escolha um serviço"}</option>
+                  {addable.map((x) => <option key={x.id} value={x.id}>{x.name} — {brl(x.price_cents)}</option>)}
+                </select>
+                <button type="button" disabled={!pickSvc} onClick={() => { changeSvc(pickSvc, 1); setPickSvc(""); }}
+                  className="min-h-11 shrink-0 rounded-md border border-brand px-3 text-sm font-bold text-brand disabled:opacity-50">Adicionar</button>
+              </div>
+              {extraSvc.map((x) => (
+                <div key={x.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate">{x.name} — {brl(x.price_cents * (extras[x.id] ?? 0))}</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <button type="button" aria-label="Diminuir" onClick={() => changeSvc(x.id, -1)} className="h-9 w-9 rounded-md border border-input">−</button>
+                    <span className="w-6 text-center font-bold">{extras[x.id]}</span>
+                    <button type="button" aria-label="Aumentar" onClick={() => changeSvc(x.id, 1)} className="h-9 w-9 rounded-md border border-input">+</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2 rounded-md border border-border p-3">
               <p className="text-sm font-semibold text-foreground">Adicionar produto</p>
               <div className="flex gap-2">
                 <select value={pick} onChange={(e) => setPick(e.target.value)}
@@ -291,10 +337,10 @@ function BarberPanel() {
             </div>
             {payingItem?.total_price_cents != null && (
               <div className="space-y-0.5 text-sm text-foreground">
-                <p className="flex justify-between"><span>Serviços</span><span>{brl(payingItem.total_price_cents)}</span></p>
+                <p className="flex justify-between"><span>Serviços</span><span>{brl(servicesTotal)}</span></p>
                 {toCents(discount) > 0 && <p className="flex justify-between"><span>Desconto (serviços)</span><span>−{brl(toCents(discount))}</span></p>}
                 <p className="flex justify-between"><span>Produtos</span><span>{brl(productsTotal)}</span></p>
-                <p className="flex justify-between border-t border-border pt-1 text-base font-bold"><span>TOTAL</span><span>{brl(payingItem.total_price_cents - toCents(discount) + productsTotal)}</span></p>
+                <p className="flex justify-between border-t border-border pt-1 text-base font-bold"><span>TOTAL</span><span>{brl(servicesTotal - toCents(discount) + productsTotal)}</span></p>
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
