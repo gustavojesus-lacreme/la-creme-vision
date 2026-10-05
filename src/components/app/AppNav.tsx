@@ -34,7 +34,7 @@ export function AppNav() {
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
         ]
       : access?.role === "barbeiro"
-        ? [painel, items[1], { to: "/ausencias" as const, label: "Bloquear agenda", icon: CalendarOff }, items[2]]
+        ? [painel, items[1], { to: "/ausencias" as const, label: "Bloquear agenda", icon: CalendarOff }, { to: "/financeiro" as const, label: "Meu relatório", icon: Wallet }, items[2]]
         : access?.role === "barbeiro_pendente"
           ? [painel, items[2]]
         : items;

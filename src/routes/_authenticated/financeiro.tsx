@@ -733,6 +733,13 @@ function GeneralReport(ctx: Ctx) {
         <h2 className="text-base font-bold text-card-foreground">Resumo</h2>
         <ResultBlock entries={ctx.entries} showCount={kind === "diario"} />
       </section>
+      <section className={`${card} space-y-1`}>
+        <h2 className="text-base font-bold text-card-foreground">Comissões por perfil</h2>
+        {(["barbeiro", "lider"] as const).map((r) => (
+          <Row key={r} k={r === "lider" ? "Comissões de líderes" : "Comissões de barbeiros"}
+            v={brl(ctx.entries.filter((e) => isCounted(e) && e.commission_barber_id && ctx.barbers.find((b) => b.id === e.commission_barber_id)?.team_role === r).reduce((t, e) => t + e.commission_cents, 0))} />
+        ))}
+      </section>
       <section className={`${card} space-y-2`}>
         <h2 className="text-base font-bold text-card-foreground">Formas de pagamento</h2>
         <MethodsTable entries={ctx.entries} methods={ctx.methods} />
