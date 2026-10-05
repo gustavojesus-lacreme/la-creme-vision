@@ -1,0 +1,1 @@
+GRANT SELECT (id, name, service_ids, sort_order, active, archived_at, user_id, approved_at) ON public.barbers TO anon;
