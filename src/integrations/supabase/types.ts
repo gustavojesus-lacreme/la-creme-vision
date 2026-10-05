@@ -851,6 +851,7 @@ export type Database = {
           _discount_cents?: number
           _method: string
           _products?: Json
+          _services?: Json
         }
         Returns: undefined
       }
