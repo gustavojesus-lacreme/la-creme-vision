@@ -77,7 +77,7 @@ export function BarberDayGrid({ barberId }: { barberId: string }) {
     <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-bold text-card-foreground">Agenda do dia</h2>
-        <Link to="/ausencias" className="min-h-11 rounded-md border border-brand px-3 py-2 text-sm font-bold text-brand">+ Bloquear agenda</Link>
+        <Link to="/ausencias" className="min-h-11 rounded-md border border-brand px-3 py-2 text-sm font-bold text-brand">Minha disponibilidade</Link>
       </div>
       <input type="date" value={day} onChange={(e) => setDay(e.target.value || todaySP())}
         className="mt-3 min-h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground" />

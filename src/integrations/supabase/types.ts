@@ -697,6 +697,7 @@ export type Database = {
           created_at: string
           duration_minutes: number
           id: string
+          item_prices: Json
           name: string
           price_cents: number
           service_ids: string[]
@@ -707,6 +708,7 @@ export type Database = {
           created_at?: string
           duration_minutes: number
           id?: string
+          item_prices?: Json
           name: string
           price_cents: number
           service_ids: string[]
@@ -717,6 +719,7 @@ export type Database = {
           created_at?: string
           duration_minutes?: number
           id?: string
+          item_prices?: Json
           name?: string
           price_cents?: number
           service_ids?: string[]

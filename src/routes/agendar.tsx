@@ -15,6 +15,7 @@ import {
   toDateInputValue,
   calculateTotals,
   appliedServicePrices,
+  promoHints,
   isServiceBlocked,
   formatDuration,
   type ServiceCombo,
@@ -89,7 +90,7 @@ function BookingPage() {
     queryFn: async () => {
       const { data, error: err } = await supabase
         .from("service_combos")
-        .select("id, name, service_ids, price_cents, duration_minutes")
+        .select("id, name, service_ids, price_cents, duration_minutes, item_prices")
         .eq("active", true);
       if (err) throw err;
       return (data ?? []) as ServiceCombo[];
@@ -222,6 +223,7 @@ function BookingPage() {
   const selectedServices = (servicesQuery.data ?? []).filter((s) => serviceIds.includes(s.id));
   const totals = calculateTotals(selectedServices, combosQuery.data ?? []);
   const appliedPrices = appliedServicePrices(selectedServices, combosQuery.data ?? []);
+  const hints = promoHints(servicesQuery.data ?? [], combosQuery.data ?? []);
   const service =
     selectedServices.length > 0
       ? {
@@ -411,6 +413,12 @@ function BookingPage() {
                     <>
                       <span className="text-sm text-foreground/50 line-through">{formatPrice(item.price_cents)}</span>
                       <span className="text-base font-bold text-brand">{formatPrice(appliedPrices.get(item.id)!)}</span>
+                    </>
+                  ) : !serviceIds.includes(item.id) && hints.has(item.id) ? (
+                    <>
+                      <span className="text-sm text-foreground/50 line-through">{formatPrice(item.price_cents)}</span>
+                      <span className="text-base font-bold text-brand">{formatPrice(hints.get(item.id)!.price)}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-gold">{hints.get(item.id)!.condition}</span>
                     </>
                   ) : (
                     <span className="text-base font-bold text-brand">{formatPrice(item.price_cents)}</span>

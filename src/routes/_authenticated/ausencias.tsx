@@ -87,6 +87,12 @@ function AbsencesPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [barberId, setBarberId] = useState("");
   const [kind, setKind] = useState<AbsenceKind>("ausente");
+  const periodsQuery = useQuery({
+    queryKey: ["business-periods-view"],
+    enabled: !!ownBarberId,
+    queryFn: async () => (await supabase.from("business_periods").select("weekday, opens_at, closes_at").order("weekday").order("opens_at")).data ?? [],
+  });
+  const kindValue: AbsenceKind = !isAdmin && !editing && (kind === "ausente" || kind === "ferias") ? "emergencia" : kind;
   const [start, setStart] = useState(todaySP());
   const [end, setEnd] = useState(todaySP());
   const [partial, setPartial] = useState(false);
@@ -153,7 +159,7 @@ function AbsencesPage() {
     }
     const payload = {
       barber_id: target,
-      kind,
+      kind: kindValue,
       starts_on: start,
       ends_on: end,
       starts_time: partial ? tStart : null,
@@ -191,13 +197,34 @@ function AbsencesPage() {
           </Link>
         )}
         <h1 className="font-display text-2xl font-bold text-foreground">
-          {isAdmin ? "Ausências" : "Bloquear minha agenda"}
+          {isAdmin ? "Ausências dos barbeiros" : "Minha disponibilidade"}
         </h1>
         {access !== undefined && !allowed && (
           <div className={`${card} text-center text-base text-foreground/80`}>Acesso restrito.</div>
         )}
         {allowed && (
           <>
+            {ownBarberId && (
+              <section className={`${card} space-y-2`}>
+                <h2 className="text-base font-bold text-card-foreground">Horário de trabalho</h2>
+                <ul className="divide-y divide-border text-sm">
+                  {["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"].map((d, i) => {
+                    const ps = (periodsQuery.data ?? []).filter((p) => p.weekday === i);
+                    return (
+                      <li key={d} className="flex justify-between gap-3 py-1.5">
+                        <span className="font-semibold text-foreground">{d}</span>
+                        <span className="text-right text-foreground/70">{ps.length ? ps.map((p) => `${hhmm(p.opens_at)}–${hhmm(p.closes_at)}`).join(" · ") : "Fechado"}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="text-sm text-foreground/70">
+                  <span className="font-semibold text-foreground">Almoço/intervalo: </span>
+                  {settingsQuery.data?.lunch_start ? `${hhmm(settingsQuery.data.lunch_start)} às ${hhmm(settingsQuery.data.lunch_end ?? null)}` : "não definido pela administração"}. Esses horários não aparecem para clientes.
+                </p>
+              </section>
+            )}
+            {ownBarberId && <h2 className="pt-2 text-lg font-bold text-foreground">Minhas ausências</h2>}
             <section className={`${card} space-y-3`}>
               <h2 className="text-base font-bold text-card-foreground">{editing ? "Editar ausência" : "+ Registrar ausência"}</h2>
               {isAdmin && (
@@ -242,9 +269,9 @@ function AbsencesPage() {
                 </div>
               )}
               <label className={label}>
-                <span>Motivo (opcional)</span>
-                <select className={input} value={kind} onChange={(e) => setKind(e.target.value as AbsenceKind)}>
-                  {ABSENCE_REASONS.filter((r) => isAdmin || !r.adminOnly || kind === r.kind).map((r) => (
+                <span>{isAdmin ? "Motivo (opcional)" : "Motivo"}</span>
+                <select className={input} value={kindValue} onChange={(e) => setKind(e.target.value as AbsenceKind)}>
+                  {ABSENCE_REASONS.filter((r) => isAdmin || r.kind === "emergencia" || r.kind === "atestado" || kindValue === r.kind).map((r) => (
                     <option key={r.kind} value={r.kind}>{r.label}</option>
                   ))}
                 </select>
@@ -269,7 +296,7 @@ function AbsencesPage() {
               </div>
             </section>
 
-            <section className={`${card} space-y-3`}>
+            {isAdmin && <section className={`${card} space-y-3`}>
               <h2 className="text-base font-bold text-card-foreground">Almoço padrão da barbearia</h2>
               {isAdmin ? (
                 <p className="text-sm text-foreground/70">
@@ -283,10 +310,10 @@ function AbsencesPage() {
                     : "Não definido pela administração."}
                 </p>
               )}
-            </section>
+            </section>}
 
             <section className="space-y-2">
-              <h2 className="text-lg font-bold text-foreground">Atuais e futuros</h2>
+              <h2 className="text-lg font-bold text-foreground">{isAdmin ? "Atuais e futuras" : "Minhas ausências futuras"}</h2>
               {absencesQuery.data?.length === 0 && <p className="text-base text-foreground/70">Nenhuma ausência registrada.</p>}
               <div className="grid gap-3">
                 {absencesQuery.data?.map((a) => {
@@ -311,14 +338,14 @@ function AbsencesPage() {
                           {active ? "Em andamento" : "Programado"}
                         </span>
                       </div>
-                      <div className="mt-3 flex gap-2">
+                      {(isAdmin || a.created_by === meQuery.data) && <div className="mt-3 flex gap-2">
                         <button type="button" onClick={() => startEdit(a)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-foreground">
                           Editar
                         </button>
                         <button type="button" onClick={() => remove(a.id)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-destructive">
                           Remover
                         </button>
-                      </div>
+                      </div>}
                     </div>
                   );
                 })}

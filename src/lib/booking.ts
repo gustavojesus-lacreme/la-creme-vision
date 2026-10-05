@@ -75,7 +75,7 @@ export function buildAvailableSlots(options: {
 }
 
 export type PricedService = { id: string; name: string; price_cents: number; duration_minutes: number };
-export type ServiceCombo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number };
+export type ServiceCombo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number; item_prices?: Record<string, number> | null };
 
 const normName = (n: string) => n.trim().toLowerCase();
 /** Serviço bloqueado -> serviço que o bloqueia (Corte inclui Pezinho; Barba inclui Bigode). */
@@ -130,6 +130,12 @@ export function appliedServicePrices(
   for (const combo of applied) {
     const members = orderedSelected.filter((s) => combo.service_ids.includes(s.id));
     if (members.length < 2) continue;
+    const ip = combo.item_prices ?? {};
+    if (members.every((s) => typeof ip[s.id] === "number")) {
+      // Preço por serviço configurado pelo administrador: usado exatamente como cadastrado.
+      for (const s of members) if (ip[s.id] !== s.price_cents) out.set(s.id, ip[s.id]!);
+      continue;
+    }
     const anchor = members.reduce((m, s) => (s.price_cents > m.price_cents ? s : m), members[0]!);
     const others = members.filter((s) => s.id !== anchor.id);
     const prices = new Map<string, number>([[anchor.id, anchor.price_cents]]);
@@ -147,6 +153,29 @@ export function appliedServicePrices(
       prices.set(last.id, Math.max(0, prices.get(last.id)! + residual));
     }
     for (const s of members) if (prices.get(s.id)! !== s.price_cents) out.set(s.id, prices.get(s.id)!);
+  }
+  return out;
+}
+
+/**
+ * Preço promocional configurado (antes da seleção): menor preço do serviço dentro de uma
+ * combinação ativa, com a condição ("Com Corte" ou "Na combinação"). Só usa valores cadastrados.
+ */
+export function promoHints(services: PricedService[], combos: ServiceCombo[]) {
+  const out = new Map<string, { price: number; condition: string }>();
+  for (const sv of services) {
+    for (const c of combos) {
+      const v = c.item_prices?.[sv.id];
+      if (typeof v !== "number" || v >= sv.price_cents) continue;
+      const others = c.service_ids.filter((id) => id !== sv.id);
+      const condition =
+        others.length === 1
+          ? `Com ${services.find((x) => x.id === others[0])?.name ?? "outro serviço"}`
+          : "Na combinação";
+      const cur = out.get(sv.id);
+      if (!cur || v < cur.price || (v === cur.price && condition !== "Na combinação"))
+        out.set(sv.id, { price: v, condition });
+    }
   }
   return out;
 }
