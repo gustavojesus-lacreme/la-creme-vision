@@ -80,7 +80,7 @@ function HoursPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["config-hours"] });
 
   const update = (day: number, patch: Partial<DayState>) =>
-    setDays((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } }));
+    setDays((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } as DayState }));
 
   const isDirty = (day: number) => JSON.stringify(days[day]) !== JSON.stringify(saved[day]);
 
