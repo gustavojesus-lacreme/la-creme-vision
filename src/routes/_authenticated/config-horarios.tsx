@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsShell, Toggle, hhmm, sBtnOutline, sCard, sInput } from "@/components/app/SettingsShell";
 
@@ -24,6 +24,25 @@ const DAYS = [
   [5, "Sexta-feira"], [6, "Sábado"], [0, "Domingo"],
 ] as const;
 
+type Period = { o: string; c: string };
+type DayState = { open: boolean; periods: Period[] };
+
+function toHM(t: string) {
+  return t.slice(0, 5);
+}
+
+function validate(periods: Period[]): string | null {
+  const sorted = [...periods].sort((a, b) => a.o.localeCompare(b.o));
+  for (const p of sorted) {
+    if (!p.o || !p.c) return "Preencha abertura e fechamento de todos os períodos.";
+    if (p.c <= p.o) return "O fechamento deve ser depois da abertura.";
+  }
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i]!.o < sorted[i - 1]!.c) return "Os períodos não podem se sobrepor.";
+  }
+  return null;
+}
+
 function HoursPage() {
   const qc = useQueryClient();
   const q = useQuery({
@@ -36,79 +55,160 @@ function HoursPage() {
       return { hours: h.data ?? [], periods: p.data ?? [] };
     },
   });
-  const [msg, setMsg] = useState<{ day: number; text: string } | null>(null);
-  const [draft, setDraft] = useState<Record<number, { o: string; c: string }>>({});
+
+  const [days, setDays] = useState<Record<number, DayState>>({});
+  const [saved, setSaved] = useState<Record<number, DayState>>({});
+  const [msg, setMsg] = useState<{ day: number; text: string; ok: boolean } | null>(null);
+  const [saving, setSaving] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!q.data) return;
+    const next: Record<number, DayState> = {};
+    for (const [day] of DAYS) {
+      const closed = q.data.hours.find((h) => h.weekday === day)?.closed ?? true;
+      next[day] = {
+        open: !closed,
+        periods: q.data.periods
+          .filter((p) => p.weekday === day)
+          .map((p) => ({ o: toHM(p.opens_at), c: toHM(p.closes_at) })),
+      };
+    }
+    setDays(next);
+    setSaved(next);
+  }, [q.data]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["config-hours"] });
-  const err = (day: number, e: { message: string } | null, okText?: string) =>
-    setMsg(e ? { day, text: e.message.includes("sobrepõe") ? e.message : "Não foi possível salvar." } : okText ? { day, text: okText } : null);
 
-  async function setOpen(day: number, open: boolean) {
-    const { error } = await supabase.from("business_hours").update({ closed: !open }).eq("weekday", day);
-    err(day, error);
-    refresh();
-  }
-  async function add(day: number) {
-    const d = draft[day] ?? { o: "09:00", c: "19:00" };
-    if (d.c <= d.o) return setMsg({ day, text: "O fechamento deve ser depois da abertura." });
-    const { error } = await supabase.from("business_periods").insert({ weekday: day, opens_at: d.o, closes_at: d.c });
-    err(day, error, "Período adicionado.");
-    refresh();
-  }
-  async function remove(day: number, id: string) {
-    if (!window.confirm("Remover este período?")) return;
-    const { error } = await supabase.from("business_periods").delete().eq("id", id);
-    err(day, error);
+  const update = (day: number, patch: Partial<DayState>) =>
+    setDays((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } as DayState }));
+
+  const isDirty = (day: number) => JSON.stringify(days[day]) !== JSON.stringify(saved[day]);
+
+  async function save(day: number) {
+    const st = days[day];
+    if (!st) return;
+    if (st.open) {
+      if (st.periods.length === 0) {
+        return setMsg({ day, text: "Adicione ao menos um período ou feche o dia.", ok: false });
+      }
+      const problem = validate(st.periods);
+      if (problem) return setMsg({ day, text: problem, ok: false });
+    }
+    setSaving(day);
+    setMsg(null);
+    const { error: e1 } = await supabase.from("business_hours").update({ closed: !st.open }).eq("weekday", day);
+    if (e1) {
+      setSaving(null);
+      return setMsg({ day, text: "Não foi possível salvar.", ok: false });
+    }
+    const { error: e2 } = await supabase.from("business_periods").delete().eq("weekday", day);
+    if (e2) {
+      setSaving(null);
+      return setMsg({ day, text: "Não foi possível salvar os períodos.", ok: false });
+    }
+    if (st.open && st.periods.length > 0) {
+      const rows = [...st.periods]
+        .sort((a, b) => a.o.localeCompare(b.o))
+        .map((p) => ({ weekday: day, opens_at: p.o, closes_at: p.c }));
+      const { error: e3 } = await supabase.from("business_periods").insert(rows);
+      if (e3) {
+        setSaving(null);
+        refresh();
+        return setMsg({ day, text: e3.message.includes("sobrepõe") ? e3.message : "Não foi possível salvar os períodos.", ok: false });
+      }
+    }
+    setSaving(null);
+    setMsg({ day, text: "Configuração salva.", ok: true });
     refresh();
   }
 
   return (
     <SettingsShell title="Horários de funcionamento">
       <p className="text-sm text-foreground/70">
-        Estes horários definem os horários oferecidos aos clientes. Um serviço só aparece se couber inteiro dentro de um período.
+        Estes horários definem os horários oferecidos aos clientes. Faça as alterações do dia e toque em <strong>Salvar</strong> para confirmar.
       </p>
-      <div className="grid gap-3">
+      <div className="grid gap-4">
         {DAYS.map(([day, name]) => {
-          const closed = q.data?.hours.find((h) => h.weekday === day)?.closed ?? true;
-          const periods = q.data?.periods.filter((p) => p.weekday === day) ?? [];
-          const d = draft[day] ?? { o: "09:00", c: "19:00" };
+          const st = days[day];
+          if (!st) return null;
+          const dirty = isDirty(day);
           return (
-            <section key={day} className={`${sCard} space-y-3`}>
-              <div className="flex items-center justify-between gap-3">
+            <section key={day} className={`${sCard} space-y-4`}>
+              <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
                 <div>
                   <h2 className="text-base font-bold text-card-foreground">{name}</h2>
                   <p className="text-sm text-foreground/60">
-                    {closed ? "Fechado" : periods.length ? periods.map((p) => `${hhmm(p.opens_at)} → ${hhmm(p.closes_at)}`).join(" · ") : "Aberto, sem períodos (sem horários)"}
+                    {st.open
+                      ? st.periods.length
+                        ? st.periods.map((p) => `${hhmm(p.o)} → ${hhmm(p.c)}`).join(" · ")
+                        : "Sem períodos definidos"
+                      : "Fechado"}
                   </p>
                 </div>
-                <Toggle checked={!closed} onChange={(v) => setOpen(day, v)} label={`${name} aberto`} />
+                <Toggle checked={st.open} onChange={(v) => update(day, { open: v })} label={`${name} aberto`} />
               </div>
-              {!closed && (
-                <>
-                  {periods.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-                      <span className="text-base font-semibold tabular-nums text-foreground">{hhmm(p.opens_at)} → {hhmm(p.closes_at)}</span>
-                      <button type="button" onClick={() => remove(day, p.id)} aria-label="Remover período" className="grid min-h-11 min-w-11 place-items-center text-destructive">
+
+              {st.open && (
+                <div className="space-y-3">
+                  {st.periods.map((p, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+                      <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
+                        <span>Abre</span>
+                        <input
+                          type="time"
+                          className={sInput}
+                          value={p.o}
+                          onChange={(e) =>
+                            update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, o: e.target.value } : x)) })
+                          }
+                        />
+                      </label>
+                      <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
+                        <span>Fecha</span>
+                        <input
+                          type="time"
+                          className={sInput}
+                          value={p.c}
+                          onChange={(e) =>
+                            update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: e.target.value } : x)) })
+                          }
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
+                        aria-label="Remover período"
+                        className="grid min-h-11 min-w-11 place-items-center rounded-md border border-border text-destructive"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
-                  <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
-                    <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
-                      <span>Abre</span>
-                      <input type="time" className={sInput} value={d.o} onChange={(e) => setDraft({ ...draft, [day]: { ...d, o: e.target.value } })} />
-                    </label>
-                    <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
-                      <span>Fecha</span>
-                      <input type="time" className={sInput} value={d.c} onChange={(e) => setDraft({ ...draft, [day]: { ...d, c: e.target.value } })} />
-                    </label>
-                    <button type="button" onClick={() => add(day)} className={`${sBtnOutline} inline-flex items-center gap-1 px-3`} aria-label="Adicionar período">
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                </>
+                  <button
+                    type="button"
+                    onClick={() => update(day, { periods: [...st.periods, { o: "09:00", c: "19:00" }] })}
+                    className={`${sBtnOutline} inline-flex w-full items-center justify-center gap-2`}
+                  >
+                    <Plus className="h-4 w-4" /> Adicionar período
+                  </button>
+                </div>
               )}
-              {msg?.day === day && <p className="text-sm font-semibold text-foreground">{msg.text}</p>}
+
+              {msg?.day === day && (
+                <p className={`text-sm font-semibold ${msg.ok ? "text-primary" : "text-destructive"}`}>{msg.text}</p>
+              )}
+
+              {dirty && (
+                <button
+                  type="button"
+                  disabled={saving === day}
+                  onClick={() => save(day)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                >
+                  <Check className="h-4 w-4" />
+                  {saving === day ? "Salvando…" : `Salvar ${name.split("-")[0]}`}
+                </button>
+              )}
             </section>
           );
         })}
