@@ -734,6 +734,7 @@ export type Database = {
           description: string
           duration_minutes: number
           id: string
+          latest_start_time: string | null
           name: string
           price_cents: number
           sort_order: number
@@ -744,6 +745,7 @@ export type Database = {
           description?: string
           duration_minutes: number
           id?: string
+          latest_start_time?: string | null
           name: string
           price_cents: number
           sort_order?: number
@@ -754,6 +756,7 @@ export type Database = {
           description?: string
           duration_minutes?: number
           id?: string
+          latest_start_time?: string | null
           name?: string
           price_cents?: number
           sort_order?: number
@@ -859,7 +862,12 @@ export type Database = {
         Returns: undefined
       }
       get_available_slots: {
-        Args: { _barber_id: string; _day: string; _duration: number }
+        Args: {
+          _barber_id: string
+          _day: string
+          _duration: number
+          _service_ids?: string[]
+        }
         Returns: {
           starts_at: string
         }[]

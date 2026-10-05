@@ -166,13 +166,14 @@ function BookingPage() {
   ).durationMinutes;
   // Fonte única de disponibilidade (horários, almoço, bloqueios, ausências, agenda, regras).
   const busyQuery = useQuery({
-    queryKey: ["available-slots", barberId, dateStr, durationForSlots],
+    queryKey: ["available-slots", barberId, dateStr, durationForSlots, serviceIds.join(",")],
     enabled: !!barberId && durationForSlots > 0,
     queryFn: async () => {
       const { data, error: err } = await supabase.rpc("get_available_slots", {
         _barber_id: barberId!,
         _day: dateStr,
         _duration: durationForSlots,
+        _service_ids: serviceIds,
       });
       if (err) throw err;
       return (data ?? []).map((r) => new Date(r.starts_at));

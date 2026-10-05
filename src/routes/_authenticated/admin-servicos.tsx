@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin-servicos")({
   component: AdminServicesPage,
 });
 
-type Service = { id: string; name: string; price_cents: number; duration_minutes: number; active: boolean; sort_order: number };
+type Service = { id: string; name: string; price_cents: number; duration_minutes: number; active: boolean; sort_order: number; latest_start_time: string | null };
 type Combo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number; active: boolean; item_prices: Record<string, number> | null };
 
 const card = "rounded-lg border border-border bg-card p-4";
@@ -45,7 +45,7 @@ function AdminServicesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
-        .select("id, name, price_cents, duration_minutes, active, sort_order")
+        .select("id, name, price_cents, duration_minutes, active, sort_order, latest_start_time")
         .order("sort_order");
       if (error) throw error;
       // Combinações não são serviços: oculta o antigo "Corte + Barba" individual.
@@ -125,7 +125,7 @@ function AdminServicesPage() {
                       <div className="min-w-0 break-words">
                         <p className="text-base font-bold text-card-foreground">{s.name}</p>
                         <p className="text-sm text-foreground/70">
-                          {formatPrice(s.price_cents)} · {s.duration_minutes} min · {s.active ? "Ativo" : "Inativo"}
+                          {formatPrice(s.price_cents)} · {s.duration_minutes} min{s.latest_start_time ? ` · até ${s.latest_start_time.slice(0, 5)}` : ""} · {s.active ? "Ativo" : "Inativo"}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
@@ -198,6 +198,8 @@ function ServiceForm({ service, nextOrder, onDone }: { service?: Service; nextOr
   const [price, setPrice] = useState(service ? fromCents(service.price_cents) : "");
   const [duration, setDuration] = useState(service ? String(service.duration_minutes) : "");
   const [active, setActive] = useState(service?.active ?? true);
+  const [ownHours, setOwnHours] = useState(!!service?.latest_start_time);
+  const [latest, setLatest] = useState(service?.latest_start_time?.slice(0, 5) ?? "18:00");
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -209,7 +211,8 @@ function ServiceForm({ service, nextOrder, onDone }: { service?: Service; nextOr
       return;
     }
     setSaving(true);
-    const payload = { name: name.trim(), price_cents, duration_minutes, active };
+    if (ownHours && !latest) { setErr("Informe o último horário de início."); return; }
+    const payload = { name: name.trim(), price_cents, duration_minutes, active, latest_start_time: ownHours ? latest : null };
     const { error } = service
       ? await supabase.from("services").update(payload).eq("id", service.id)
       : await supabase.from("services").insert({ ...payload, sort_order: nextOrder ?? 0 });
@@ -238,6 +241,23 @@ function ServiceForm({ service, nextOrder, onDone }: { service?: Service; nextOr
         <input type="checkbox" className="h-5 w-5 accent-brand" checked={active} onChange={(e) => setActive(e.target.checked)} />
         Ativo
       </label>
+      <fieldset className="space-y-2 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-semibold text-foreground/70">Horário de atendimento deste serviço</legend>
+        <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
+          <input type="radio" className="h-5 w-5 accent-brand" checked={!ownHours} onChange={() => setOwnHours(false)} />
+          Horário de funcionamento da barbearia
+        </label>
+        <label className="flex min-h-11 items-center gap-2 text-base text-foreground">
+          <input type="radio" className="h-5 w-5 accent-brand" checked={ownHours} onChange={() => setOwnHours(true)} />
+          Horário próprio
+        </label>
+        {ownHours && (
+          <label className="block space-y-1">
+            <span className="text-sm font-semibold text-foreground/70">Último horário de início</span>
+            <input type="time" className={input} value={latest} onChange={(e) => setLatest(e.target.value)} />
+          </label>
+        )}
+      </fieldset>
       {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
       <div className="flex gap-2">
         <button type="button" className={`${btnPrimary} flex-1`} disabled={saving} onClick={save}>Salvar</button>
