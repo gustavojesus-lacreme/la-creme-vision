@@ -187,4 +187,4 @@ export function professionalReport(all: Entry[], barberId: string) {
   };
 }
 
-export const TEAM_ROLE_LABEL: Record<string, string> = { barbeiro: "Barbeiro", lider: "Líder", admin: "Administrador", dono: "Dono/Proprietário" };
+export const TEAM_ROLE_LABEL: Record<string, string> = { barbeiro: "Barbeiro", lider: "Líder", administrador: "Administrador", dono: "Dono/Proprietário" };
