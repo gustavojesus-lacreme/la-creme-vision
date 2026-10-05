@@ -433,9 +433,7 @@ function BookingPage() {
                 <span className="block text-base font-bold text-card-foreground">{item.name}</span>
                 {away && (
                   <span className="mt-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-foreground/60">
-                    {away.is_vacation
-                      ? `Em férias · Retorno em ${formatDayShort(returnDay(away.ends_on))}`
-                      : `Indisponível até ${formatDayShort(away.ends_on)}`}
+                    {`Ausente · Retorno em ${formatDayShort(returnDay(away.ends_on))}`}
                   </span>
                 )}
               </button>
