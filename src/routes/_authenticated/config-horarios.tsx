@@ -38,7 +38,7 @@ function validate(periods: Period[]): string | null {
     if (p.c <= p.o) return "O fechamento deve ser depois da abertura.";
   }
   for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i].o < sorted[i - 1].c) return "Os períodos não podem se sobrepor.";
+    if (sorted[i]!.o < sorted[i - 1]!.c) return "Os períodos não podem se sobrepor.";
   }
   return null;
 }
