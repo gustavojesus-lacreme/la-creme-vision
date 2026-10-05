@@ -5,13 +5,13 @@ import { ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { getPanelAccess } from "@/lib/admin";
-import { ABSENCE_KINDS, PARTIAL_KINDS, formatDay, todaySP, type Absence, type AbsenceKind } from "@/lib/absences";
+import { ABSENCE_KINDS, ABSENCE_REASONS, formatDay, todaySP, type Absence, type AbsenceKind } from "@/lib/absences";
 
 export const Route = createFileRoute("/_authenticated/ausencias")({
   head: () => ({
     meta: [
-      { title: "Ausências e bloqueios | LA CREME BARBER" },
-      { name: "description", content: "Registre férias, atestados, almoço, pausas e bloqueios de agenda dos barbeiros." },
+      { title: "Ausências | LA CREME BARBER" },
+      { name: "description", content: "Registre ausências dos barbeiros: dia inteiro ou horário, com motivo opcional." },
       { property: "og:title", content: "Ausências e bloqueios | LA CREME BARBER" },
       { property: "og:description", content: "Gestão de ausências e bloqueios da agenda." },
       { property: "og:type", content: "website" },
@@ -39,7 +39,7 @@ const stamp = (iso: string) =>
   new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 function friendlyError(msg: string) {
-  if (msg.includes("Existem agendamentos") || msg.includes("sobrepõe") || msg.includes("Horário final") || msg.includes("Data final") || msg.includes("almoço"))
+  if (msg.includes("sobrepõe") || msg.includes("Horário final") || msg.includes("Data final") || msg.includes("férias"))
     return msg;
   return "Não foi possível salvar.";
 }
@@ -86,10 +86,10 @@ function AbsencesPage() {
   const meQuery = useQuery({ queryKey: ["me-id"], queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null });
   const [editing, setEditing] = useState<string | null>(null);
   const [barberId, setBarberId] = useState("");
-  const [kind, setKind] = useState<AbsenceKind>("almoco");
+  const [kind, setKind] = useState<AbsenceKind>("ausente");
   const [start, setStart] = useState(todaySP());
   const [end, setEnd] = useState(todaySP());
-  const [partial, setPartial] = useState(true);
+  const [partial, setPartial] = useState(false);
   const [tStart, setTStart] = useState("12:00");
   const [tEnd, setTEnd] = useState("14:00");
   const [note, setNote] = useState("");
@@ -105,10 +105,6 @@ function AbsencesPage() {
     return barberOf(barberIdOf)?.user_id === uid ? "Próprio barbeiro" : "Administração";
   };
 
-  function changeKind(k: AbsenceKind) {
-    setKind(k);
-    if (!editing) setPartial(PARTIAL_KINDS.includes(k));
-  }
 
   function resetForm() {
     setEditing(null);
@@ -141,6 +137,20 @@ function AbsencesPage() {
     if (end < start) return setError("A data final deve ser igual ou posterior à data inicial.");
     if (partial && tEnd <= tStart) return setError("O horário final deve ser depois do horário inicial.");
     setSaving(true);
+    // Conflitos: não cancela nada, apenas avisa.
+    const { data: clash } = await supabase.from("appointments").select("starts_at, ends_at")
+      .eq("barber_id", target).eq("status", "agendado")
+      .gte("starts_at", new Date(`${start}T00:00:00-03:00`).toISOString())
+      .lt("starts_at", new Date(new Date(`${end}T00:00:00-03:00`).getTime() + 86400000).toISOString())
+      .order("starts_at");
+    const hm = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+    const dm = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" }).format(new Date(iso));
+    const conflicts = (clash ?? []).filter((a) => !partial || (hm(a.starts_at) < tEnd && hm(a.ends_at) > tStart));
+    const conflictText = conflicts.map((a) => `${dm(a.starts_at)} ${hm(a.starts_at)}–${hm(a.ends_at)}`).join(", ");
+    if (conflicts.length && !window.confirm(`Existem ${conflicts.length} agendamento(s) neste período (${conflictText}). Eles NÃO serão cancelados automaticamente e precisarão ser resolvidos manualmente. Salvar a ausência mesmo assim?`)) {
+      setSaving(false);
+      return;
+    }
     const payload = {
       barber_id: target,
       kind,
@@ -155,14 +165,14 @@ function AbsencesPage() {
       : await supabase.from("barber_absences").insert(payload);
     setSaving(false);
     if (err) return setError(friendlyError(err.message));
-    setOk(editing ? "Bloqueio atualizado." : "Bloqueio salvo. Esses horários não aparecem mais para clientes.");
+    setOk(`${editing ? "Ausência atualizada." : "Ausência salva. Esses horários não aparecem mais para clientes."}${conflicts.length ? ` Atenção: ${conflicts.length} agendamento(s) em conflito para resolver (${conflictText}).` : ""}`);
     resetForm();
     qc.invalidateQueries({ queryKey: ["admin-absences"] });
     qc.invalidateQueries({ queryKey: ["barber-day"] });
   }
 
   async function remove(id: string) {
-    if (!window.confirm("Remover este bloqueio? Os horários voltam a ficar disponíveis.")) return;
+    if (!window.confirm("Remover esta ausência? Os horários voltam a ficar disponíveis.")) return;
     await supabase.from("barber_absences").delete().eq("id", id);
     if (editing === id) resetForm();
     qc.invalidateQueries({ queryKey: ["admin-absences"] });
@@ -181,7 +191,7 @@ function AbsencesPage() {
           </Link>
         )}
         <h1 className="font-display text-2xl font-bold text-foreground">
-          {isAdmin ? "Ausências e bloqueios" : "Bloquear minha agenda"}
+          {isAdmin ? "Ausências" : "Bloquear minha agenda"}
         </h1>
         {access !== undefined && !allowed && (
           <div className={`${card} text-center text-base text-foreground/80`}>Acesso restrito.</div>
@@ -189,7 +199,7 @@ function AbsencesPage() {
         {allowed && (
           <>
             <section className={`${card} space-y-3`}>
-              <h2 className="text-base font-bold text-card-foreground">{editing ? "Editar bloqueio" : "+ Bloquear agenda"}</h2>
+              <h2 className="text-base font-bold text-card-foreground">{editing ? "Editar ausência" : "+ Registrar ausência"}</h2>
               {isAdmin && (
                 <label className={label}>
                   <span>Barbeiro</span>
@@ -199,19 +209,6 @@ function AbsencesPage() {
                   </select>
                 </label>
               )}
-              <label className={label}>
-                <span>Tipo</span>
-                <select className={input} value={kind} onChange={(e) => changeKind(e.target.value as AbsenceKind)}>
-                  <optgroup label="Pausas">
-                    {PARTIAL_KINDS.map((k) => <option key={k} value={k}>{ABSENCE_KINDS[k]}</option>)}
-                  </optgroup>
-                  <optgroup label="Ausências">
-                    {(Object.keys(ABSENCE_KINDS) as AbsenceKind[]).filter((k) => !PARTIAL_KINDS.includes(k)).map((k) => (
-                      <option key={k} value={k}>{ABSENCE_KINDS[k]}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className={label}>
                   <span>Data inicial</span>
@@ -244,9 +241,15 @@ function AbsencesPage() {
                   </label>
                 </div>
               )}
-              {kind === "almoco" && (
-                <p className="text-xs text-foreground/60">Seu almoço neste dia substitui o almoço padrão da barbearia. O cliente não vê “Almoço”, apenas não recebe esses horários.</p>
-              )}
+              <label className={label}>
+                <span>Motivo (opcional)</span>
+                <select className={input} value={kind} onChange={(e) => setKind(e.target.value as AbsenceKind)}>
+                  {ABSENCE_REASONS.filter((r) => isAdmin || !r.adminOnly || kind === r.kind).map((r) => (
+                    <option key={r.kind} value={r.kind}>{r.label}</option>
+                  ))}
+                </select>
+              </label>
+              {!isAdmin && <p className="text-xs text-foreground/60">Férias são registradas pela administração. O cliente vê apenas "Ausente", nunca o motivo.</p>}
               <label className={label}>
                 <span>Observação interna (opcional)</span>
                 <textarea className={`${input} min-h-20 py-2`} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -261,7 +264,7 @@ function AbsencesPage() {
                 )}
                 <button type="button" disabled={saving} onClick={save}
                   className="min-h-12 flex-1 rounded-md bg-brand px-4 text-base font-bold text-brand-foreground disabled:opacity-50">
-                  {saving ? "Salvando..." : editing ? "Salvar alterações" : "Confirmar bloqueio"}
+                  {saving ? "Salvando..." : editing ? "Salvar alterações" : "Salvar ausência"}
                 </button>
               </div>
             </section>
@@ -276,7 +279,7 @@ function AbsencesPage() {
               ) : (
                 <p className="text-sm text-foreground/70">
                   {settingsQuery.data?.lunch_start
-                    ? `${hhmm(settingsQuery.data.lunch_start)} às ${hhmm(settingsQuery.data.lunch_end ?? null)}. Para outro horário num dia, registre um bloqueio do tipo Almoço.`
+                    ? `${hhmm(settingsQuery.data.lunch_start)} às ${hhmm(settingsQuery.data.lunch_end ?? null)}.`
                     : "Não definido pela administração."}
                 </p>
               )}
@@ -284,7 +287,7 @@ function AbsencesPage() {
 
             <section className="space-y-2">
               <h2 className="text-lg font-bold text-foreground">Atuais e futuros</h2>
-              {absencesQuery.data?.length === 0 && <p className="text-base text-foreground/70">Nenhum bloqueio registrado.</p>}
+              {absencesQuery.data?.length === 0 && <p className="text-base text-foreground/70">Nenhuma ausência registrada.</p>}
               <div className="grid gap-3">
                 {absencesQuery.data?.map((a) => {
                   const active = a.starts_on <= today;
