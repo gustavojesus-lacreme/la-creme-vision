@@ -115,9 +115,11 @@ export function calculateTotals(selected: PricedService[], combos: ServiceCombo[
 }
 
 /**
- * Preço aplicado por serviço, derivado de calculateTotals (sem regra nova).
- * A diferença de cada combinação é exibida no primeiro serviço dela (na ordem da lista),
- * de modo que a soma dos preços aplicados é sempre igual ao total da combinação.
+ * Preço aplicado por serviço, derivado das combinações cadastradas (sem regra nova de total).
+ * O serviço principal da combinação (mais caro, primeiro na lista) fica com preço cheio;
+ * cada outro membro recebe o preço promocional próprio, obtido da combinação "principal + ele"
+ * (ex.: Corte + Barba R$65 -> Barba R$30; Corte + Sobrancelha R$40 -> Sobrancelha R$5).
+ * Qualquer diferença residual vai para o último membro, garantindo soma = total da combinação.
  */
 export function appliedServicePrices(
   orderedSelected: PricedService[],
@@ -127,11 +129,24 @@ export function appliedServicePrices(
   const out = new Map<string, number>();
   for (const combo of applied) {
     const members = orderedSelected.filter((s) => combo.service_ids.includes(s.id));
-    const original = members.reduce((t, s) => t + s.price_cents, 0);
-    const diff = original - combo.price_cents;
-    if (diff === 0 || !members.length) continue;
-    const first = members[0]!;
-    out.set(first.id, Math.max(0, first.price_cents - diff));
+    if (members.length < 2) continue;
+    const anchor = members.reduce((m, s) => (s.price_cents > m.price_cents ? s : m), members[0]!);
+    const others = members.filter((s) => s.id !== anchor.id);
+    const prices = new Map<string, number>([[anchor.id, anchor.price_cents]]);
+    for (const s of others) {
+      const pair = combos.find(
+        (c) => c.service_ids.length === 2 && c.service_ids.includes(anchor.id) && c.service_ids.includes(s.id),
+      );
+      const promo = pair ? pair.price_cents - anchor.price_cents : s.price_cents;
+      prices.set(s.id, Math.max(0, Math.min(s.price_cents, promo)));
+    }
+    const sum = [...prices.values()].reduce((t, v) => t + v, 0);
+    const residual = combo.price_cents - sum;
+    if (residual !== 0) {
+      const last = others[others.length - 1]!;
+      prices.set(last.id, Math.max(0, prices.get(last.id)! + residual));
+    }
+    for (const s of members) if (prices.get(s.id)! !== s.price_cents) out.set(s.id, prices.get(s.id)!);
   }
   return out;
 }
