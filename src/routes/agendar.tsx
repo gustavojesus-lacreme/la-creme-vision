@@ -14,6 +14,7 @@ import {
   formatTime,
   toDateInputValue,
   calculateTotals,
+  appliedServicePrices,
   isServiceBlocked,
   formatDuration,
   type ServiceCombo,
@@ -220,6 +221,7 @@ function BookingPage() {
 
   const selectedServices = (servicesQuery.data ?? []).filter((s) => serviceIds.includes(s.id));
   const totals = calculateTotals(selectedServices, combosQuery.data ?? []);
+  const appliedPrices = appliedServicePrices(selectedServices, combosQuery.data ?? []);
   const service =
     selectedServices.length > 0
       ? {
@@ -402,13 +404,46 @@ function BookingPage() {
                     {item.duration_minutes} min
                   </span>
                 </span>
-                <span className="text-base font-bold text-brand">
-                  {blocked ? "Incluído" : formatPrice(item.price_cents)}
+                <span className="flex shrink-0 flex-col items-end leading-tight">
+                  {blocked ? (
+                    <span className="text-base font-bold text-brand">Incluído</span>
+                  ) : appliedPrices.has(item.id) ? (
+                    <>
+                      <span className="text-sm text-foreground/50 line-through">{formatPrice(item.price_cents)}</span>
+                      <span className="text-base font-bold text-brand">{formatPrice(appliedPrices.get(item.id)!)}</span>
+                    </>
+                  ) : (
+                    <span className="text-base font-bold text-brand">{formatPrice(item.price_cents)}</span>
+                  )}
                 </span>
               </button>
               );
             })}
           </div>
+          {totals.applied.length > 0 && (
+            <div className="space-y-1 rounded-md border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-foreground">
+              {totals.applied.map((c) => {
+                const original = selectedServices
+                  .filter((s) => c.service_ids.includes(s.id))
+                  .reduce((t, s) => t + s.price_cents, 0);
+                return (
+                  <p key={c.id} className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-semibold">Preço especial · {c.name}</span>
+                    <span>
+                      {original !== c.price_cents && (
+                        <span className="mr-2 text-foreground/50 line-through">{formatPrice(original)}</span>
+                      )}
+                      <span className="font-bold">{formatPrice(c.price_cents)}</span>
+                    </span>
+                  </p>
+                );
+              })}
+              <p className="flex justify-between border-t border-gold/40 pt-1 font-bold">
+                <span>Total</span>
+                <span>{formatPrice(totals.priceCents)}</span>
+              </p>
+            </div>
+          )}
         </section>
 
         <section className="space-y-2">
