@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/admin-servicos")({
 });
 
 type Service = { id: string; name: string; price_cents: number; duration_minutes: number; active: boolean; sort_order: number };
-type Combo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number; active: boolean };
+type Combo = { id: string; name: string; service_ids: string[]; price_cents: number; duration_minutes: number; active: boolean; item_prices: Record<string, number> | null };
 
 const card = "rounded-lg border border-border bg-card p-4";
 const input =
@@ -59,7 +59,7 @@ function AdminServicesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_combos")
-        .select("id, name, service_ids, price_cents, duration_minutes, active")
+        .select("id, name, service_ids, price_cents, duration_minutes, active, item_prices")
         .order("created_at");
       if (error) throw error;
       return (data ?? []) as Combo[];
@@ -163,6 +163,17 @@ function AdminServicesPage() {
                         <p className="text-sm text-foreground/70">
                           {formatPrice(c.price_cents)} · {c.duration_minutes} min · {c.active ? "Ativa" : "Inativa"}
                         </p>
+                        {c.service_ids.some((id) => typeof c.item_prices?.[id] === "number") && (
+                          <p className="text-sm text-foreground/70">
+                            {c.service_ids.map((id) => {
+                              const normal = services.find((s) => s.id === id)?.price_cents ?? 0;
+                              const v = c.item_prices?.[id];
+                              return typeof v === "number" && v !== normal
+                                ? `${nameOf(id)}: ${formatPrice(v)} (desconto ${formatPrice(normal - v)})`
+                                : `${nameOf(id)}: ${formatPrice(normal)}`;
+                            }).join(" · ")}
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
                         <button type="button" className={btnOutline} onClick={() => toggleCombo(c)}>
@@ -238,9 +249,17 @@ function ServiceForm({ service, nextOrder, onDone }: { service?: Service; nextOr
 
 function ComboForm({ combo, services, onDone }: { combo?: Combo; services: Service[]; onDone: () => void }) {
   const [ids, setIds] = useState<string[]>(combo?.service_ids ?? []);
-  const [price, setPrice] = useState(combo ? fromCents(combo.price_cents) : "");
   const [duration, setDuration] = useState(combo ? String(combo.duration_minutes) : "");
   const [active, setActive] = useState(combo?.active ?? true);
+  const [itemPrices, setItemPrices] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const s of services) {
+      if (!combo?.service_ids.includes(s.id)) continue;
+      const v = combo.item_prices?.[s.id];
+      out[s.id] = fromCents(typeof v === "number" ? v : s.price_cents);
+    }
+    return out;
+  });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -248,13 +267,19 @@ function ComboForm({ combo, services, onDone }: { combo?: Combo; services: Servi
   const autoName = ordered.map((s) => s.name).join(" + ");
 
   async function save() {
-    const price_cents = toCents(price);
     const duration_minutes = parseInt(duration, 10);
     if (ids.length < 2) return setErr("Selecione pelo menos dois serviços.");
-    if (!Number.isFinite(price_cents) || price_cents < 0 || !(duration_minutes > 0))
-      return setErr("Preencha preço e duração válidos.");
+    const item_prices: Record<string, number> = {};
+    for (const s of ordered) {
+      const v = toCents(itemPrices[s.id] ?? fromCents(s.price_cents));
+      if (!Number.isFinite(v) || v < 0 || v > s.price_cents)
+        return setErr(`Preço de ${s.name} na combinação deve ficar entre R$ 0,00 e o preço normal.`);
+      item_prices[s.id] = v;
+    }
+    if (!(duration_minutes > 0)) return setErr("Preencha uma duração válida.");
+    const price_cents = Object.values(item_prices).reduce((t, v) => t + v, 0);
     setSaving(true);
-    const payload = { name: autoName, service_ids: ordered.map((s) => s.id), price_cents, duration_minutes, active };
+    const payload = { name: autoName, service_ids: ordered.map((s) => s.id), price_cents, item_prices, duration_minutes, active };
     const { error } = combo
       ? await supabase.from("service_combos").update(payload).eq("id", combo.id)
       : await supabase.from("service_combos").insert(payload);
@@ -285,16 +310,36 @@ function ComboForm({ combo, services, onDone }: { combo?: Combo; services: Servi
         })}
       </div>
       <p className="text-base font-bold text-card-foreground">{autoName || "Nome automático"}</p>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block space-y-1">
-          <span className="text-sm font-semibold text-foreground/70">Preço (R$)</span>
-          <input className={input} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-semibold text-foreground/70">Duração (min)</span>
-          <input className={input} inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value)} />
-        </label>
-      </div>
+      {ordered.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-foreground/70">Preço de cada serviço nesta combinação</p>
+          {ordered.map((s) => {
+            const raw = itemPrices[s.id] ?? fromCents(s.price_cents);
+            const v = toCents(raw);
+            const disc = Number.isFinite(v) ? s.price_cents - v : 0;
+            return (
+              <div key={s.id} className="grid grid-cols-[1fr_8rem] items-center gap-3">
+                <span className="min-w-0 text-sm text-foreground">
+                  <span className="font-semibold">{s.name}</span>
+                  <span className="block text-foreground/60">
+                    Normal {formatPrice(s.price_cents)}{disc > 0 ? ` · desconto ${formatPrice(disc)}` : ""}
+                  </span>
+                </span>
+                <input className={input} inputMode="decimal" aria-label={`Preço de ${s.name} na combinação`} value={raw}
+                  onChange={(e) => setItemPrices((m) => ({ ...m, [s.id]: e.target.value }))} />
+              </div>
+            );
+          })}
+          <p className="flex justify-between border-t border-border pt-2 text-base font-bold text-card-foreground">
+            <span>Total da combinação</span>
+            <span>{formatPrice(ordered.reduce((t, s) => { const v = toCents(itemPrices[s.id] ?? fromCents(s.price_cents)); return t + (Number.isFinite(v) ? v : 0); }, 0))}</span>
+          </p>
+        </div>
+      )}
+      <label className="block space-y-1">
+        <span className="text-sm font-semibold text-foreground/70">Duração (min)</span>
+        <input className={input} inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value)} />
+      </label>
       <label className="flex min-h-12 items-center gap-2 text-base text-foreground">
         <input type="checkbox" className="h-5 w-5 accent-brand" checked={active} onChange={(e) => setActive(e.target.checked)} />
         Ativa
