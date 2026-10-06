@@ -48,6 +48,22 @@ function summary(st: DayState) {
   return `${st.periods.map((p) => `${p.o} às ${p.c}`).join(" · ")} · ${n} ${n === 1 ? "período" : "períodos"}`;
 }
 
+const SLOTS = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
+
+/** Seletor de horário em 24h (passos de 30 min), nativo no celular e sem sobrepor outros campos. */
+function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const opts = SLOTS.includes(value) || !value ? SLOTS : [...SLOTS, value].sort();
+  return (
+    <span className="relative block">
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className={`${sInput} appearance-none bg-card !pl-3 !pr-9 font-semibold tabular-nums`}>
+        {opts.map((t) => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <Clock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" />
+    </span>
+  );
+}
+
 function HoursPage() {
   const qc = useQueryClient();
   const q = useQuery({
@@ -165,7 +181,12 @@ function HoursPage() {
                     : <MinusCircle className="h-5 w-5 shrink-0 text-gold/70" />}
                   <span className="min-w-0">
                     <span className="block font-display text-base font-bold text-card-foreground">{name}</span>
-                    <span className="block text-sm text-foreground/60">{summary(st)}</span>
+                    {st.open && st.periods.length ? (
+                      <>
+                        <span className="block text-sm tabular-nums text-foreground/65">{st.periods.map((p) => `${p.o} às ${p.c}`).join(" · ")}</span>
+                        <span className="block text-sm text-foreground/55">{st.periods.length} {st.periods.length === 1 ? "período" : "períodos"}</span>
+                      </>
+                    ) : <span className="block text-sm text-foreground/60">{summary(st)}</span>}
                   </span>
                 </button>
                 <Toggle
@@ -192,13 +213,11 @@ function HoursPage() {
                       <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-end gap-2">
                         <label className={labelCls}>
                           <span>Abre</span>
-                          <input type="time" step={300} className={`${sInput} !px-2 tabular-nums`} value={p.o}
-                            onChange={(e) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, o: e.target.value } : x)) })} />
+                          <TimeSelect value={p.o} onChange={(v) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, o: v } : x)) })} />
                         </label>
                         <label className={labelCls}>
                           <span>Fecha</span>
-                          <input type="time" step={300} className={`${sInput} !px-2 tabular-nums`} value={p.c}
-                            onChange={(e) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: e.target.value } : x)) })} />
+                          <TimeSelect value={p.c} onChange={(v) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: v } : x)) })} />
                         </label>
                         <button type="button" aria-label="Remover período"
                           onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
