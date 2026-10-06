@@ -76,7 +76,7 @@ export function AppNav() {
     {/* Desktop sidebar */}
     <aside className="app-sidebar fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-sidebar text-sidebar-foreground lg:flex">
       <Link to="/agendar" className="block px-5 pt-6 pb-4" aria-label="LA CREME BARBER — início">
-        <img src={logo.url} alt="LA CREME BARBER" className="mx-auto h-auto w-full max-w-[11rem]" />
+        <img src={logo.url} alt="LA CREME BARBER" className="logo-blend mx-auto h-auto w-full max-w-[11rem]" />
       </Link>
       <div className="mx-5 h-px bg-sidebar-border" />
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4" aria-label="Menu principal">
@@ -102,7 +102,7 @@ export function AppNav() {
     <header className="sticky top-0 z-40 bg-sidebar text-sidebar-foreground shadow-sm lg:hidden">
       <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:px-4">
         <Link to="/agendar" className="flex min-w-0 items-center" aria-label="LA CREME BARBER — início">
-          <img src={logo.url} alt="LA CREME BARBER" className="h-11 w-auto max-w-[9.5rem] object-contain" />
+          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-11 w-auto max-w-[9.5rem] object-contain" />
         </Link>
         {session ? (
           <div className="flex shrink-0 items-center [&_button]:text-sidebar-foreground">

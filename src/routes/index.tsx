@@ -38,7 +38,7 @@ function EntryPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
           <h1 className="sr-only">LA CREME BARBER</h1>
-          <img src={logo.url} alt="LA CREME BARBER" className="h-auto w-full max-w-xs" />
+          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-auto w-full max-w-xs" />
         </div>
 
         <div className="mt-8 space-y-3">

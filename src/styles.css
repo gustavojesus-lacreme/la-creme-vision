@@ -223,3 +223,8 @@
     padding-inline: 2rem;
   }
 }
+
+@utility logo-blend {
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at center, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 75% at center, #000 55%, transparent 100%);
+}

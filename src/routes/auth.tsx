@@ -139,7 +139,7 @@ function AuthPage() {
   return (
     <main className="grid min-h-svh bg-sidebar lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Link to="/" aria-label="LA CREME BARBER — início" className="flex items-center justify-center px-6 pt-6 pb-4 lg:p-12">
-        <img src={logo.url} alt="LA CREME BARBER" className="h-auto w-full max-w-[16rem] lg:max-w-md" />
+        <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-auto w-full max-w-[16rem] lg:max-w-md" />
       </Link>
       <div className="flex flex-col items-center rounded-t-3xl bg-background px-5 py-10 lg:justify-center lg:rounded-none">
       <div className="w-full max-w-sm">
