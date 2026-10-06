@@ -1,13 +1,14 @@
-import { useEffect, useRef } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/la-creme-logo.png.asset.json";
+import logo from "@/assets/la-creme-logo-tight.png.asset.json";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/app/NotificationBell";
 
 const items = [
@@ -26,7 +27,7 @@ export function AppNav() {
     queryFn: getPanelAccess,
   });
   const access = accessQuery.data ?? null;
-  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList, Wallet, Package };
+  const painel = { to: "/painel" as const, label: "Painel", icon: LayoutList, Wallet, Package, Menu, MoreHorizontal };
   const navItems =
     access?.role === "admin"
       ? [
@@ -49,11 +50,9 @@ export function AppNav() {
           ? [painel, items[2]]
         : items;
 
-  const navRef = useRef<HTMLElement>(null);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => {
-    navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
-  }, [pathname, navItems.length]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const hasMore = navItems.length > 5;
+  const bottomItems = hasMore ? navItems.slice(0, 4) : navItems;
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -100,32 +99,69 @@ export function AppNav() {
 
     {/* Mobile / tablet header */}
     <header className="sticky top-0 z-40 bg-sidebar text-sidebar-foreground shadow-sm lg:hidden">
-      <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:px-4">
-        <Link to="/agendar" className="flex min-w-0 items-center" aria-label="LA CREME BARBER — início">
-          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-11 w-auto max-w-[9.5rem] object-contain" />
+      <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2 sm:px-4">
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <button type="button" aria-label="Abrir menu" className="grid h-11 w-11 place-items-center rounded-lg hover:bg-sidebar-accent">
+              <Menu className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="flex w-[17rem] flex-col border-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:text-sidebar-foreground">
+            <SheetTitle className="sr-only">Menu</SheetTitle>
+            <div className="px-6 pt-10 pb-4">
+              <img src={logo.url} alt="LA CREME BARBER" className="logo-blend mx-auto h-auto w-full max-w-[10rem]" />
+            </div>
+            <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Menu completo">
+              {navItems.map((item) => (
+                <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)}
+                  className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-[15px] font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                  activeProps={{ className: "bg-sidebar-accent !text-sidebar-primary" }}>
+                  <item.icon className="h-5 w-5 shrink-0 text-sidebar-primary" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="border-t border-sidebar-border p-3">
+              {session ? (
+                <button type="button" onClick={handleSignOut} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-[15px] font-medium hover:bg-sidebar-accent">
+                  <LogOut className="h-5 w-5" /> Sair
+                </button>
+              ) : (
+                <Link to="/auth" search={{ modo: "entrar" }} onClick={() => setMenuOpen(false)} className="flex min-h-12 items-center justify-center rounded-lg bg-sidebar-primary font-semibold text-sidebar-primary-foreground">Entrar</Link>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+        <Link to="/agendar" className="flex min-w-0 justify-center" aria-label="LA CREME BARBER — início">
+          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-11 w-auto max-w-[9rem] object-contain" />
         </Link>
-        {session ? (
-          <div className="flex shrink-0 items-center [&_button]:text-sidebar-foreground">
-            <NotificationBell userId={session.user.id} />
-            {signOutBtn}
-          </div>
-        ) : (
-          <Button asChild variant="ghost" className="min-h-11 px-3 text-sm font-semibold text-sidebar-primary hover:bg-sidebar-accent">
-            <Link to="/auth" search={{ modo: "entrar" }}>Entrar</Link>
-          </Button>
-        )}
+        <div className="flex min-w-11 shrink-0 items-center justify-end [&_button]:text-sidebar-foreground">
+          {session ? <NotificationBell userId={session.user.id} /> : (
+            <Link to="/auth" search={{ modo: "entrar" }} className="px-2 text-sm font-semibold text-sidebar-primary">Entrar</Link>
+          )}
+        </div>
       </div>
-      <nav ref={navRef} className="mx-auto flex w-full max-w-3xl snap-x gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:grid sm:auto-cols-fr sm:grid-flow-col sm:overflow-visible" aria-label="Menu principal">
-        {navItems.map((item) => (
+    </header>
+
+    {/* Mobile bottom navigation */}
+    <nav aria-label="Navegação principal" className="app-bottomnav fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <div className="mx-auto grid max-w-3xl" style={{ gridTemplateColumns: `repeat(${bottomItems.length + (hasMore ? 1 : 0)}, minmax(0, 1fr))` }}>
+        {bottomItems.map((item) => (
           <Link key={item.to} to={item.to}
-            className="flex min-h-12 min-w-[4.75rem] shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-center text-[12px] leading-tight font-semibold text-sidebar-foreground/70 hover:bg-sidebar-accent sm:min-w-0 sm:text-[13px]"
-            activeProps={{ className: "bg-sidebar-accent !text-sidebar-primary" }}>
+            className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium leading-tight text-foreground/55"
+            activeProps={{ className: "!text-brand font-semibold [&_svg]:stroke-[2.4]" }}>
             <item.icon className="h-5 w-5" />
-            {item.label}
+            <span className="max-w-full truncate">{item.label}</span>
           </Link>
         ))}
-      </nav>
-    </header>
+        {hasMore && (
+          <button type="button" onClick={() => setMenuOpen(true)} className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium text-foreground/55">
+            <MoreHorizontal className="h-5 w-5" />
+            Mais
+          </button>
+        )}
+      </div>
+    </nav>
     </>
   );
 }
