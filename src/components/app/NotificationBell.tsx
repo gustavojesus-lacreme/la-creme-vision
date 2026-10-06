@@ -13,10 +13,10 @@ export function NotificationBell({ userId }: { userId: string }) {
   const n = q.data ?? 0;
   return (
     <Link to="/notificacoes" aria-label={n ? `Notificações: ${n} não lidas` : "Notificações"}
-      className="relative grid h-11 w-11 shrink-0 place-items-center rounded-md text-foreground hover:bg-secondary">
+      className="relative grid h-11 w-11 shrink-0 place-items-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent">
       <Bell className="h-5 w-5" />
       {n > 0 && (
-        <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[11px] font-bold text-destructive-foreground">
+        <span className="absolute right-1 top-1 grid h-5 min-w-5 place-items-center rounded-full bg-sidebar-foreground px-1 text-[11px] font-bold text-sidebar">
           {n > 99 ? "99+" : n}
         </span>
       )}
