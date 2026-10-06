@@ -17,12 +17,15 @@ export type Database = {
       appointments: {
         Row: {
           barber_id: string
+          client_id: string | null
           created_at: string
+          created_by: string | null
           customer_first_name: string
           customer_last_name: string
           customer_whatsapp: string
           ends_at: string
           id: string
+          is_walkin: boolean
           service_id: string
           service_ids: string[]
           services_label: string
@@ -34,12 +37,15 @@ export type Database = {
         }
         Insert: {
           barber_id: string
+          client_id?: string | null
           created_at?: string
+          created_by?: string | null
           customer_first_name: string
           customer_last_name: string
           customer_whatsapp: string
           ends_at: string
           id?: string
+          is_walkin?: boolean
           service_id: string
           service_ids?: string[]
           services_label?: string
@@ -51,12 +57,15 @@ export type Database = {
         }
         Update: {
           barber_id?: string
+          client_id?: string | null
           created_at?: string
+          created_by?: string | null
           customer_first_name?: string
           customer_last_name?: string
           customer_whatsapp?: string
           ends_at?: string
           id?: string
+          is_walkin?: boolean
           service_id?: string
           service_ids?: string[]
           services_label?: string
@@ -72,6 +81,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -281,6 +297,47 @@ export type Database = {
           weekday?: number
         }
         Relationships: []
+      }
+      clients: {
+        Row: {
+          code: number
+          created_at: string
+          created_by: string | null
+          first_name: string
+          id: string
+          last_name: string
+          profile_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          code?: number
+          created_at?: string
+          created_by?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          profile_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          code?: number
+          created_at?: string
+          created_by?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          profile_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_entries: {
         Row: {
@@ -918,6 +975,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_walkin_client: {
+        Args: { _first: string; _last: string; _whatsapp: string }
+        Returns: {
+          code: number
+          existed: boolean
+          id: string
+        }[]
+      }
       finalize_appointment: {
         Args: {
           _appointment_id: string
@@ -996,6 +1061,7 @@ export type Database = {
         Returns: boolean
       }
       is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
+      is_staff_booker: { Args: never; Returns: boolean }
       notify: {
         Args: {
           _appt: string
@@ -1033,7 +1099,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      search_clients: {
+        Args: { _q: string }
+        Returns: {
+          code: number
+          first_name: string
+          id: string
+          last_name: string
+          whatsapp: string
+        }[]
+      }
       send_appointment_reminders: { Args: never; Returns: undefined }
+      staff_create_appointment: {
+        Args: {
+          _barber_id: string
+          _client_id: string
+          _duration: number
+          _encaixe: boolean
+          _label: string
+          _price_cents: number
+          _service_ids: string[]
+          _starts_at: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "barbeiro"
