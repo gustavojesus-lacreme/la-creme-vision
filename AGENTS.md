@@ -9,3 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 - Stock balance changes only via stock_movements (trigger-guarded); product sales go through finalize_appointment and financial_entries — single source for finance/commission.
+- Client codes come only from the clients table sequence (DB-generated, immutable); staff walk-in bookings go through staff_create_appointment so availability and pricing rules stay in the database.
