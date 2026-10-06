@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
 import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
@@ -47,6 +48,12 @@ export function AppNav() {
           ? [painel, items[2]]
         : items;
 
+  const navRef = useRef<HTMLElement>(null);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => {
+    navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [pathname, navItems.length]);
+
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -90,7 +97,7 @@ export function AppNav() {
         )}
       </div>
 
-      <nav className="mx-auto flex w-full max-w-3xl snap-x gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:grid sm:auto-cols-fr sm:grid-flow-col sm:overflow-visible" aria-label="Menu principal">
+      <nav ref={navRef} className="mx-auto flex w-full max-w-3xl snap-x gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:grid sm:auto-cols-fr sm:grid-flow-col sm:overflow-visible" aria-label="Menu principal">
         {navItems.map((item) => (
           <Link
             key={item.to}
