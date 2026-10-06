@@ -7,6 +7,7 @@ import { formatDateLong, formatTime, isServiceBlocked } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
+import { EncaixeDialog } from "@/components/app/EncaixeDialog";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   validateSearch: (s: Record<string, unknown>): { ver?: string } =>
@@ -103,6 +104,9 @@ function BarberPanel() {
   const [discount, setDiscount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
+  const [encaixe, setEncaixe] = useState(false);
+  const isBarber = access?.role === "barbeiro";
+  const actions = ACTIONS.filter((a) => a.status !== "cancelado" || access?.role === "admin");
 
   async function setStatus(id: string, status: string) {
     if (status === "finalizado") {
@@ -182,7 +186,14 @@ function BarberPanel() {
     <div className="min-h-svh bg-background">
       <AppNav />
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
-        <h1 className="font-display text-2xl font-bold text-foreground">Meu Painel</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="font-display text-2xl font-bold text-foreground">Meu Painel</h1>
+          {isBarber && (
+            <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
+              + Encaixe / agendamento
+            </button>
+          )}
+        </div>
         {previewId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand bg-secondary p-3">
             <p className="text-sm font-semibold text-foreground">
@@ -265,8 +276,8 @@ function BarberPanel() {
                   </span>
                 </div>
                 {item.status === "agendado" && !previewId && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {ACTIONS.map((action) => (
+                  <div className={`mt-3 grid gap-2 ${actions.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                    {actions.map((action) => (
                       <button
                         key={action.status}
                         type="button"
@@ -283,6 +294,10 @@ function BarberPanel() {
           })}
         </div>
       </main>
+      {encaixe && isBarber && (
+        <EncaixeDialog barberId={access.barberId} onClose={() => setEncaixe(false)}
+          onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
+      )}
       {paying && (
         <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
           <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">

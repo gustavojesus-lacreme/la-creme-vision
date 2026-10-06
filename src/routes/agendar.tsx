@@ -103,7 +103,7 @@ function BookingPage() {
       // Mesma regra de is_barber_bookable no banco: ativo, não arquivado, conta vinculada e aprovado.
       const { data, error: err } = await supabase
         .from("barbers")
-        .select("id, name, service_ids")
+        .select("id, name, service_ids, photo_url")
         .eq("active", true)
         .is("archived_at", null)
         .not("user_id", "is", null)
@@ -408,7 +408,10 @@ function BookingPage() {
                 } ${blocked ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <span>
+                  <span className="flex items-center gap-3">
+                  {item.photo_url && <img src={item.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />}
                   <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                </span>
                   <span className="block text-sm text-foreground/70">
                     {item.duration_minutes} min
                   </span>
