@@ -12,6 +12,7 @@ export type ClientRow = {
   name: string;
   whatsapp: string;
   email: string;
+  code: number | null;
   appointments: number;
   archived: boolean;
 };
@@ -21,12 +22,14 @@ export const listClients = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<ClientRow[]> => {
     if (!(await assertAdmin(context))) throw new Error("forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: profiles }, { data: roles }, { data: appts }, users] = await Promise.all([
+    const [{ data: profiles }, { data: roles }, { data: appts }, users, { data: codes }] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, first_name, last_name, whatsapp, archived_at"),
       supabaseAdmin.from("user_roles").select("user_id, role"),
       supabaseAdmin.from("appointments").select("user_id").not("user_id", "is", null),
       supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+      supabaseAdmin.from("clients").select("profile_id, code").not("profile_id", "is", null),
     ]);
+    const codeMap = new Map((codes ?? []).map((c) => [c.profile_id!, c.code]));
     const staff = new Set((roles ?? []).filter((r) => r.role !== "user").map((r) => r.user_id));
     const emails = new Map((users.data?.users ?? []).map((u) => [u.id, u.email ?? ""]));
     const counts = new Map<string, number>();
@@ -38,6 +41,7 @@ export const listClients = createServerFn({ method: "GET" })
         name: `${p.first_name} ${p.last_name}`.trim() || "Sem nome",
         whatsapp: p.whatsapp,
         email: emails.get(p.id) ?? "",
+        code: codeMap.get(p.id) ?? null,
         appointments: counts.get(p.id) ?? 0,
         archived: !!p.archived_at,
       }))

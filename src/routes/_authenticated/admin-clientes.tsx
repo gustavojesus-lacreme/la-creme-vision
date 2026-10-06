@@ -52,6 +52,7 @@ function AdminClientsPage() {
   const row = (c: ClientRow) => (
     <div key={c.id} className={card}>
       <p className="text-base font-bold text-card-foreground">{c.name}</p>
+      {c.code != null && <p className="text-sm text-foreground/70">Código: #{String(c.code).padStart(5, "0")}</p>}
       {c.whatsapp && <p className="text-sm text-foreground/70">{c.whatsapp}</p>}
       {c.email && <p className="truncate text-sm text-foreground/70">{c.email}</p>}
       <p className="mt-1 text-sm text-foreground/70">{c.appointments} agendamento(s)</p>
