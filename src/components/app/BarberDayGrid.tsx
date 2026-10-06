@@ -18,8 +18,9 @@ const spMinutes = (iso: string) => {
 type Cell = { kind: "livre" } | { kind: "cliente"; name: string } | { kind: "almoco" } | { kind: "bloqueio"; label: string };
 
 /** Agenda do dia do barbeiro em intervalos de 30 min: agendado, disponível, almoço, bloqueio/ausência. */
-export function BarberDayGrid({ barberId }: { barberId: string }) {
-  const [day, setDay] = useState(todaySP());
+export function BarberDayGrid({ barberId, day: fixedDay }: { barberId: string; day?: string }) {
+  const [ownDay, setDay] = useState(todaySP());
+  const day = fixedDay ?? ownDay;
 
   const q = useQuery({
     queryKey: ["barber-day", barberId, day],
@@ -76,11 +77,11 @@ export function BarberDayGrid({ barberId }: { barberId: string }) {
   return (
     <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-bold text-card-foreground">Agenda do dia</h2>
+        <h2 className="text-base font-bold text-card-foreground">Horários do dia</h2>
         <Link to="/ausencias" className="min-h-11 rounded-md border border-brand px-3 py-2 text-sm font-bold text-brand">Minha disponibilidade</Link>
       </div>
-      <input type="date" value={day} onChange={(e) => setDay(e.target.value || todaySP())}
-        className="mt-3 min-h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground" />
+      {!fixedDay && <input type="date" value={day} onChange={(e) => setDay(e.target.value || todaySP())}
+        className="mt-3 min-h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground" />}
       {q.isLoading && <p className="mt-3 text-sm text-foreground/70">Carregando...</p>}
       {closed && <p className="mt-3 text-sm text-foreground/70">Barbearia fechada neste dia.</p>}
       <div className="mt-3 grid gap-1">
