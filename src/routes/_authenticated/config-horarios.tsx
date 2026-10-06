@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Clock, Info, MinusCircle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SettingsShell, Toggle, hhmm, sBtnOutline, sCard, sInput } from "@/components/app/SettingsShell";
+import { SettingsShell, Toggle, sCard, sInput } from "@/components/app/SettingsShell";
 
 export const Route = createFileRoute("/_authenticated/config-horarios")({
   head: () => ({
@@ -27,9 +27,7 @@ const DAYS = [
 type Period = { o: string; c: string };
 type DayState = { open: boolean; periods: Period[] };
 
-function toHM(t: string) {
-  return t.slice(0, 5);
-}
+const toHM = (t: string) => t.slice(0, 5);
 
 function validate(periods: Period[]): string | null {
   const sorted = [...periods].sort((a, b) => a.o.localeCompare(b.o));
@@ -41,6 +39,13 @@ function validate(periods: Period[]): string | null {
     if (sorted[i]!.o < sorted[i - 1]!.c) return "Os períodos não podem se sobrepor.";
   }
   return null;
+}
+
+function summary(st: DayState) {
+  if (!st.open) return "Fechado";
+  if (!st.periods.length) return "Sem períodos definidos";
+  const n = st.periods.length;
+  return `${st.periods.map((p) => `${p.o} às ${p.c}`).join(" · ")} · ${n} ${n === 1 ? "período" : "períodos"}`;
 }
 
 function HoursPage() {
@@ -58,8 +63,10 @@ function HoursPage() {
 
   const [days, setDays] = useState<Record<number, DayState>>({});
   const [saved, setSaved] = useState<Record<number, DayState>>({});
-  const [msg, setMsg] = useState<{ day: number; text: string; ok: boolean } | null>(null);
-  const [saving, setSaving] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<number, string>>({});
+  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!q.data) return;
@@ -68,151 +75,179 @@ function HoursPage() {
       const closed = q.data.hours.find((h) => h.weekday === day)?.closed ?? true;
       next[day] = {
         open: !closed,
-        periods: q.data.periods
-          .filter((p) => p.weekday === day)
-          .map((p) => ({ o: toHM(p.opens_at), c: toHM(p.closes_at) })),
+        periods: q.data.periods.filter((p) => p.weekday === day).map((p) => ({ o: toHM(p.opens_at), c: toHM(p.closes_at) })),
       };
     }
     setDays(next);
     setSaved(next);
   }, [q.data]);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["config-hours"] });
+  const dirtyDays = useMemo(
+    () => DAYS.map(([d]) => d).filter((d) => days[d] && JSON.stringify(days[d]) !== JSON.stringify(saved[d])),
+    [days, saved],
+  );
+  const dirtyCount = dirtyDays.length;
 
-  const update = (day: number, patch: Partial<DayState>) =>
+  const blocker = useBlocker({ shouldBlockFn: () => dirtyCount > 0 && !saving, withResolver: true, enableBeforeUnload: dirtyCount > 0 });
+
+  const update = (day: number, patch: Partial<DayState>) => {
+    setFeedback(null);
+    setErrors((e) => { const { [day]: _, ...rest } = e; return rest; });
     setDays((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } as DayState }));
+  };
 
-  const isDirty = (day: number) => JSON.stringify(days[day]) !== JSON.stringify(saved[day]);
-
-  async function save(day: number) {
-    const st = days[day];
-    if (!st) return;
-    if (st.open) {
-      if (st.periods.length === 0) {
-        return setMsg({ day, text: "Adicione ao menos um período ou feche o dia.", ok: false });
-      }
-      const problem = validate(st.periods);
-      if (problem) return setMsg({ day, text: problem, ok: false });
+  async function saveAll() {
+    if (saving || dirtyCount === 0) return;
+    const errs: Record<number, string> = {};
+    for (const d of dirtyDays) {
+      const st = days[d]!;
+      if (!st.open) continue;
+      if (st.periods.length === 0) errs[d] = "Adicione ao menos um período ou feche o dia.";
+      else { const p = validate(st.periods); if (p) errs[d] = p; }
     }
-    setSaving(day);
-    setMsg(null);
-    const { error: e1 } = await supabase.from("business_hours").update({ closed: !st.open }).eq("weekday", day);
-    if (e1) {
-      setSaving(null);
-      return setMsg({ day, text: "Não foi possível salvar.", ok: false });
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      setExpanded(Number(Object.keys(errs)[0]));
+      setFeedback({ text: "Corrija os campos destacados antes de salvar.", ok: false });
+      return;
     }
-    const { error: e2 } = await supabase.from("business_periods").delete().eq("weekday", day);
-    if (e2) {
-      setSaving(null);
-      return setMsg({ day, text: "Não foi possível salvar os períodos.", ok: false });
-    }
-    if (st.open && st.periods.length > 0) {
-      const rows = [...st.periods]
-        .sort((a, b) => a.o.localeCompare(b.o))
-        .map((p) => ({ weekday: day, opens_at: p.o, closes_at: p.c }));
-      const { error: e3 } = await supabase.from("business_periods").insert(rows);
-      if (e3) {
-        setSaving(null);
-        refresh();
-        return setMsg({ day, text: e3.message.includes("sobrepõe") ? e3.message : "Não foi possível salvar os períodos.", ok: false });
+    setSaving(true);
+    setFeedback(null);
+    let failed: string | null = null;
+    for (const d of dirtyDays) {
+      const st = days[d]!;
+      const { error: e1 } = await supabase.from("business_hours").update({ closed: !st.open }).eq("weekday", d);
+      if (e1) { failed = "Não foi possível salvar."; break; }
+      const { error: e2 } = await supabase.from("business_periods").delete().eq("weekday", d);
+      if (e2) { failed = "Não foi possível salvar os períodos."; break; }
+      if (st.open && st.periods.length) {
+        const rows = [...st.periods].sort((a, b) => a.o.localeCompare(b.o)).map((p) => ({ weekday: d, opens_at: p.o, closes_at: p.c }));
+        const { error: e3 } = await supabase.from("business_periods").insert(rows);
+        if (e3) { failed = e3.message.includes("sobrepõe") ? e3.message : "Não foi possível salvar os períodos."; break; }
       }
     }
-    setSaving(null);
-    setMsg({ day, text: "Configuração salva.", ok: true });
-    refresh();
+    setSaving(false);
+    if (failed) {
+      setFeedback({ text: failed, ok: false });
+      await qc.invalidateQueries({ queryKey: ["config-hours"] });
+      return;
+    }
+    setSaved(days);
+    setFeedback({ text: "Horários atualizados com sucesso.", ok: true });
+    qc.invalidateQueries({ queryKey: ["config-hours"] });
   }
+
+  const labelCls = "block min-w-0 space-y-1 text-xs font-medium text-foreground/70";
 
   return (
     <SettingsShell title="Horários de funcionamento">
-      <p className="text-sm text-foreground/70">
-        Estes horários definem os horários oferecidos aos clientes. Faça as alterações do dia e toque em <strong>Salvar</strong> para confirmar.
+      <p className="-mt-2 text-sm leading-relaxed text-foreground/65">
+        Defina os horários em que a barbearia atende. Você pode adicionar mais de um período por dia e salvar tudo no final.
       </p>
-      <div className="grid gap-4">
+
+      <div className="grid gap-3 pb-36 lg:pb-28">
         {DAYS.map(([day, name]) => {
           const st = days[day];
           if (!st) return null;
-          const dirty = isDirty(day);
+          const isOpen = expanded === day && st.open;
+          const err = errors[day];
           return (
-            <section key={day} className={`${sCard} space-y-4`}>
-              <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-card-foreground">{name}</h2>
-                  <p className="text-sm text-foreground/60">
-                    {st.open
-                      ? st.periods.length
-                        ? st.periods.map((p) => `${hhmm(p.o)} → ${hhmm(p.c)}`).join(" · ")
-                        : "Sem períodos definidos"
-                      : "Fechado"}
-                  </p>
-                </div>
-                <Toggle checked={st.open} onChange={(v) => update(day, { open: v })} label={`${name} aberto`} />
+            <section key={day} className={`${sCard} !p-0 overflow-hidden ${err ? "border-destructive/60" : ""}`}>
+              <div className="flex items-center gap-3 px-4 py-3.5">
+                <button
+                  type="button"
+                  onClick={() => st.open && setExpanded(isOpen ? null : day)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  aria-expanded={isOpen}
+                >
+                  {st.open
+                    ? <Clock className="h-5 w-5 shrink-0 text-gold" />
+                    : <MinusCircle className="h-5 w-5 shrink-0 text-gold/70" />}
+                  <span className="min-w-0">
+                    <span className="block font-display text-base font-bold text-card-foreground">{name}</span>
+                    <span className="block text-sm text-foreground/60">{summary(st)}</span>
+                  </span>
+                </button>
+                <Toggle
+                  checked={st.open}
+                  onChange={(v) => { update(day, { open: v, periods: v && st.periods.length === 0 ? [{ o: "09:00", c: "19:00" }] : st.periods }); if (v) setExpanded(day); }}
+                  label={`${name} aberto`}
+                />
+                <button
+                  type="button"
+                  disabled={!st.open}
+                  onClick={() => setExpanded(isOpen ? null : day)}
+                  aria-label={isOpen ? "Recolher" : "Expandir"}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-foreground/50 disabled:opacity-30"
+                >
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
               </div>
 
-              {st.open && (
-                <div className="space-y-3">
-                  {st.periods.map((p, i) => (
-                    <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
-                      <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
-                        <span>Abre</span>
-                        <input
-                          type="time"
-                          className={sInput}
-                          value={p.o}
-                          onChange={(e) =>
-                            update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, o: e.target.value } : x)) })
-                          }
-                        />
-                      </label>
-                      <label className="block min-w-0 space-y-1 text-xs font-semibold text-foreground">
-                        <span>Fecha</span>
-                        <input
-                          type="time"
-                          className={sInput}
-                          value={p.c}
-                          onChange={(e) =>
-                            update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: e.target.value } : x)) })
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
-                        aria-label="Remover período"
-                        className="grid min-h-11 min-w-11 place-items-center rounded-md border border-border text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => update(day, { periods: [...st.periods, { o: "09:00", c: "19:00" }] })}
-                    className={`${sBtnOutline} inline-flex w-full items-center justify-center gap-2`}
-                  >
+              {isOpen && (
+                <div className="space-y-3 px-3 pb-4">
+                  <div className="space-y-3 rounded-lg bg-secondary/60 p-3">
+                    <p className="text-sm font-semibold text-foreground">Períodos de atendimento</p>
+                    {st.periods.map((p, i) => (
+                      <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-end gap-2">
+                        <label className={labelCls}>
+                          <span>Abre</span>
+                          <input type="time" step={300} className={`${sInput} !px-2 tabular-nums`} value={p.o}
+                            onChange={(e) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, o: e.target.value } : x)) })} />
+                        </label>
+                        <label className={labelCls}>
+                          <span>Fecha</span>
+                          <input type="time" step={300} className={`${sInput} !px-2 tabular-nums`} value={p.c}
+                            onChange={(e) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: e.target.value } : x)) })} />
+                        </label>
+                        <button type="button" aria-label="Remover período"
+                          onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
+                          className="grid h-12 w-11 place-items-center rounded-md text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {st.periods.length === 0 && <p className="text-sm text-foreground/60">Nenhum período. Adicione um abaixo.</p>}
+                  </div>
+                  <button type="button"
+                    onClick={() => { const last = st.periods[st.periods.length - 1]; update(day, { periods: [...st.periods, last ? { o: last.c, c: last.c < "19:00" ? "19:00" : last.c } : { o: "09:00", c: "19:00" }] }); }}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-brand/60 text-sm font-semibold text-brand">
                     <Plus className="h-4 w-4" /> Adicionar período
                   </button>
                 </div>
               )}
-
-              {msg?.day === day && (
-                <p className={`text-sm font-semibold ${msg.ok ? "text-primary" : "text-destructive"}`}>{msg.text}</p>
-              )}
-
-              {dirty && (
-                <button
-                  type="button"
-                  disabled={saving === day}
-                  onClick={() => save(day)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-                >
-                  <Check className="h-4 w-4" />
-                  {saving === day ? "Salvando…" : `Salvar ${name.split("-")[0]}`}
-                </button>
-              )}
+              {err && <p className="px-4 pb-3 text-sm font-semibold text-destructive">{err}</p>}
             </section>
           );
         })}
       </div>
+
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
+        <div className="mx-auto w-full max-w-3xl space-y-1.5">
+          <button type="button" onClick={saveAll} disabled={saving || dirtyCount === 0}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 text-base font-bold text-brand-foreground disabled:bg-muted disabled:text-foreground/40">
+            {saving ? "Salvando..." : dirtyCount ? `Salvar alterações (${dirtyCount})` : "Salvar alterações"}
+            {!saving && dirtyCount > 0 && <span className="h-2 w-2 rounded-full bg-gold" />}
+          </button>
+          <p className={`flex items-center justify-center gap-1.5 text-xs ${feedback ? (feedback.ok ? "text-brand" : "text-destructive") : "text-foreground/60"}`}>
+            {feedback ? feedback.text : dirtyCount ? (
+              <><span className="h-2 w-2 rounded-full bg-gold" />{dirtyCount === 1 ? "Você tem 1 dia com alterações não salvas" : `Você tem ${dirtyCount} dias com alterações não salvas`}</>
+            ) : (<><Info className="h-3.5 w-3.5" />Nenhuma alteração pendente</>)}
+          </p>
+        </div>
+      </div>
+
+      {blocker.status === "blocked" && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4">
+          <div className={`${sCard} w-full max-w-sm space-y-4`}>
+            <p className="font-display text-lg font-bold text-card-foreground">Você tem alterações não salvas.</p>
+            <div className="grid gap-2">
+              <button type="button" onClick={() => blocker.reset?.()} className="min-h-12 rounded-md bg-brand font-bold text-brand-foreground">Continuar editando</button>
+              <button type="button" onClick={() => blocker.proceed?.()} className="min-h-12 rounded-md border border-destructive/60 font-semibold text-destructive">Descartar alterações</button>
+            </div>
+          </div>
+        </div>
+      )}
     </SettingsShell>
   );
 }
