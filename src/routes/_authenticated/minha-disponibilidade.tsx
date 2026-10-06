@@ -21,8 +21,8 @@ export const Route = createFileRoute("/_authenticated/minha-disponibilidade")({
 });
 
 const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const addMin = (t: string, m: number) => { const [h, mi] = t.split(":").map(Number); const x = h * 60 + mi + m; return `${String(Math.floor(x / 60) % 24).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
-const mins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const addMin = (t: string, m: number) => { const [h = 0, mi = 0] = t.split(":").map(Number); const x = h * 60 + mi + m; return `${String(Math.floor(x / 60) % 24).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
+const mins = (t: string) => { const [h = 0, m = 0] = t.split(":").map(Number); return h * 60 + m; };
 
 function Availability({ barberId }: { barberId: string }) {
   const qc = useQueryClient();

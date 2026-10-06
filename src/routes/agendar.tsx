@@ -408,10 +408,7 @@ function BookingPage() {
                 } ${blocked ? "cursor-not-allowed opacity-40" : ""}`}
               >
                 <span>
-                  <span className="flex items-center gap-3">
-                  {item.photo_url && <img src={item.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />}
                   <span className="block text-base font-bold text-card-foreground">{item.name}</span>
-                </span>
                   <span className="block text-sm text-foreground/70">
                     {item.duration_minutes} min
                   </span>
@@ -482,7 +479,10 @@ function BookingPage() {
                   barberId === item.id ? "border-brand ring-2 ring-brand/30" : ""
                 }`}
               >
-                <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                <span className="flex items-center gap-3">
+                  {item.photo_url && <img src={item.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />}
+                  <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                </span>
                 {away && (
                   <span className="mt-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-foreground/60">
                     {`Ausente · Retorno em ${formatDayShort(returnDay(away.ends_on))}`}
