@@ -98,6 +98,67 @@ function add(a: Agg, e: Entry) {
 }
 const aggOf = (l: Entry[]) => { const a = emptyAgg(); l.forEach((e) => add(a, e)); return a; };
 
+/** Serviços de um lançamento de atendimento (1 lançamento = 1 atendimento com N serviços). */
+export type ServiceItem = { name: string; qty: number; added: boolean };
+const parseItems = (txt: string, added: boolean): ServiceItem[] =>
+  txt.split(" + ").map((t) => t.trim()).filter(Boolean).map((t) => {
+    const m = t.match(/^(\d+)x (.+)$/);
+    return m ? { name: m[2], qty: Number(m[1]), added } : { name: t, qty: 1, added };
+  });
+export function serviceItems(e: Entry): ServiceItem[] {
+  if (e.category !== "servico") return [];
+  const prefix = "Serviços adicionados na finalização:";
+  const extrasTxt = e.note?.startsWith(prefix) ? e.note.slice(prefix.length).trim() : "";
+  const extras = extrasTxt ? parseItems(extrasTxt, true) : [];
+  let base = e.description || "";
+  if (extrasTxt && base.endsWith(" + " + extrasTxt)) base = base.slice(0, -(extrasTxt.length + 3));
+  const orig = parseItems(base, false);
+  const items = [...orig, ...extras];
+  return items.length ? items : [{ name: "Serviço", qty: 1, added: false }];
+}
+const qtyOf = (e: Entry) => (e.quantity && e.quantity > 0 ? e.quantity : 1);
+/** Contagens separadas: atendimentos únicos ≠ serviços ≠ produtos ≠ planos. */
+export function counts(list: Entry[]) {
+  const inc = list.filter((e) => e.kind === "entrada" && isCounted(e));
+  const svc = inc.filter((e) => e.category === "servico");
+  const ids = new Set(svc.map((e) => e.appointment_id ?? e.id));
+  return {
+    appointments: ids.size,
+    services: svc.reduce((s, e) => s + serviceItems(e).reduce((t, i) => t + i.qty, 0), 0),
+    products: inc.filter((e) => e.category === "produto").reduce((s, e) => s + qtyOf(e), 0),
+    plans: inc.filter((e) => e.category === "plano").length,
+    productOnlySales: inc.filter((e) => e.category === "produto" && !e.appointment_id).length,
+  };
+}
+
+export type Attendance = {
+  key: string; appointmentId: string | null; client: string; barberId: string | null; occurredAt: string;
+  services: ServiceItem[]; products: { name: string; qty: number; entry: Entry }[];
+  entries: Entry[]; method: string | null;
+  servicesPaid: number; productsPaid: number; discounts: number; paid: number; fees: number; commission: number; net: number;
+};
+/** Agrupa lançamentos por atendimento (agendamento). Venda avulsa de produto/plano fica fora. */
+export function groupAttendances(all: Entry[]): Attendance[] {
+  const map = new Map<string, Attendance>();
+  for (const e of all) {
+    if (e.kind !== "entrada" || !e.appointment_id) continue;
+    let a = map.get(e.appointment_id);
+    if (!a) {
+      a = { key: e.appointment_id, appointmentId: e.appointment_id, client: e.client_name, barberId: e.barber_id, occurredAt: e.occurred_at,
+        services: [], products: [], entries: [], method: e.payment_method, servicesPaid: 0, productsPaid: 0, discounts: 0, paid: 0, fees: 0, commission: 0, net: 0 };
+      map.set(e.appointment_id, a);
+    }
+    a.entries.push(e);
+    if (e.occurred_at < a.occurredAt) a.occurredAt = e.occurred_at;
+    if (e.category === "servico") a.services.push(...serviceItems(e));
+    if (e.category === "produto") a.products.push({ name: e.description.replace(/^\d+x /, ""), qty: qtyOf(e), entry: e });
+    if (!isCounted(e)) continue;
+    if (e.category === "servico") a.servicesPaid += paid(e); else a.productsPaid += paid(e);
+    a.discounts += e.discount_cents; a.paid += paid(e); a.fees += e.fee_cents; a.commission += e.commission_cents; a.net += net(e);
+  }
+  return [...map.values()].sort((x, y) => y.occurredAt.localeCompare(x.occurredAt));
+}
+
 export function summarize(all: Entry[]) {
   const entries = all.filter(isCounted);
   const inc = entries.filter((e) => e.kind === "entrada");
@@ -121,14 +182,14 @@ export function summarize(all: Entry[]) {
     services: byCategory["servico"]?.paid ?? 0,
     products: byCategory["produto"]?.paid ?? 0,
     plans: byCategory["plano"]?.paid ?? 0,
-    appointments: inc.filter((e) => e.appointment_id).length,
+    ...(() => { const c = counts(entries); return { appointments: c.appointments, serviceCount: c.services, productCount: c.products, planCount: c.plans, productOnlySales: c.productOnlySales }; })(),
     byMethod, byCategory, byService: byItem("servico"), byProduct: byItem("produto"), byPlan: byItem("plano"), byExpense,
   };
 }
 
 export type BarberPerf = {
   id: string; name: string;
-  services: number; products: number; plans: number;
+  appointments: number; services: number; products: number; plans: number;
   /** Faturamento atribuído: serviços realizados + produtos/planos vendidos */
   totals: Agg;
   commissionBase: number; commission: number; pending: number; paid: number;
@@ -144,9 +205,7 @@ export function barberPerf(entries: Entry[], barbers: { id: string; name: string
     const comm = inc.filter((e) => e.commission_barber_id === b.id && e.commission_cents > 0);
     return {
       id: b.id, name: b.name,
-      services: mine.filter((e) => e.category === "servico").length,
-      products: mine.filter((e) => e.category === "produto").length,
-      plans: mine.filter((e) => e.category === "plano").length,
+      ...counts(mine),
       totals: aggOf(mine),
       commissionBase: comm.reduce((s, e) => s + net(e), 0),
       commission: comm.reduce((s, e) => s + e.commission_cents, 0),
@@ -171,13 +230,11 @@ export function professionalReport(all: Entry[], barberId: string) {
   const mine = all.filter((e) => e.kind === "entrada" && isCounted(e) && (attributedTo(e) === barberId || e.commission_barber_id === barberId));
   const cat = (c: string) => mine.filter((e) => e.category === c);
   const comm = (c: string) => cat(c).filter((e) => e.commission_barber_id === barberId).reduce((s, e) => s + e.commission_cents, 0);
-  const qty = (l: Entry[]) => l.reduce((s, e) => s + (e.quantity && e.quantity > 0 ? e.quantity : 1), 0);
   const t = aggOf(mine);
   const own = mine.filter((e) => e.commission_barber_id === barberId);
   return {
     entries: mine,
-    appointments: new Set(cat("servico").map((e) => e.appointment_id ?? e.id)).size,
-    services: cat("servico").length, products: qty(cat("produto")), plans: cat("plano").length,
+    ...(() => { const c = counts(cat("servico").concat(cat("produto"), cat("plano"))); return { appointments: c.appointments, services: c.services, products: c.products, plans: c.plans }; })(),
     servicesPaid: aggOf(cat("servico")).paid, productsPaid: aggOf(cat("produto")).paid, plansPaid: aggOf(cat("plano")).paid,
     gross: t.gross, discounts: t.discounts, revenue: t.paid, fees: t.fees, net: t.net,
     commService: comm("servico"), commProduct: comm("produto"), commPlan: comm("plano"),
