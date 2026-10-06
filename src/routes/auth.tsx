@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Scissors } from "lucide-react";
+import logo from "@/assets/la-creme-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
@@ -137,16 +137,12 @@ function AuthPage() {
     "min-h-12 w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center bg-background px-5 py-10">
+    <main className="grid min-h-svh bg-sidebar lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <Link to="/" aria-label="LA CREME BARBER — início" className="flex items-center justify-center px-6 pt-6 pb-4 lg:p-12">
+        <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-auto w-full max-w-[16rem] lg:max-w-md" />
+      </Link>
+      <div className="flex flex-col items-center rounded-t-3xl bg-background px-5 py-10 lg:justify-center lg:rounded-none">
       <div className="w-full max-w-sm">
-        <Link to="/" className="flex flex-col items-center text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand text-brand-foreground">
-            <Scissors className="h-6 w-6" />
-          </span>
-          <span className="mt-3 font-display text-lg font-bold text-foreground">
-            LA CREME BARBER
-          </span>
-        </Link>
 
         {mode === "visitante" ? (
           <form className="mt-6 space-y-3" onSubmit={handleGuest}>
@@ -278,6 +274,7 @@ function AuthPage() {
             </Link>
           </>
         )}
+      </div>
       </div>
     </main>
   );
