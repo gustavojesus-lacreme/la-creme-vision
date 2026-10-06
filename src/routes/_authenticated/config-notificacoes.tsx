@@ -35,7 +35,7 @@ function NotificationsPage() {
   return (
     <SettingsShell title="Notificações">
       <div className="rounded-lg border border-gold/50 bg-gold/10 p-3 text-sm text-foreground">
-        Nenhum serviço de envio (WhatsApp, e-mail ou SMS) está conectado. Nenhuma mensagem é enviada ainda; aqui você define quais avisos ficarão ativos quando o envio for conectado.
+        Os avisos ligados aparecem na central de notificações (sino no topo) de cada pessoa. Envio por WhatsApp, e-mail ou SMS ainda não está conectado.
       </div>
       {AUD.map(([aud, title]) => (
         <section key={aud} className={`${sCard} space-y-1`}>
