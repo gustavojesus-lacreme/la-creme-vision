@@ -39,7 +39,7 @@ const TABS = [
   { k: "movs", l: "Movimentações" }, { k: "ajustes", l: "Ajustes/perdas" }, { k: "baixo", l: "Estoque baixo" },
 ] as const;
 
-const card = "rounded-lg border border-border bg-card p-4";
+const card = "rounded-xl border border-border/80 bg-card p-4 shadow-card";
 const input = "min-h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 const label = "block space-y-1 text-sm font-semibold text-foreground";
 const btn = "min-h-12 rounded-md bg-brand px-4 text-base font-bold text-brand-foreground disabled:opacity-50";
