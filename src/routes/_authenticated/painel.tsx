@@ -66,7 +66,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, services(name), barbers(name, color)",
+          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, services(name), barbers(name, color)",
         )
         .gte("starts_at", today.toISOString())
         .order("starts_at", { ascending: true });
@@ -188,9 +188,9 @@ function BarberPanel() {
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-display text-2xl font-bold text-foreground">Meu Painel</h1>
-          {isBarber && (
+          {(isBarber || (access?.role === "admin" && !previewId)) && (
             <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
-              + Encaixe / agendamento
+              + Agendamento avulso
             </button>
           )}
         </div>
@@ -264,6 +264,7 @@ function BarberPanel() {
                     <p className="text-base font-bold text-card-foreground">
                       {item.customer_first_name} {item.customer_last_name}
                     </p>
+                    {item.is_walkin && <p className="text-xs font-semibold text-foreground/60">Avulso/Encaixe</p>}
                     <p className="text-sm text-foreground/70">
                       {item.services_label || item.services?.name} · {item.barbers?.name}
                     </p>
@@ -294,8 +295,8 @@ function BarberPanel() {
           })}
         </div>
       </main>
-      {encaixe && isBarber && (
-        <EncaixeDialog barberId={access.barberId} onClose={() => setEncaixe(false)}
+      {encaixe && (isBarber || access?.role === "admin") && (
+        <EncaixeDialog barberId={isBarber ? access.barberId : undefined} onClose={() => setEncaixe(false)}
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
       {paying && (
