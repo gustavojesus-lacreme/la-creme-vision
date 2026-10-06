@@ -81,7 +81,7 @@
   --radius: 0.75rem;
 
   /* Brand palette */
-  --brand: oklch(0.29 0.045 225);
+  --brand: oklch(0.29 0.055 222);
   --brand-foreground: oklch(0.98 0.005 260);
   --gold: oklch(0.76 0.12 80);
   --gold-foreground: oklch(0.18 0.02 260);
@@ -97,7 +97,7 @@
   --card-foreground: oklch(0.18 0.02 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 260);
-  --primary: oklch(0.29 0.045 225);
+  --primary: oklch(0.29 0.055 222);
   --primary-foreground: oklch(0.98 0.005 260);
   --secondary: oklch(0.955 0.006 220);
   --secondary-foreground: oklch(0.18 0.02 260);
@@ -115,11 +115,11 @@
   --chart-3: oklch(0.18 0.02 260);
   --chart-4: oklch(0.55 0.05 260);
   --chart-5: oklch(0.65 0.08 260);
-  --sidebar: oklch(0.25 0.04 225);
+  --sidebar: oklch(0.29 0.055 222);
   --sidebar-foreground: oklch(0.93 0.01 220);
   --sidebar-primary: oklch(0.76 0.12 80);
   --sidebar-primary-foreground: oklch(0.22 0.03 230);
-  --sidebar-accent: oklch(0.32 0.045 225);
+  --sidebar-accent: oklch(0.34 0.055 222);
   --sidebar-accent-foreground: oklch(0.97 0.01 85);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.45 0.12 210);

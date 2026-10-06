@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Scissors } from "lucide-react";
+import logo from "@/assets/la-creme-logo.png.asset.json";
 import { useSession } from "@/hooks/useSession";
 import { readGuest } from "@/lib/guest";
 
@@ -34,22 +34,18 @@ function EntryPage() {
   }, [session, loading, navigate]);
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center bg-background px-5 py-10">
+    <main className="flex min-h-svh flex-col items-center justify-center bg-sidebar px-5 py-10">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-xl bg-brand text-brand-foreground">
-            <Scissors className="h-7 w-7" />
-          </span>
-          <h1 className="mt-4 font-display text-2xl font-bold tracking-tight text-foreground">
-            LA CREME BARBER
-          </h1>
+          <h1 className="sr-only">LA CREME BARBER</h1>
+          <img src={logo.url} alt="LA CREME BARBER" className="h-auto w-full max-w-xs" />
         </div>
 
         <div className="mt-8 space-y-3">
           <Link
             to="/auth"
             search={{ modo: "entrar" }}
-            className="flex min-h-13 w-full items-center justify-center rounded-md bg-brand px-6 text-base font-bold text-brand-foreground"
+            className="flex min-h-13 w-full items-center justify-center rounded-lg bg-gold px-6 text-base font-bold text-gold-foreground"
           >
             Entrar
           </Link>
