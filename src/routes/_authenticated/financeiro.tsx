@@ -9,7 +9,7 @@ import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, PERIODS, brl, periodRange, rangeToIso, summarize, toCents,
   barberPerf, adminTotals, paid, net, pct,
   type Entry, type PaymentMethod, type PeriodKey, type CommissionSettings,
-  isCounted, professionalReport, TEAM_ROLE_LABEL,
+  isCounted, professionalReport, TEAM_ROLE_LABEL, groupAttendances, type Attendance,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
 
@@ -199,7 +199,12 @@ function ResultBlock({ entries, showCount }: { entries: Entry[]; showCount?: boo
   const s = summarize(entries);
   return (
     <div>
-      {showCount && <Row k="Atendimentos" v={String(s.appointments)} />}
+      {showCount && <>
+        <Row k="Atendimentos" v={String(s.appointments)} />
+        <Row k="Serviços realizados" v={String(s.serviceCount)} />
+        <Row k="Produtos vendidos" v={String(s.productCount)} />
+        <Row k="Planos vendidos" v={String(s.planCount)} />
+      </>}
       <Row k="Faturamento bruto" v={brl(s.gross)} />
       <Row k="(−) Descontos" v={brl(s.discounts)} />
       <Row k="(−) Taxas de pagamento" v={brl(s.fees)} />
@@ -229,6 +234,12 @@ function Summary({ entries, barbers, methods }: Ctx) {
   const maxCat = Math.max(s.services, s.products, s.plans);
   return (
     <>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat title="Atendimentos" value={String(s.appointments)} tone="brand" />
+        <Stat title="Serviços" value={String(s.serviceCount)} />
+        <Stat title="Produtos" value={String(s.productCount)} />
+        <Stat title="Planos" value={String(s.planCount)} />
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat title="Faturamento bruto" value={brl(s.gross)} tone="brand" />
         <Stat title="Descontos" value={brl(s.discounts)} />
@@ -302,7 +313,7 @@ function Overview(ctx: Ctx) {
           {(sel ? [sel] : perf).map((p) => (
             <div key={p.id} className="rounded-md border border-border p-3">
               <p className="font-bold text-card-foreground">{p.name}</p>
-              <p className="text-xs text-foreground/60">{p.services} serviço(s) · {p.products} produto(s) · {p.plans} plano(s)</p>
+              <p className="text-xs text-foreground/60">{p.appointments} atendimento(s) · {p.services} serviço(s) · {p.products} produto(s) · {p.plans} plano(s)</p>
               <div className="mt-2">
                 <Row k="Faturamento bruto" v={brl(p.totals.gross)} />
                 <Row k="Descontos" v={brl(p.totals.discounts)} />
@@ -368,6 +379,7 @@ function Movements({ entries, barbers, methods, settings }: Ctx) {
   const qc = useQueryClient();
   const [f, setF] = useState({ kind: "", category: "", barber: "", seller: "", method: "" });
   const [adding, setAdding] = useState(false);
+  const [view, setView] = useState<"atend" | "lanc">("atend");
   const [confirmRefund, setConfirmRefund] = useState<string | null>(null);
   const [refundErr, setRefundErr] = useState<string | null>(null);
   async function refund(id: string) {
@@ -387,6 +399,11 @@ function Movements({ entries, barbers, methods, settings }: Ctx) {
     <div className="space-y-4">
       <button type="button" className={`${btn} w-full`} onClick={() => setAdding(!adding)}>+ Registrar venda de produto ou plano</button>
       {adding && <SaleForm barbers={barbers} methods={methods} settings={settings} onDone={() => { setAdding(false); qc.invalidateQueries({ queryKey: ["fin-entries"] }); }} />}
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" className={view === "atend" ? btn : btnGhost} onClick={() => setView("atend")}>Atendimentos</button>
+        <button type="button" className={view === "lanc" ? btn : btnGhost} onClick={() => setView("lanc")}>Todos os lançamentos</button>
+      </div>
+      {view === "atend" ? <Attendances entries={entries} barbers={barbers} methods={methods} /> : <>
       <section className={`${card} grid gap-2 sm:grid-cols-2`}>
         <select className={input} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}><option value="">Entradas e saídas</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select>
         <select className={input} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}><option value="">Todas as categorias</option>{cats.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
@@ -417,6 +434,75 @@ function Movements({ entries, barbers, methods, settings }: Ctx) {
           )}
         </EntryRow>
       ))}</div>
+      </>}
+    </div>
+  );
+}
+
+function Attendances({ entries, barbers, methods }: { entries: Entry[]; barbers: Barber[]; methods: PaymentMethod[] }) {
+  const list = groupAttendances(entries);
+  const s = summarize(entries);
+  const bname = (id: string | null) => barbers.find((b) => b.id === id)?.name ?? "—";
+  const mLabel = (id: string | null) => methods.find((m) => m.id === id)?.label ?? id ?? "—";
+  const solo = entries.filter((e) => e.kind === "entrada" && !e.appointment_id && e.category !== "servico");
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat title="Atendimentos" value={String(s.appointments)} tone="brand" />
+        <Stat title="Serviços" value={String(s.serviceCount)} />
+        <Stat title="Produtos" value={String(s.productCount)} />
+        <Stat title="Vendas avulsas" value={String(solo.length)} />
+      </div>
+      {list.length === 0 && <p className="text-base text-foreground/70">Nenhum atendimento no período.</p>}
+      {list.map((a: Attendance) => {
+        const allRefunded = a.entries.every((e) => e.refunded_at);
+        return (
+          <div key={a.key} className={card}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words font-bold text-card-foreground">{a.client || "Cliente"}</p>
+                <p className="text-xs text-foreground/60">{new Date(a.occurredAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })} · Barbeiro: {bname(a.barberId)} · {mLabel(a.method)}</p>
+              </div>
+              <p className="shrink-0 font-bold text-brand">{brl(a.paid)}</p>
+            </div>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-foreground/60">Serviços</p>
+                {a.services.length === 0 && <p className="text-sm text-foreground/60">—</p>}
+                {a.services.map((i, n) => (
+                  <p key={n} className="text-sm">• {i.qty > 1 ? `${i.qty}x ` : ""}{i.name} <span className={i.added ? "text-gold" : "text-foreground/60"}>— {i.added ? "adicional" : "agendado"}</span></p>
+                ))}
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-foreground/60">Produtos</p>
+                {a.products.length === 0 && <p className="text-sm text-foreground/60">—</p>}
+                {a.products.map((p) => (
+                  <p key={p.entry.id} className={`text-sm ${p.entry.refunded_at ? "line-through text-foreground/50" : ""}`}>• {p.name} — {p.qty} unidade{p.qty > 1 ? "s" : ""}{p.entry.refunded_at ? " (estornado)" : ""}</p>
+                ))}
+              </div>
+            </div>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 border-t border-border pt-2 text-xs text-foreground/70 sm:grid-cols-4">
+              <div>Serviços: <b>{brl(a.servicesPaid)}</b></div>
+              <div>Produtos: <b>{brl(a.productsPaid)}</b></div>
+              <div>Desconto: <b>{brl(a.discounts)}</b></div>
+              <div>Total pago: <b>{brl(a.paid)}</b></div>
+              <div>Taxa: <b>{brl(a.fees)}</b></div>
+              <div>Comissão: <b>{brl(a.commission)}</b></div>
+              <div>Valor líquido: <b>{brl(a.net)}</b></div>
+              <div>Atendimento: <b>1</b></div>
+            </dl>
+            {allRefunded && <p className="mt-1 text-xs font-bold text-destructive">Estornado · fora dos totais</p>}
+          </div>
+        );
+      })}
+      {solo.length > 0 && (
+        <section className={`${card} space-y-1`}>
+          <h3 className="text-sm font-bold">Vendas sem atendimento</h3>
+          {solo.map((e) => (
+            <Row key={e.id} k={`${e.category === "produto" ? "Venda de produto" : "Venda de plano"} · ${e.description}${e.client_name ? ` · ${e.client_name}` : ""}${e.refunded_at ? " (estornado)" : ""}`} v={brl(paid(e))} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

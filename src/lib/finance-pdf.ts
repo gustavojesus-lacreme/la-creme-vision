@@ -116,7 +116,10 @@ export async function generateFinancePdf(opts: {
 
   section("RESUMO");
   table(["Item", "Valor"], [
-    ...(kind === "diario" ? [["Atendimentos", String(s.appointments)]] : []),
+    ["Atendimentos", String(s.appointments)],
+    ["Serviços realizados", String(s.serviceCount)],
+    ["Produtos vendidos", String(s.productCount)],
+    ["Planos vendidos", String(s.planCount)],
     ["Faturamento bruto", brl(s.gross)],
     ["(-) Descontos", brl(s.discounts)],
     ["(=) Valor pago pelos clientes", brl(s.paid)],
