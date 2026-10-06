@@ -8,15 +8,15 @@ import { sCard, sBtn, sBtnOutline, sInput, sLabel } from "@/components/app/Setti
 export const Route = createFileRoute("/_authenticated/meu-perfil")({
   head: () => ({
     meta: [
-      { title: "Meu perfil | LA CREME BARBER" },
+      { title: "Minha conta | LA CREME BARBER" },
       { name: "description", content: "Dados pessoais, foto e segurança da conta do barbeiro." },
-      { property: "og:title", content: "Meu perfil | LA CREME BARBER" },
+      { property: "og:title", content: "Minha conta | LA CREME BARBER" },
       { property: "og:description", content: "Dados pessoais e segurança." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <BarberShell title="Meu perfil" back>{(id) => <Profile barberId={id} />}</BarberShell>,
+  component: () => <BarberShell title="Minha conta" back>{(id) => <Profile barberId={id} />}</BarberShell>,
 });
 
 /** Reduz a foto para 256px (JPEG) antes de salvar. */

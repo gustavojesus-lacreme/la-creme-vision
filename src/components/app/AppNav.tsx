@@ -13,7 +13,7 @@ import { NotificationBell } from "@/components/app/NotificationBell";
 const items = [
   { to: "/agendar", label: "Agendar", icon: CalendarPlus },
   { to: "/meus-agendamentos", label: "Agendamentos", icon: CalendarCheck },
-  { to: "/minha-conta", label: "Minha conta", icon: User },
+  { to: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
 export function AppNav() {
@@ -31,7 +31,7 @@ export function AppNav() {
     access?.role === "admin"
       ? [
           painel,
-          ...items,
+          items[0], items[1],
           { to: "/financeiro" as const, label: "Financeiro", icon: Wallet },
           { to: "/estoque" as const, label: "Estoque", icon: Package },
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
