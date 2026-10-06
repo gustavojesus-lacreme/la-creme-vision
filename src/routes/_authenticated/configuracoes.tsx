@@ -5,7 +5,9 @@ import {
   ListChecks, Bell, SlidersHorizontal, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { AppNav } from "@/components/app/AppNav";
-import { isBarberAdmin } from "@/lib/admin";
+import { getPanelAccess } from "@/lib/admin";
+import { supabase } from "@/integrations/supabase/client";
+import { User as UserIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -90,14 +92,17 @@ function Row({ item }: { item: Item }) {
 }
 
 function SettingsPage() {
-  const adminQuery = useQuery({ queryKey: ["is-admin"], queryFn: isBarberAdmin });
+  const accessQuery = useQuery({ queryKey: ["panel-access-page"], queryFn: getPanelAccess });
+  const role = accessQuery.data?.role;
+  const adminQuery = { isLoading: accessQuery.isLoading, data: accessQuery.isLoading ? undefined : role === "admin" };
   return (
     <div className="min-h-svh bg-background">
       <AppNav />
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Configurações</h1>
         {adminQuery.isLoading && <p className="text-base text-foreground/70">Carregando...</p>}
-        {adminQuery.data === false && (
+        {role === "barbeiro" && <BarberSettings />}
+        {adminQuery.data === false && role !== "barbeiro" && (
           <div className="rounded-lg border border-border bg-card p-4 text-center text-base text-foreground/80">
             Acesso restrito ao administrador.
           </div>
@@ -116,3 +121,45 @@ function SettingsPage() {
   );
 }
 
+
+const barberGroups: { title: string; items: { icon: LucideIcon; title: string; desc: string; to: "/meu-perfil" | "/minha-disponibilidade" | "/ausencias" }[] }[] = [
+  { title: "Meu perfil", items: [{ icon: UserIcon, title: "Dados pessoais e segurança", desc: "Nome, WhatsApp, foto, e-mail e senha", to: "/meu-perfil" }] },
+  {
+    title: "Minha disponibilidade",
+    items: [
+      { icon: Clock, title: "Meu horário e almoço", desc: "Dias de trabalho, horário e início do almoço", to: "/minha-disponibilidade" },
+      { icon: CalendarOff, title: "Minhas ausências", desc: "Emergência, afastamento médico e bloqueios", to: "/ausencias" },
+    ],
+  },
+];
+
+function BarberSettings() {
+  const ns = useQuery({
+    queryKey: ["notification-settings-barber"],
+    queryFn: async () => (await supabase.from("notification_settings").select("key, label, enabled").eq("audience", "barbeiro").order("sort_order")).data ?? [],
+  });
+  return (
+    <>
+      {barberGroups.map((g) => (
+        <section key={g.title} className="space-y-2">
+          <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">{g.title}</h2>
+          <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+            {g.items.map((it) => <Row key={it.title} item={it as unknown as Item} />)}
+          </div>
+        </section>
+      ))}
+      <section className="space-y-2">
+        <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">Notificações</h2>
+        <div className="divide-y divide-border rounded-lg border border-border bg-card">
+          {ns.data?.map((n) => (
+            <div key={n.key} className="flex min-h-12 items-center justify-between gap-3 px-4">
+              <span className="text-base">{n.label}</span>
+              <span className={`text-sm font-semibold ${n.enabled ? "text-brand" : "text-foreground/50"}`}>{n.enabled ? "Ativa" : "Desativada"}</span>
+            </div>
+          ))}
+          <p className="px-4 py-3 text-xs text-foreground/60">Definido pela administração.</p>
+        </div>
+      </section>
+    </>
+  );
+}

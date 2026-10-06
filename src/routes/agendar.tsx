@@ -103,7 +103,7 @@ function BookingPage() {
       // Mesma regra de is_barber_bookable no banco: ativo, não arquivado, conta vinculada e aprovado.
       const { data, error: err } = await supabase
         .from("barbers")
-        .select("id, name, service_ids")
+        .select("id, name, service_ids, photo_url")
         .eq("active", true)
         .is("archived_at", null)
         .not("user_id", "is", null)
@@ -479,7 +479,10 @@ function BookingPage() {
                   barberId === item.id ? "border-brand ring-2 ring-brand/30" : ""
                 }`}
               >
-                <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                <span className="flex items-center gap-3">
+                  {item.photo_url && <img src={item.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />}
+                  <span className="block text-base font-bold text-card-foreground">{item.name}</span>
+                </span>
                 {away && (
                   <span className="mt-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-foreground/60">
                     {`Ausente · Retorno em ${formatDayShort(returnDay(away.ends_on))}`}

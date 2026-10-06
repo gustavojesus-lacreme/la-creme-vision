@@ -778,7 +778,7 @@ function ProfessionalReport(ctx: Ctx & { fixedId?: string }) {
             <Row k="Pendente" v={brl(r.pending)} />
             <Row k="Total de comissão a receber" v={brl(r.commission)} bold />
           </section>
-          <button type="button" disabled={busy} onClick={pdf} className={`${btn} w-full`}>{busy ? "Gerando..." : "Gerar PDF"}</button>
+          {!ctx.fixedId && <button type="button" disabled={busy} onClick={pdf} className={`${btn} w-full`}>{busy ? "Gerando..." : "Gerar PDF"}</button>}
           {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
         </>
       )}
