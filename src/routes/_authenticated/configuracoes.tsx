@@ -23,14 +23,17 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: SettingsPage,
 });
 
+const accountGroup = { title: "Minha Conta", items: [{ icon: UserIcon, title: "Minha conta", desc: "Dados pessoais, e-mail, senha, segurança e sair", to: "/minha-conta" as const }] };
+
 type Item = {
   icon: LucideIcon;
   title: string;
   desc: string;
-  to?: "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
+  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
 };
 
 const groups: { title: string; items: Item[] }[] = [
+  accountGroup,
   {
     title: "Operação",
     items: [
@@ -103,9 +106,12 @@ function SettingsPage() {
         {adminQuery.isLoading && <p className="text-base text-foreground/70">Carregando...</p>}
         {role === "barbeiro" && <BarberSettings />}
         {adminQuery.data === false && role !== "barbeiro" && (
-          <div className="rounded-lg border border-border bg-card p-4 text-center text-base text-foreground/80">
-            Acesso restrito ao administrador.
-          </div>
+          <section className="space-y-2">
+            <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">{accountGroup.title}</h2>
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              {accountGroup.items.map((it) => <Row key={it.title} item={it} />)}
+            </div>
+          </section>
         )}
         {adminQuery.data === true &&
           groups.map((g) => (
@@ -123,11 +129,11 @@ function SettingsPage() {
 
 
 const barberGroups: { title: string; items: { icon: LucideIcon; title: string; desc: string; to: "/meu-perfil" | "/minha-disponibilidade" | "/ausencias" }[] }[] = [
-  { title: "Meu perfil", items: [{ icon: UserIcon, title: "Dados pessoais e segurança", desc: "Nome, WhatsApp, foto, e-mail e senha", to: "/meu-perfil" }] },
+  { title: "Minha Conta", items: [{ icon: UserIcon, title: "Minha conta", desc: "Dados pessoais, foto, e-mail, senha, segurança e sair", to: "/meu-perfil" }] },
   {
-    title: "Minha disponibilidade",
+    title: "Disponibilidade",
     items: [
-      { icon: Clock, title: "Meu horário e almoço", desc: "Dias de trabalho, horário e início do almoço", to: "/minha-disponibilidade" },
+      { icon: Clock, title: "Minha disponibilidade", desc: "Dias de trabalho, horário e início do almoço", to: "/minha-disponibilidade" },
       { icon: CalendarOff, title: "Minhas ausências", desc: "Emergência, afastamento médico e bloqueios", to: "/ausencias" },
     ],
   },
