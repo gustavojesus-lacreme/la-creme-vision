@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS barbers_notify_pending ON public.barbers;
+CREATE TRIGGER barbers_notify_pending AFTER INSERT OR UPDATE OF user_id, approved_at ON public.barbers FOR EACH ROW EXECUTE FUNCTION public.notify_barber_pending();
