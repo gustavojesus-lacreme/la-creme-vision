@@ -183,7 +183,9 @@ export type Database = {
           email: string | null
           id: string
           last_name: string
+          lunch_start: string | null
           name: string
+          photo_url: string | null
           service_ids: string[]
           sort_order: number
           specialty: string
@@ -202,7 +204,9 @@ export type Database = {
           email?: string | null
           id?: string
           last_name?: string
+          lunch_start?: string | null
           name: string
+          photo_url?: string | null
           service_ids?: string[]
           sort_order?: number
           specialty?: string
@@ -221,7 +225,9 @@ export type Database = {
           email?: string | null
           id?: string
           last_name?: string
+          lunch_start?: string | null
           name?: string
+          photo_url?: string | null
           service_ids?: string[]
           sort_order?: number
           specialty?: string
@@ -851,6 +857,19 @@ export type Database = {
     }
     Functions: {
       barber_commissionable: { Args: { _barber_id: string }; Returns: boolean }
+      barber_create_appointment: {
+        Args: {
+          _duration: number
+          _first: string
+          _label: string
+          _last: string
+          _price_cents: number
+          _service_ids: string[]
+          _starts_at: string
+          _whatsapp: string
+        }
+        Returns: string
+      }
       finalize_appointment: {
         Args: {
           _appointment_id: string
@@ -886,6 +905,15 @@ export type Database = {
         Returns: {
           ends_at: string
           starts_at: string
+        }[]
+      }
+      get_my_clients: {
+        Args: never
+        Returns: {
+          client_name: string
+          history: Json
+          last_visit: string
+          visits: number
         }[]
       }
       get_public_settings: {
