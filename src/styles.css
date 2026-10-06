@@ -90,6 +90,16 @@
   --off-white: oklch(0.97 0.005 260);
   --off-white-foreground: oklch(0.18 0.02 260);
 
+  /* Cores automáticas por barbeiro (harmonizam com petróleo + dourado) */
+  --barber-1: oklch(0.52 0.08 205);  /* petróleo claro */
+  --barber-2: oklch(0.66 0.12 75);   /* dourado ocre */
+  --barber-3: oklch(0.55 0.10 35);   /* terracota */
+  --barber-4: oklch(0.56 0.07 150);  /* sálvia */
+  --barber-5: oklch(0.50 0.08 330);  /* ameixa */
+  --barber-6: oklch(0.52 0.08 255);  /* azul ardósia */
+  --barber-7: oklch(0.58 0.08 110);  /* oliva */
+  --barber-8: oklch(0.58 0.09 15);   /* rosa argila */
+
   /* Semantic mapping — light mode */
   --background: oklch(0.975 0.004 220);
   --foreground: oklch(0.22 0.02 230);

@@ -1,0 +1,1 @@
+GRANT SELECT (client_id, created_by, is_walkin) ON public.appointments TO authenticated;

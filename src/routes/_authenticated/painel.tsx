@@ -3,11 +3,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { formatDateLong, formatTime, isServiceBlocked } from "@/lib/booking";
+import { formatTime, isServiceBlocked } from "@/lib/booking";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
 import { EncaixeDialog } from "@/components/app/EncaixeDialog";
+import { todaySP } from "@/lib/absences";
+import { buildBarberColors, tint } from "@/lib/barber-colors";
+
+const addDays = (d: string, n: number) => {
+  const t = new Date(`${d}T12:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+};
+const spStartISO = (d: string) => new Date(`${d}T00:00:00-03:00`).toISOString();
+const spDate = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
+const dayPart = (d: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", ...o }).format(new Date(`${d}T12:00:00Z`)).replace(".", "");
 
 export const Route = createFileRoute("/_authenticated/painel")({
   validateSearch: (s: Record<string, unknown>): { ver?: string } =>
@@ -57,18 +68,29 @@ function BarberPanel() {
     queryFn: async () => (await supabase.from("barbers").select("name").eq("id", previewId!).maybeSingle()).data?.name ?? "",
   });
 
+  const [day, setDay] = useState(todaySP());
+  const stripStart = (() => { const t = todaySP(); const s3 = addDays(day, -3); return s3 < t ? t : s3; })();
+  const strip = Array.from({ length: 7 }, (_, i) => addDays(stripStart, i));
+
+  const barbersQuery = useQuery({
+    queryKey: ["panel-barber-colors"],
+    enabled: access != null && !pending,
+    queryFn: async () => (await supabase.from("barbers").select("id, name, color, sort_order, created_at, active, approved_at, archived_at").order("sort_order").order("created_at")).data ?? [],
+  });
+  const colors = buildBarberColors(barbersQuery.data ?? []);
+  const colorOf = (id: string) => colors.get(id) ?? "var(--barber-1)";
+
   const appointmentsQuery = useQuery({
-    queryKey: ["panel-appointments", barberFilter ?? "all"],
+    queryKey: ["panel-appointments", barberFilter ?? "all", stripStart],
     enabled: access != null && !pending,
     queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       let query = supabase
         .from("appointments")
         .select(
           "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, services(name), barbers(name, color)",
         )
-        .gte("starts_at", today.toISOString())
+        .gte("starts_at", spStartISO(stripStart))
+        .lt("starts_at", spStartISO(addDays(stripStart, 7)))
         .order("starts_at", { ascending: true });
       if (barberFilter) {
         query = query.eq("barber_id", barberFilter);
@@ -78,6 +100,9 @@ function BarberPanel() {
       return data ?? [];
     },
   });
+  const weekAppts = appointmentsQuery.data ?? [];
+  const dayAppts = weekAppts.filter((a) => spDate(a.starts_at) === day);
+  const countOn = (d: string) => weekAppts.filter((a) => a.status !== "cancelado" && spDate(a.starts_at) === d).length;
 
   const methodsQuery = useQuery({
     queryKey: ["panel-methods"],
@@ -161,12 +186,12 @@ function BarberPanel() {
     if (q <= 0) delete next[id]; else next[id] = q;
     setCart(next);
   }
-  type BarberRef = { name: string; color?: string | null } | null;
+  type BarberRow = { id: string; name: string; active?: boolean; approved_at?: string | null; archived_at?: string | null };
+  const teamBarbers = ((barbersQuery.data ?? []) as BarberRow[]).filter((b) => b.active && b.approved_at && !b.archived_at);
   const legend = !barberFilter
-    ? Array.from(new Map((appointmentsQuery.data ?? []).map((a) => [a.barber_id, (a.barbers as BarberRef)])).entries())
-        .filter(([, b]) => b)
+    ? teamBarbers.map((b) => ({ id: b.id, name: b.name, count: dayAppts.filter((x) => x.barber_id === b.id && x.status !== "cancelado").length }))
     : [];
-  const shown = (appointmentsQuery.data ?? []).filter((a) => !colorFilter || a.barber_id === colorFilter);
+  const shown = dayAppts.filter((a) => !colorFilter || a.barber_id === colorFilter);
   const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
@@ -230,60 +255,113 @@ function BarberPanel() {
           </div>
         )}
 
-        {access != null && !pending && appointmentsQuery.data?.length === 0 && (
-          <div className="rounded-lg border border-border bg-card p-6 text-center">
-            <p className="text-base text-foreground/80">Nenhum agendamento a partir de hoje.</p>
+        {access != null && !pending && (
+          <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-sm" aria-label="Escolher o dia">
+            <div className="flex items-center gap-2">
+              <button type="button" aria-label="Dia anterior" onClick={() => setDay(addDays(day, -1))}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-input text-lg font-bold text-foreground">‹</button>
+              <label className="relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-md bg-brand px-3 text-center text-brand-foreground">
+                <span className="block truncate text-sm font-bold first-letter:uppercase">
+                  {day === todaySP() ? "Hoje · " : day === addDays(todaySP(), 1) ? "Amanhã · " : ""}
+                  {dayPart(day, { weekday: "long", day: "2-digit", month: "short" })}
+                </span>
+                <input type="date" aria-label="Abrir calendário" value={day} onChange={(e) => e.target.value && setDay(e.target.value)}
+                  className="absolute inset-0 cursor-pointer opacity-0" />
+              </label>
+              <button type="button" aria-label="Próximo dia" onClick={() => setDay(addDays(day, 1))}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-input text-lg font-bold text-foreground">›</button>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {strip.map((d) => {
+                const n = countOn(d);
+                const sel = d === day;
+                return (
+                  <button key={d} type="button" onClick={() => setDay(d)} aria-pressed={sel}
+                    className={`flex min-h-16 flex-col items-center justify-center rounded-lg border text-xs ${sel ? "border-brand bg-brand text-brand-foreground" : "border-border bg-background text-foreground"}`}>
+                    <span className="uppercase opacity-70">{dayPart(d, { weekday: "short" })}</span>
+                    <span className="text-base font-bold tabular-nums">{dayPart(d, { day: "2-digit" })}</span>
+                    <span className={`mt-0.5 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${sel ? "bg-gold text-gold-foreground" : n ? "bg-secondary text-foreground" : "text-foreground/40"}`}>
+                      {n || "livre"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-center text-xs text-foreground/60">O número mostra quantos atendimentos há em cada dia — menos atendimentos, mais horários livres.</p>
+          </section>
+        )}
+
+        {appointmentsQuery.isError && (
+          <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm text-destructive">Não foi possível carregar os agendamentos. Atualize a página.</div>
+        )}
+
+        {legend.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar por barbeiro">
+            <button type="button" onClick={() => setColorFilter("")}
+              className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold ${!colorFilter ? "border-brand bg-brand text-brand-foreground" : "border-input bg-card text-foreground/80"}`}>
+              Todos <span className="tabular-nums opacity-80">{legend.reduce((t, b) => t + b.count, 0)}</span>
+            </button>
+            {legend.map((b) => {
+              const c = colorOf(b.id);
+              const on = colorFilter === b.id;
+              return (
+                <button key={b.id} type="button" onClick={() => setColorFilter(on ? "" : b.id)}
+                  className="flex min-h-10 shrink-0 items-center gap-2 rounded-full border-2 px-3 text-xs font-semibold text-foreground"
+                  style={{ borderColor: on ? c : "transparent", backgroundColor: tint(c, on ? 18 : 10) }}>
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: c }} />
+                  {b.name}
+                  <span className="rounded-full px-1.5 text-[11px] font-bold tabular-nums text-brand-foreground" style={{ backgroundColor: c }}>{b.count}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} />}
-
-        {legend.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2" aria-label="Legenda e filtro por barbeiro">
-            <button type="button" onClick={() => setColorFilter("")}
-              className={`min-h-9 rounded-full border px-3 text-xs font-semibold ${!colorFilter ? "border-brand text-brand" : "border-input text-foreground/70"}`}>Todos</button>
-            {legend.map(([id, b]) => (
-              <button key={id} type="button" onClick={() => setColorFilter(colorFilter === id ? "" : id)}
-                className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold ${colorFilter === id ? "border-brand text-brand" : "border-input text-foreground/80"}`}>
-                <span className="h-2.5 w-2.5 rounded-full border border-border" style={{ backgroundColor: b?.color || "transparent" }} />
-                {b?.name}
-              </button>
-            ))}
+        {access != null && !pending && !appointmentsQuery.isLoading && !appointmentsQuery.isError && shown.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
+            <p className="text-base text-foreground/80">Nenhum agendamento neste dia.</p>
           </div>
         )}
 
         <div className="grid gap-3">
           {shown.map((item) => {
             const when = new Date(item.starts_at);
-            const bc = !barberFilter ? (item.barbers as BarberRef)?.color : null;
+            const c = colorOf(item.barber_id);
+            const faded = item.status === "cancelado" || item.status === "nao_compareceu";
             return (
-              <div key={item.id} className="rounded-lg border border-border bg-card p-4"
-                style={bc ? { borderLeftColor: bc, borderLeftWidth: 4 } : undefined}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-base font-bold text-card-foreground">
-                      {item.customer_first_name} {item.customer_last_name}
-                    </p>
-                    {item.is_walkin && <p className="text-xs font-semibold text-foreground/60">Avulso/Encaixe</p>}
-                    <p className="text-sm text-foreground/70">
-                      {item.services_label || item.services?.name} · {item.barbers?.name}
-                    </p>
-                    <p className="text-sm text-foreground/70">
-                      {formatDateLong(when)} · {formatTime(when)} – {formatTime(new Date(item.ends_at))}
-                    </p>
+              <div key={item.id} className={`overflow-hidden rounded-xl border border-border shadow-sm ${faded ? "opacity-60" : ""}`}
+                style={{ backgroundColor: tint(c, 7), borderLeftColor: c, borderLeftWidth: 6 }}>
+                <div className="flex items-stretch gap-3 p-4">
+                  <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg text-brand-foreground" style={{ backgroundColor: c }}>
+                    <span className="text-base font-bold tabular-nums">{formatTime(when)}</span>
+                    <span className="text-[10px] tabular-nums opacity-85">{formatTime(new Date(item.ends_at))}</span>
                   </div>
-                  <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-xs font-bold text-foreground">
-                    {STATUS_LABELS[item.status] ?? item.status}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 truncate text-base font-bold text-card-foreground">
+                        {item.customer_first_name} {item.customer_last_name}
+                      </p>
+                      <span className="shrink-0 rounded-md bg-card px-2 py-0.5 text-[11px] font-bold text-foreground">
+                        {STATUS_LABELS[item.status] ?? item.status}
+                      </span>
+                    </div>
+                    <p className="truncate text-sm text-foreground/75">{item.services_label || item.services?.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: c }}>
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c }} />{item.barbers?.name}
+                      </span>
+                      {item.is_walkin && <span className="rounded-full border border-gold px-2 py-0.5 font-semibold text-foreground">Avulso/Encaixe</span>}
+                    </div>
+                  </div>
                 </div>
                 {item.status === "agendado" && !previewId && (
-                  <div className={`mt-3 grid gap-2 ${actions.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                  <div className={`grid gap-2 border-t border-border bg-card/70 p-3 ${actions.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
                     {actions.map((action) => (
                       <button
                         key={action.status}
                         type="button"
                         onClick={() => setStatus(item.id, action.status)}
-                        className="min-h-11 rounded-md border border-input px-2 text-xs font-semibold text-foreground"
+                        className="min-h-11 rounded-md border border-input bg-card px-2 text-xs font-semibold text-foreground"
                       >
                         {action.label}
                       </button>
@@ -294,6 +372,8 @@ function BarberPanel() {
             );
           })}
         </div>
+
+        {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} day={day} />}
       </main>
       {encaixe && (isBarber || access?.role === "admin") && (
         <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} onClose={() => setEncaixe(false)}
