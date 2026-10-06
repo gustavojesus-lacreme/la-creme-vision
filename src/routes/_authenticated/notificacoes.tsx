@@ -46,6 +46,15 @@ function NotificationsCenter() {
     const r = access.data?.role;
     navigate({ to: r === "admin" || r === "barbeiro" ? "/painel" : "/meus-agendamentos" });
   }
+  async function openAny(n: { id: string; kind: string; appointment_id: string | null; read_at: string | null }) {
+    if (n.appointment_id) return open(n);
+    if (!n.read_at) await markRead(n.id);
+    const r = access.data?.role;
+    if (n.kind === "cadastro" && r === "admin") navigate({ to: "/admin-barbeiros" });
+    else if (n.kind === "cadastro" && r === "barbeiro") navigate({ to: "/painel" });
+    else if (n.kind === "estoque" && r === "admin") navigate({ to: "/estoque" });
+    else if ((n.kind === "bloqueio" || n.kind === "conflito") && r === "admin") navigate({ to: "/ausencias" });
+  }
   const unread = q.data?.filter((n) => !n.read_at).length ?? 0;
 
   return (
@@ -61,7 +70,7 @@ function NotificationsCenter() {
         <div className="grid gap-2">
           {q.data?.map((n) => (
             <div key={n.id} className={`rounded-lg border bg-card p-4 ${n.read_at ? "border-border" : "border-brand"}`}>
-              <button type="button" onClick={() => open(n)} className="block w-full min-w-0 text-left">
+              <button type="button" onClick={() => openAny(n)} className="block w-full min-w-0 text-left">
                 <span className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gold">
                   {KIND[n.kind] ?? n.kind} · {when(n.created_at)}
                   {!n.read_at && <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] text-brand-foreground">Nova</span>}
