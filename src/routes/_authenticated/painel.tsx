@@ -261,7 +261,7 @@ function BarberPanel() {
               <button type="button" aria-label="Dia anterior" onClick={() => setDay(addDays(day, -1))}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-input text-lg font-bold text-foreground">‹</button>
               <label className="relative flex min-h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-md bg-brand px-3 text-center text-brand-foreground">
-                <span className="truncate text-sm font-bold first-letter:uppercase">
+                <span className="block truncate text-sm font-bold first-letter:uppercase">
                   {day === todaySP() ? "Hoje · " : day === addDays(todaySP(), 1) ? "Amanhã · " : ""}
                   {dayPart(day, { weekday: "long", day: "2-digit", month: "short" })}
                 </span>
