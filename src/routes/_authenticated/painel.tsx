@@ -8,6 +8,17 @@ import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
 import { EncaixeDialog } from "@/components/app/EncaixeDialog";
+import { todaySP } from "@/lib/absences";
+import { buildBarberColors, tint } from "@/lib/barber-colors";
+
+const addDays = (d: string, n: number) => {
+  const t = new Date(`${d}T12:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+};
+const spStartISO = (d: string) => new Date(`${d}T00:00:00-03:00`).toISOString();
+const spDate = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
+const dayPart = (d: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", ...o }).format(new Date(`${d}T12:00:00Z`)).replace(".", "");
 
 export const Route = createFileRoute("/_authenticated/painel")({
   validateSearch: (s: Record<string, unknown>): { ver?: string } =>
@@ -57,18 +68,29 @@ function BarberPanel() {
     queryFn: async () => (await supabase.from("barbers").select("name").eq("id", previewId!).maybeSingle()).data?.name ?? "",
   });
 
+  const [day, setDay] = useState(todaySP());
+  const stripStart = (() => { const t = todaySP(); const s3 = addDays(day, -3); return s3 < t ? t : s3; })();
+  const strip = Array.from({ length: 7 }, (_, i) => addDays(stripStart, i));
+
+  const barbersQuery = useQuery({
+    queryKey: ["panel-barber-colors"],
+    enabled: access != null && !pending,
+    queryFn: async () => (await supabase.from("barbers").select("id, name, color, sort_order, created_at").order("sort_order").order("created_at")).data ?? [],
+  });
+  const colors = buildBarberColors(barbersQuery.data ?? []);
+  const colorOf = (id: string) => colors.get(id) ?? "var(--barber-1)";
+
   const appointmentsQuery = useQuery({
-    queryKey: ["panel-appointments", barberFilter ?? "all"],
+    queryKey: ["panel-appointments", barberFilter ?? "all", stripStart],
     enabled: access != null && !pending,
     queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       let query = supabase
         .from("appointments")
         .select(
           "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, services(name), barbers(name, color)",
         )
-        .gte("starts_at", today.toISOString())
+        .gte("starts_at", spStartISO(stripStart))
+        .lt("starts_at", spStartISO(addDays(stripStart, 7)))
         .order("starts_at", { ascending: true });
       if (barberFilter) {
         query = query.eq("barber_id", barberFilter);
@@ -78,6 +100,9 @@ function BarberPanel() {
       return data ?? [];
     },
   });
+  const weekAppts = appointmentsQuery.data ?? [];
+  const dayAppts = weekAppts.filter((a) => spDate(a.starts_at) === day);
+  const countOn = (d: string) => weekAppts.filter((a) => a.status !== "cancelado" && spDate(a.starts_at) === d).length;
 
   const methodsQuery = useQuery({
     queryKey: ["panel-methods"],
