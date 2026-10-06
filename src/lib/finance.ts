@@ -103,7 +103,7 @@ export type ServiceItem = { name: string; qty: number; added: boolean };
 const parseItems = (txt: string, added: boolean): ServiceItem[] =>
   txt.split(" + ").map((t) => t.trim()).filter(Boolean).map((t) => {
     const m = t.match(/^(\d+)x (.+)$/);
-    return m ? { name: m[2], qty: Number(m[1]), added } : { name: t, qty: 1, added };
+    return m ? { name: m[2] ?? t, qty: Number(m[1]), added } : { name: t, qty: 1, added };
   });
 export function serviceItems(e: Entry): ServiceItem[] {
   if (e.category !== "servico") return [];
