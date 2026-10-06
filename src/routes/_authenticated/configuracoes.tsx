@@ -70,11 +70,11 @@ const groups: { title: string; items: Item[] }[] = [
 function Row({ item }: { item: Item }) {
   const inner = (
     <>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-secondary text-brand">
-        <item.icon className="h-5 w-5" />
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand/[0.06] text-brand">
+        <item.icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold text-card-foreground">{item.title}</span>
+        <span className="block text-[15px] font-semibold text-card-foreground">{item.title}</span>
         <span className="block text-sm text-foreground/65">{item.desc}</span>
       </span>
       {item.to ? (
@@ -101,14 +101,14 @@ function SettingsPage() {
   return (
     <div className="min-h-svh bg-background">
       <AppNav />
-      <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
+      <main className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Configurações</h1>
         {adminQuery.isLoading && <p className="text-base text-foreground/70">Carregando...</p>}
         {role === "barbeiro" && <BarberSettings />}
         {adminQuery.data === false && role !== "barbeiro" && (
           <section className="space-y-2">
-            <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">{accountGroup.title}</h2>
-            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+            <h2 className="px-1 font-sans text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">{accountGroup.title}</h2>
+            <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
               {accountGroup.items.map((it) => <Row key={it.title} item={it} />)}
             </div>
           </section>
@@ -116,8 +116,8 @@ function SettingsPage() {
         {adminQuery.data === true &&
           groups.map((g) => (
             <section key={g.title} className="space-y-2">
-              <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">{g.title}</h2>
-              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <h2 className="px-1 font-sans text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">{g.title}</h2>
+              <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
                 {g.items.map((it) => <Row key={it.title} item={it} />)}
               </div>
             </section>
@@ -148,15 +148,15 @@ function BarberSettings() {
     <>
       {barberGroups.map((g) => (
         <section key={g.title} className="space-y-2">
-          <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">{g.title}</h2>
-          <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+          <h2 className="px-1 font-sans text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">{g.title}</h2>
+          <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
             {g.items.map((it) => <Row key={it.title} item={it as unknown as Item} />)}
           </div>
         </section>
       ))}
       <section className="space-y-2">
-        <h2 className="px-1 text-xs font-bold uppercase tracking-[0.14em] text-gold">Notificações</h2>
-        <div className="divide-y divide-border rounded-lg border border-border bg-card">
+        <h2 className="px-1 font-sans text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">Notificações</h2>
+        <div className="divide-y divide-border/70 rounded-xl border border-border/80 bg-card shadow-card">
           {ns.data?.map((n) => (
             <div key={n.key} className="flex min-h-12 items-center justify-between gap-3 px-4">
               <span className="text-base">{n.label}</span>

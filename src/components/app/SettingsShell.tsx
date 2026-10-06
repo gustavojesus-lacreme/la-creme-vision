@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { AppNav } from "@/components/app/AppNav";
 import { isBarberAdmin } from "@/lib/admin";
 
-export const sCard = "rounded-lg border border-border bg-card p-4";
+export const sCard = "rounded-xl border border-border/80 bg-card p-4 shadow-card";
 export const sInput =
   "min-h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-brand focus:ring-2 focus:ring-ring";
 export const sLabel = "block min-w-0 space-y-1 text-sm font-semibold text-foreground";
