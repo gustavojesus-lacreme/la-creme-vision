@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 - Stock balance changes only via stock_movements (trigger-guarded); product sales go through finalize_appointment and financial_entries — single source for finance/commission.
 - Client codes come only from the clients table sequence (DB-generated, immutable); staff walk-in bookings go through staff_create_appointment so availability and pricing rules stay in the database.
+- Barber colors come from src/lib/barber-colors.ts (brand palette tokens --barber-N, then golden-angle generated; admin-chosen color wins) so every screen colors barbers consistently.
