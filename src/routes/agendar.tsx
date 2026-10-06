@@ -580,7 +580,7 @@ function BookingPage() {
             type="button"
             disabled={!ready || saving}
             onClick={handleConfirm}
-            className="min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground disabled:opacity-50"
+            className="sticky bottom-3 z-10 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground shadow-lg active:opacity-90 disabled:opacity-50"
           >
             Confirmar agendamento
           </button>

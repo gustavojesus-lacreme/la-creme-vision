@@ -372,7 +372,7 @@ function BarberPanel() {
                 className="min-h-12 w-full rounded-md border border-input bg-background px-3 text-base" />
             </label>
             {payError && <p className="text-sm font-semibold text-destructive">{payError}</p>}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="sticky bottom-0 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-border bg-card p-4">
               <button type="button" onClick={() => setPaying(null)} className="min-h-12 rounded-md border border-input text-sm font-semibold">Voltar</button>
               <button type="button" disabled={payBusy} onClick={confirmPayment}
                 className="min-h-12 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">

@@ -101,7 +101,7 @@ export function EncaixeDialog({ barberId, onClose, onDone }: { barberId: string;
           </div>
         )}
         {err && <p className="text-sm font-semibold text-destructive">{err}</p>}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="sticky bottom-0 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-border bg-card p-4">
           <button type="button" onClick={onClose} className="min-h-12 rounded-md border border-input text-sm font-semibold">Voltar</button>
           <button type="button" disabled={busy} onClick={save} className="min-h-12 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">
             {busy ? "Salvando..." : "Agendar"}

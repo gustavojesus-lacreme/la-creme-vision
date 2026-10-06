@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
 import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
@@ -47,6 +48,12 @@ export function AppNav() {
           ? [painel, items[2]]
         : items;
 
+  const navRef = useRef<HTMLElement>(null);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => {
+    navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [pathname, navItems.length]);
+
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -57,27 +64,28 @@ export function AppNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between gap-3 px-4">
-        <Link to="/agendar" className="flex items-center gap-2 text-foreground">
+      <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:px-4">
+        <Link to="/agendar" className="flex min-w-0 items-center gap-2 text-foreground">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand text-brand-foreground">
             <Scissors className="h-5 w-5" />
           </span>
-          <span className="truncate font-display text-base font-bold tracking-tight">
+          <span className="min-w-0 truncate font-display text-sm font-bold tracking-tight sm:text-base">
             LA CREME BARBER
           </span>
         </Link>
 
         {session ? (
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center">
           <NotificationBell userId={session.user.id} />
           <Button
             type="button"
             variant="ghost"
             onClick={handleSignOut}
-            className="min-h-11 px-3 text-sm font-semibold text-foreground"
+            aria-label="Sair"
+            className="min-h-11 min-w-11 px-2 text-sm font-semibold text-foreground sm:px-3"
           >
             <LogOut className="h-4 w-4" />
-            Sair
+            <span className="hidden min-[360px]:inline">Sair</span>
           </Button>
           </div>
         ) : (
@@ -89,12 +97,12 @@ export function AppNav() {
         )}
       </div>
 
-      <nav className="mx-auto grid w-full max-w-3xl grid-flow-row auto-cols-fr grid-cols-3 gap-1 px-2 pb-2 sm:grid-flow-col sm:grid-cols-none" aria-label="Menu principal">
+      <nav ref={navRef} className="mx-auto flex w-full max-w-3xl snap-x gap-1 overflow-x-auto px-2 pb-2 [scrollbar-width:none] sm:grid sm:auto-cols-fr sm:grid-flow-col sm:overflow-visible" aria-label="Menu principal">
         {navItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-[13px] leading-tight font-semibold text-foreground/70 hover:bg-secondary"
+            className="flex min-h-12 min-w-[4.75rem] shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-center text-[12px] leading-tight font-semibold text-foreground/70 hover:bg-secondary active:bg-secondary sm:min-w-0 sm:text-[13px]"
             activeProps={{ className: "bg-secondary text-brand" }}
           >
             <item.icon className="h-5 w-5" />
