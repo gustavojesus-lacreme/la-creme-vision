@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/la-creme-logo.png.asset.json";
+import logo from "@/assets/la-creme-logo-tight.png.asset.json";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/app/NotificationBell";
 

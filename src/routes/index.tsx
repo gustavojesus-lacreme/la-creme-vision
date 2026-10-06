@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/la-creme-logo.png.asset.json";
+import logo from "@/assets/la-creme-logo-tight.png.asset.json";
 import { useSession } from "@/hooks/useSession";
 import { readGuest } from "@/lib/guest";
 
