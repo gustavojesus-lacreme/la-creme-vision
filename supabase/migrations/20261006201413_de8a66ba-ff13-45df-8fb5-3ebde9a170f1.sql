@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.assign_client_code(), public.guard_client_code() FROM anon, authenticated, public;
