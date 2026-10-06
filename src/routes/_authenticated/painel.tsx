@@ -296,7 +296,7 @@ function BarberPanel() {
         </div>
       </main>
       {encaixe && (isBarber || access?.role === "admin") && (
-        <EncaixeDialog barberId={isBarber ? access.barberId : undefined} onClose={() => setEncaixe(false)}
+        <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} onClose={() => setEncaixe(false)}
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
       {paying && (
