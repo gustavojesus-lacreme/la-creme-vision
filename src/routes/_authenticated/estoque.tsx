@@ -109,26 +109,32 @@ function StockPage() {
   );
 }
 
-function Stat({ t, v }: { t: string; v: string }) {
-  return <div className={card}><p className="text-xs font-semibold uppercase text-foreground/60">{t}</p><p className="mt-1 text-lg font-bold text-card-foreground">{v}</p></div>;
+function Stat({ t, v, big }: { t: string; v: string; big?: boolean }) {
+  return <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-foreground/55">{t}</p><p className={`mt-1 font-bold tabular-nums text-card-foreground ${big ? "font-display text-2xl" : "text-lg"}`}>{v}</p></div>;
 }
 
 function Overview({ products, movements }: { products: Product[]; movements: Movement[] }) {
   const active = products.filter((p) => p.active);
   const sum = (k: string) => movements.filter((m) => m.kind === k).reduce((s, m) => s + Math.abs(m.quantity), 0);
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Stat t="Produtos ativos" v={String(active.length)} />
-        <Stat t="Unidades em estoque" v={String(active.reduce((s, p) => s + p.stock, 0))} />
-        <Stat t="Estoque baixo" v={String(active.filter(isLow).length)} />
-        <Stat t="Valor em custo" v={brl(active.reduce((s, p) => s + p.stock * p.cost_cents, 0))} />
-        <Stat t="Valor de venda" v={brl(active.reduce((s, p) => s + p.stock * p.price_cents, 0))} />
-      </div>
-      <p className="text-sm font-semibold text-foreground/80">Últimas 500 movimentações (unidades)</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {Object.entries(KIND_LABEL).map(([k, l]) => <Stat key={k} t={l} v={String(sum(k))} />)}
-      </div>
+    <div className="space-y-5">
+      <section className={`${card} space-y-4`}>
+        <div className="grid grid-cols-3 gap-3">
+          <Stat big t="Produtos ativos" v={String(active.length)} />
+          <Stat big t="Estoque atual" v={String(active.reduce((s, p) => s + p.stock, 0))} />
+          <Stat big t="Estoque baixo" v={String(active.filter(isLow).length)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
+          <Stat t="Valor em custo" v={brl(active.reduce((s, p) => s + p.stock * p.cost_cents, 0))} />
+          <Stat t="Valor de venda" v={brl(active.reduce((s, p) => s + p.stock * p.price_cents, 0))} />
+        </div>
+      </section>
+      <section className="rounded-xl bg-muted/60 p-4">
+        <h2 className="mb-3 font-sans text-sm font-semibold text-foreground/80">Movimentações · últimas 500 (unidades)</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Object.entries(KIND_LABEL).map(([k, l]) => <Stat key={k} t={l} v={String(sum(k))} />)}
+        </div>
+      </section>
     </div>
   );
 }

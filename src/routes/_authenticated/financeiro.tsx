@@ -171,9 +171,9 @@ function Bar({ label: l, value, max }: { label: string; value: number; max: numb
 
 function Row({ k, v, bold, tone }: { k: string; v: string; bold?: boolean; tone?: string }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-border py-1 text-sm last:border-0">
+    <div className={`flex justify-between gap-3 border-b border-border/70 text-sm last:border-0 ${bold ? "py-2.5" : "py-1.5"}`}>
       <span className={bold ? "font-bold" : "text-foreground/70"}>{k}</span>
-      <span className={`text-right ${bold ? "font-bold" : "font-semibold"} ${tone ?? ""}`}>{v}</span>
+      <span className={`text-right tabular-nums ${bold ? "font-bold" : "font-semibold"} ${tone ?? ""}`}>{v}</span>
     </div>
   );
 }
@@ -234,24 +234,23 @@ function Summary({ entries, barbers, methods }: Ctx) {
   const maxCat = Math.max(s.services, s.products, s.plans);
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat title="Atendimentos" value={String(s.appointments)} tone="brand" />
-        <Stat title="Serviços" value={String(s.serviceCount)} />
-        <Stat title="Produtos" value={String(s.productCount)} />
-        <Stat title="Planos" value={String(s.planCount)} />
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat title="Faturamento bruto" value={brl(s.gross)} tone="brand" />
-        <Stat title="Descontos" value={brl(s.discounts)} />
-        <Stat title="Taxas de pagamento" value={brl(s.fees)} />
-        <Stat title="Comissões" value={brl(s.commissions)} />
-        <Stat title="Despesas" value={brl(s.expenses)} />
-        <Stat title="Resultado operacional" value={brl(s.result)} tone={s.result < 0 ? "neg" : "gold"} />
-      </div>
-      <section className={`${card} space-y-1`}>
-        <h2 className="text-base font-bold text-card-foreground">Demonstrativo</h2>
-        <ResultBlock entries={entries} />
+      <section className={`${card} space-y-4`}>
+        <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-foreground/55">Resultado operacional</p>
+            <p className={`mt-1 break-words font-display text-3xl font-bold ${s.result < 0 ? "text-destructive" : "text-brand"}`}>{brl(s.result)}</p>
+          </div>
+          <div className="shrink-0 text-right text-xs text-foreground/60">
+            <p><b className="text-foreground">{s.appointments}</b> atendimentos</p>
+            <p>{s.serviceCount} serv. · {s.productCount} prod. · {s.planCount} planos</p>
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-1 text-sm font-semibold text-foreground/70">Demonstrativo</h2>
+          <ResultBlock entries={entries} />
+        </div>
       </section>
+
       <section className={`${card} space-y-3`}>
         <h2 className="text-base font-bold text-card-foreground">Faturamento por tipo (valor pago)</h2>
         <Bar label="Serviços" value={s.services} max={maxCat} />

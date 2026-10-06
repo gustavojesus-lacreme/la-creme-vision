@@ -99,7 +99,7 @@ export function AppNav() {
 
     {/* Mobile / tablet header */}
     <header className="sticky top-0 z-40 bg-sidebar text-sidebar-foreground shadow-sm lg:hidden">
-      <div className="mx-auto grid h-14 w-full max-w-3xl grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2 sm:px-4">
+      <div className="mx-auto grid h-12 w-full max-w-3xl grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2 sm:px-4">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button type="button" aria-label="Abrir menu" className="grid h-11 w-11 place-items-center rounded-lg hover:bg-sidebar-accent">
@@ -133,7 +133,7 @@ export function AppNav() {
           </SheetContent>
         </Sheet>
         <Link to="/agendar" className="flex min-w-0 justify-center" aria-label="LA CREME BARBER — início">
-          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-11 w-auto max-w-[9rem] object-contain" />
+          <img src={logo.url} alt="LA CREME BARBER" className="logo-blend h-9 w-auto max-w-[7.5rem] object-contain opacity-95" />
         </Link>
         <div className="flex min-w-11 shrink-0 items-center justify-end [&_button]:text-sidebar-foreground">
           {session ? <NotificationBell userId={session.user.id} /> : (
