@@ -52,14 +52,14 @@ function EntryPage() {
           <Link
             to="/auth"
             search={{ modo: "cadastro" }}
-            className="flex min-h-13 w-full items-center justify-center rounded-md border border-input bg-background px-6 text-base font-bold text-foreground"
+            className="flex min-h-13 w-full items-center justify-center rounded-lg border border-sidebar-foreground/25 px-6 text-base font-bold text-sidebar-foreground hover:bg-sidebar-accent"
           >
             Criar cadastro
           </Link>
           <Link
             to="/auth"
             search={{ modo: "visitante" }}
-            className="flex min-h-13 w-full items-center justify-center rounded-md border border-input bg-background px-6 text-base font-semibold text-foreground"
+            className="flex min-h-13 w-full items-center justify-center rounded-lg px-6 text-base font-semibold text-sidebar-foreground/80 underline-offset-4 hover:underline"
           >
             Continuar como visitante
           </Link>
