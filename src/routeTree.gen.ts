@@ -26,8 +26,13 @@ import { Route as AuthenticatedConfigRegrasRouteImport } from './routes/_authent
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedEstoqueRouteImport } from './routes/_authenticated/estoque'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
+import { Route as AuthenticatedMeuPerfilRouteImport } from './routes/_authenticated/meu-perfil'
 import { Route as AuthenticatedMeusAgendamentosRouteImport } from './routes/_authenticated/meus-agendamentos'
+import { Route as AuthenticatedMeusClientesRouteImport } from './routes/_authenticated/meus-clientes'
+import { Route as AuthenticatedMeusProdutosRouteImport } from './routes/_authenticated/meus-produtos'
+import { Route as AuthenticatedMeusServicosRouteImport } from './routes/_authenticated/meus-servicos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
+import { Route as AuthenticatedMinhaDisponibilidadeRouteImport } from './routes/_authenticated/minha-disponibilidade'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConviteBarbeiroTokenRouteImport } from './routes/convite.barbeiro.$token'
@@ -126,10 +131,33 @@ const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeuPerfilRoute = AuthenticatedMeuPerfilRouteImport.update({
+  id: '/meu-perfil',
+  path: '/meu-perfil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeusAgendamentosRoute =
   AuthenticatedMeusAgendamentosRouteImport.update({
     id: '/meus-agendamentos',
     path: '/meus-agendamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMeusClientesRoute =
+  AuthenticatedMeusClientesRouteImport.update({
+    id: '/meus-clientes',
+    path: '/meus-clientes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMeusProdutosRoute =
+  AuthenticatedMeusProdutosRouteImport.update({
+    id: '/meus-produtos',
+    path: '/meus-produtos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMeusServicosRoute =
+  AuthenticatedMeusServicosRouteImport.update({
+    id: '/meus-servicos',
+    path: '/meus-servicos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
@@ -137,6 +165,12 @@ const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
   path: '/minha-conta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMinhaDisponibilidadeRoute =
+  AuthenticatedMinhaDisponibilidadeRouteImport.update({
+    id: '/minha-disponibilidade',
+    path: '/minha-disponibilidade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -170,8 +204,13 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/meu-perfil': typeof AuthenticatedMeuPerfilRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
+  '/meus-clientes': typeof AuthenticatedMeusClientesRoute
+  '/meus-produtos': typeof AuthenticatedMeusProdutosRoute
+  '/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -193,8 +232,13 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/estoque': typeof AuthenticatedEstoqueRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/meu-perfil': typeof AuthenticatedMeuPerfilRoute
   '/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
+  '/meus-clientes': typeof AuthenticatedMeusClientesRoute
+  '/meus-produtos': typeof AuthenticatedMeusProdutosRoute
+  '/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -218,8 +262,13 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/estoque': typeof AuthenticatedEstoqueRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/_authenticated/meu-perfil': typeof AuthenticatedMeuPerfilRoute
   '/_authenticated/meus-agendamentos': typeof AuthenticatedMeusAgendamentosRoute
+  '/_authenticated/meus-clientes': typeof AuthenticatedMeusClientesRoute
+  '/_authenticated/meus-produtos': typeof AuthenticatedMeusProdutosRoute
+  '/_authenticated/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/_authenticated/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -243,8 +292,13 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
+    | '/meu-perfil'
     | '/meus-agendamentos'
+    | '/meus-clientes'
+    | '/meus-produtos'
+    | '/meus-servicos'
     | '/minha-conta'
+    | '/minha-disponibilidade'
     | '/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -266,8 +320,13 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/estoque'
     | '/financeiro'
+    | '/meu-perfil'
     | '/meus-agendamentos'
+    | '/meus-clientes'
+    | '/meus-produtos'
+    | '/meus-servicos'
     | '/minha-conta'
+    | '/minha-disponibilidade'
     | '/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -290,8 +349,13 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/estoque'
     | '/_authenticated/financeiro'
+    | '/_authenticated/meu-perfil'
     | '/_authenticated/meus-agendamentos'
+    | '/_authenticated/meus-clientes'
+    | '/_authenticated/meus-produtos'
+    | '/_authenticated/meus-servicos'
     | '/_authenticated/minha-conta'
+    | '/_authenticated/minha-disponibilidade'
     | '/_authenticated/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -427,6 +491,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/meu-perfil': {
+      id: '/_authenticated/meu-perfil'
+      path: '/meu-perfil'
+      fullPath: '/meu-perfil'
+      preLoaderRoute: typeof AuthenticatedMeuPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meus-agendamentos': {
       id: '/_authenticated/meus-agendamentos'
       path: '/meus-agendamentos'
@@ -434,11 +505,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeusAgendamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/meus-clientes': {
+      id: '/_authenticated/meus-clientes'
+      path: '/meus-clientes'
+      fullPath: '/meus-clientes'
+      preLoaderRoute: typeof AuthenticatedMeusClientesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/meus-produtos': {
+      id: '/_authenticated/meus-produtos'
+      path: '/meus-produtos'
+      fullPath: '/meus-produtos'
+      preLoaderRoute: typeof AuthenticatedMeusProdutosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/meus-servicos': {
+      id: '/_authenticated/meus-servicos'
+      path: '/meus-servicos'
+      fullPath: '/meus-servicos'
+      preLoaderRoute: typeof AuthenticatedMeusServicosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/minha-conta': {
       id: '/_authenticated/minha-conta'
       path: '/minha-conta'
       fullPath: '/minha-conta'
       preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/minha-disponibilidade': {
+      id: '/_authenticated/minha-disponibilidade'
+      path: '/minha-disponibilidade'
+      fullPath: '/minha-disponibilidade'
+      preLoaderRoute: typeof AuthenticatedMinhaDisponibilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/painel': {
@@ -479,8 +578,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedEstoqueRoute: typeof AuthenticatedEstoqueRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
+  AuthenticatedMeuPerfilRoute: typeof AuthenticatedMeuPerfilRoute
   AuthenticatedMeusAgendamentosRoute: typeof AuthenticatedMeusAgendamentosRoute
+  AuthenticatedMeusClientesRoute: typeof AuthenticatedMeusClientesRoute
+  AuthenticatedMeusProdutosRoute: typeof AuthenticatedMeusProdutosRoute
+  AuthenticatedMeusServicosRoute: typeof AuthenticatedMeusServicosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
+  AuthenticatedMinhaDisponibilidadeRoute: typeof AuthenticatedMinhaDisponibilidadeRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
 }
 
@@ -498,8 +602,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedEstoqueRoute: AuthenticatedEstoqueRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
+  AuthenticatedMeuPerfilRoute: AuthenticatedMeuPerfilRoute,
   AuthenticatedMeusAgendamentosRoute: AuthenticatedMeusAgendamentosRoute,
+  AuthenticatedMeusClientesRoute: AuthenticatedMeusClientesRoute,
+  AuthenticatedMeusProdutosRoute: AuthenticatedMeusProdutosRoute,
+  AuthenticatedMeusServicosRoute: AuthenticatedMeusServicosRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
+  AuthenticatedMinhaDisponibilidadeRoute:
+    AuthenticatedMinhaDisponibilidadeRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
 }
 

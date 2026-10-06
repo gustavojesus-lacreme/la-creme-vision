@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, CalendarOff, User, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -34,7 +34,14 @@ export function AppNav() {
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
         ]
       : access?.role === "barbeiro"
-        ? [painel, items[1], { to: "/ausencias" as const, label: "Disponibilidade", icon: CalendarOff }, { to: "/financeiro" as const, label: "Meu relatório", icon: Wallet }, items[2]]
+        ? [
+            painel,
+            { to: "/meus-clientes" as const, label: "Clientes", icon: Contact },
+            { to: "/meus-servicos" as const, label: "Serviços", icon: ScissorsIcon },
+            { to: "/meus-produtos" as const, label: "Produtos", icon: Package },
+            { to: "/financeiro" as const, label: "Meu Financeiro", icon: Wallet },
+            { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
+          ]
         : access?.role === "barbeiro_pendente"
           ? [painel, items[2]]
         : items;
