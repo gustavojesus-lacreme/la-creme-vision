@@ -189,6 +189,9 @@
     transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease;
   }
   button:active:not(:disabled) { transform: translateY(1px); }
+  @media (max-width: 1023.98px) {
+    body:has(.app-bottomnav) { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+  }
   @media (min-width: 1024px) {
     body:has(.app-sidebar) { padding-left: 15rem; }
   }
