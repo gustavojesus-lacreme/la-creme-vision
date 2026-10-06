@@ -16,7 +16,7 @@ export function NotificationBell({ userId }: { userId: string }) {
   // Live updates: new or read notifications refresh the counter and the list.
   useEffect(() => {
     const ch = supabase
-      .channel(`notif-${userId}`)
+      .channel(`notif-${userId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => {
         qc.invalidateQueries({ queryKey: ["notif-unread"] });
         qc.invalidateQueries({ queryKey: ["notifications"] });
