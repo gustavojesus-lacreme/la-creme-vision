@@ -442,6 +442,50 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          appointment_id: string | null
+          body: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          body: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          body?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operation_settings: {
         Row: {
           cancel_min_hours: number | null
@@ -856,6 +900,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      appt_text: {
+        Args: { a: Database["public"]["Tables"]["appointments"]["Row"] }
+        Returns: string
+      }
       barber_commissionable: { Args: { _barber_id: string }; Returns: boolean }
       barber_create_appointment: {
         Args: {
@@ -948,6 +996,29 @@ export type Database = {
         Returns: boolean
       }
       is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
+      notify: {
+        Args: {
+          _appt: string
+          _body: string
+          _dedupe: string
+          _kind: string
+          _setting: string
+          _title: string
+          _user: string
+        }
+        Returns: undefined
+      }
+      notify_admins: {
+        Args: {
+          _appt: string
+          _body: string
+          _dedupe: string
+          _kind: string
+          _setting: string
+          _title: string
+        }
+        Returns: undefined
+      }
       refund_product_sale: {
         Args: { _entry_id: string; _note?: string }
         Returns: undefined
@@ -962,6 +1033,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      send_appointment_reminders: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user" | "barbeiro"

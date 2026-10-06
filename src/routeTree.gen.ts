@@ -33,6 +33,7 @@ import { Route as AuthenticatedMeusProdutosRouteImport } from './routes/_authent
 import { Route as AuthenticatedMeusServicosRouteImport } from './routes/_authenticated/meus-servicos'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedMinhaDisponibilidadeRouteImport } from './routes/_authenticated/minha-disponibilidade'
+import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as ConviteBarbeiroTokenRouteImport } from './routes/convite.barbeiro.$token'
@@ -171,6 +172,12 @@ const AuthenticatedMinhaDisponibilidadeRoute =
     path: '/minha-disponibilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNotificacoesRoute =
+  AuthenticatedNotificacoesRouteImport.update({
+    id: '/notificacoes',
+    path: '/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -211,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
+  '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -239,6 +247,7 @@ export interface FileRoutesByTo {
   '/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
+  '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/_authenticated/meus-servicos': typeof AuthenticatedMeusServicosRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/minha-disponibilidade': typeof AuthenticatedMinhaDisponibilidadeRoute
+  '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/convite/barbeiro/$token': typeof ConviteBarbeiroTokenRoute
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/meus-servicos'
     | '/minha-conta'
     | '/minha-disponibilidade'
+    | '/notificacoes'
     | '/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/meus-servicos'
     | '/minha-conta'
     | '/minha-disponibilidade'
+    | '/notificacoes'
     | '/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -356,6 +368,7 @@ export interface FileRouteTypes {
     | '/_authenticated/meus-servicos'
     | '/_authenticated/minha-conta'
     | '/_authenticated/minha-disponibilidade'
+    | '/_authenticated/notificacoes'
     | '/_authenticated/painel'
     | '/convite/$token'
     | '/convite/barbeiro/$token'
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaDisponibilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notificacoes': {
+      id: '/_authenticated/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/notificacoes'
+      preLoaderRoute: typeof AuthenticatedNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel': {
       id: '/_authenticated/painel'
       path: '/painel'
@@ -585,6 +605,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeusServicosRoute: typeof AuthenticatedMeusServicosRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedMinhaDisponibilidadeRoute: typeof AuthenticatedMinhaDisponibilidadeRoute
+  AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
 }
 
@@ -610,6 +631,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedMinhaDisponibilidadeRoute:
     AuthenticatedMinhaDisponibilidadeRoute,
+  AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
 }
 

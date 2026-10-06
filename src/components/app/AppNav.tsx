@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/app/NotificationBell";
 
 const items = [
   { to: "/agendar", label: "Agendar", icon: CalendarPlus },
@@ -67,6 +68,8 @@ export function AppNav() {
         </Link>
 
         {session ? (
+          <div className="flex items-center gap-1">
+          <NotificationBell userId={session.user.id} />
           <Button
             type="button"
             variant="ghost"
@@ -76,6 +79,7 @@ export function AppNav() {
             <LogOut className="h-4 w-4" />
             Sair
           </Button>
+          </div>
         ) : (
           <Button asChild variant="ghost" className="min-h-11 px-3 text-sm font-semibold text-brand">
             <Link to="/auth" search={{ modo: "entrar" }}>
