@@ -9,8 +9,6 @@ import { publicAppOrigin } from "@/lib/public-url";
 import { deleteBarber } from "@/lib/invites.functions";
 import { formatBarberServices } from "@/lib/booking";
 import { activeAbsence, statusLabel, formatDayShort, returnDay, todaySP, type Absence } from "@/lib/absences";
-import QRCode from "qrcode";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin-barbeiros")({
   head: () => ({
@@ -204,16 +202,6 @@ function AdminBarbersPage() {
     copy(b.id, data.token);
   }
 
-  const [clientQr, setClientQr] = useState<string | null>(null);
-  const [copiedUrl, setCopiedUrl] = useState(false);
-  const publicUrl = publicAppOrigin();
-  useEffect(() => {
-    QRCode.toDataURL(publicUrl, { width: 512, margin: 2 }).then(setClientQr).catch(() => {});
-  }, [publicUrl]);
-  function copyPublicUrl() {
-    navigator.clipboard?.writeText(publicUrl).catch(() => {});
-    setCopiedUrl(true);
-  }
 
   return (
     <div className="min-h-svh bg-background">
@@ -414,24 +402,6 @@ function AdminBarbersPage() {
               </div>
             </div>
 
-            <div className={`${card} space-y-3 text-center`}>
-              <p className="text-base font-bold text-card-foreground">QR Code para clientes</p>
-              <p className="text-sm text-foreground/70">
-                Aponta para a página inicial do aplicativo. O cliente pode entrar, criar cadastro ou continuar como visitante.
-              </p>
-              {clientQr && (
-                <img src={clientQr} alt="QR Code da página inicial da LA CREME BARBER" className="mx-auto w-full max-w-64 rounded-md bg-background" />
-              )}
-              <p className="break-all text-sm text-brand">{publicUrl}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {clientQr ? (
-                  <a className={`${btnPrimary} flex items-center justify-center`} href={clientQr} download="qrcode-lacreme-barber.png">Baixar QR Code</a>
-                ) : (
-                  <button disabled className={btnPrimary}>Baixar QR Code</button>
-                )}
-                <button className={btnOutline} onClick={copyPublicUrl}>{copiedUrl ? "Endereço copiado" : "Copiar endereço"}</button>
-              </div>
-            </div>
           </>
         )}
       </main>

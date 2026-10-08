@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Clock, Coffee, CalendarOff, Scissors, Layers, Users, Contact, BadgeCheck,
-  ListChecks, Bell, SlidersHorizontal, ChevronRight, type LucideIcon,
+  ListChecks, Bell, SlidersHorizontal, ChevronRight, QrCode, type LucideIcon,
 } from "lucide-react";
 import { AppNav } from "@/components/app/AppNav";
 import { getPanelAccess } from "@/lib/admin";
@@ -29,7 +29,7 @@ type Item = {
   icon: LucideIcon;
   title: string;
   desc: string;
-  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
+  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-qrcode" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
 };
 
 const groups: { title: string; items: Item[] }[] = [
@@ -52,7 +52,8 @@ const groups: { title: string; items: Item[] }[] = [
   {
     title: "Gestão",
     items: [
-      { icon: Users, title: "Barbeiros", desc: "Equipe, convites, ativação e QR Code para clientes", to: "/admin-barbeiros" },
+      { icon: Users, title: "Barbeiros", desc: "Equipe, convites e ativação", to: "/admin-barbeiros" },
+      { icon: QrCode, title: "QR Code para clientes", desc: "Link oficial de agendamento para imprimir", to: "/admin-qrcode" },
       { icon: Contact, title: "Clientes", desc: "Consulte e gerencie os clientes cadastrados", to: "/admin-clientes" },
       { icon: BadgeCheck, title: "Planos", desc: "Planos e assinaturas para clientes", to: "/config-planos" },
     ],
