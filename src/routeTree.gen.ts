@@ -15,6 +15,7 @@ import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminBarbeirosRouteImport } from './routes/_authenticated/admin-barbeiros'
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin-clientes'
+import { Route as AuthenticatedAdminQrcodeRouteImport } from './routes/_authenticated/admin-qrcode'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
 import { Route as AuthenticatedConfigGeraisRouteImport } from './routes/_authenticated/config-gerais'
@@ -67,6 +68,12 @@ const AuthenticatedAdminClientesRoute =
   AuthenticatedAdminClientesRouteImport.update({
     id: '/admin-clientes',
     path: '/admin-clientes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminQrcodeRoute =
+  AuthenticatedAdminQrcodeRouteImport.update({
+    id: '/admin-qrcode',
+    path: '/admin-qrcode',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminServicosRoute =
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
+  '/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
@@ -229,6 +237,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/admin-clientes': typeof AuthenticatedAdminClientesRoute
+  '/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin-barbeiros': typeof AuthenticatedAdminBarbeirosRoute
   '/_authenticated/admin-clientes': typeof AuthenticatedAdminClientesRoute
+  '/_authenticated/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
   '/_authenticated/config-gerais': typeof AuthenticatedConfigGeraisRoute
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin-barbeiros'
     | '/admin-clientes'
+    | '/admin-qrcode'
     | '/admin-servicos'
     | '/ausencias'
     | '/config-gerais'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin-barbeiros'
     | '/admin-clientes'
+    | '/admin-qrcode'
     | '/admin-servicos'
     | '/ausencias'
     | '/config-gerais'
@@ -350,6 +362,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/admin-barbeiros'
     | '/_authenticated/admin-clientes'
+    | '/_authenticated/admin-qrcode'
     | '/_authenticated/admin-servicos'
     | '/_authenticated/ausencias'
     | '/_authenticated/config-gerais'
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-clientes'
       fullPath: '/admin-clientes'
       preLoaderRoute: typeof AuthenticatedAdminClientesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin-qrcode': {
+      id: '/_authenticated/admin-qrcode'
+      path: '/admin-qrcode'
+      fullPath: '/admin-qrcode'
+      preLoaderRoute: typeof AuthenticatedAdminQrcodeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin-servicos': {
@@ -587,6 +607,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminBarbeirosRoute: typeof AuthenticatedAdminBarbeirosRoute
   AuthenticatedAdminClientesRoute: typeof AuthenticatedAdminClientesRoute
+  AuthenticatedAdminQrcodeRoute: typeof AuthenticatedAdminQrcodeRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
   AuthenticatedConfigGeraisRoute: typeof AuthenticatedConfigGeraisRoute
@@ -612,6 +633,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminBarbeirosRoute: AuthenticatedAdminBarbeirosRoute,
   AuthenticatedAdminClientesRoute: AuthenticatedAdminClientesRoute,
+  AuthenticatedAdminQrcodeRoute: AuthenticatedAdminQrcodeRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
   AuthenticatedConfigGeraisRoute: AuthenticatedConfigGeraisRoute,
