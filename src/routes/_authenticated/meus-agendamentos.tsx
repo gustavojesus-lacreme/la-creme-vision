@@ -28,7 +28,7 @@ function MyAppointments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, starts_at, status, services(name, price_cents), barbers(name)")
+        .select("id, starts_at, status, services_label, total_price_cents, total_duration_minutes, services(name, price_cents), barbers(name)")
         .order("starts_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
