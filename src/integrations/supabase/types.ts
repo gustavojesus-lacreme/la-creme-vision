@@ -870,6 +870,27 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_blocked_dates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day: string
+          reason?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           appointment_id: string | null
