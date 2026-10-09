@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Clock, Info, MinusCircle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsShell, Toggle, sCard, sInput } from "@/components/app/SettingsShell";
+import { BlockedDatesCard } from "@/components/app/BlockedDatesCard";
 
 export const Route = createFileRoute("/_authenticated/config-horarios")({
   head: () => ({
@@ -240,6 +241,8 @@ function HoursPage() {
           );
         })}
       </div>
+
+      <div className="pb-28"><BlockedDatesCard /></div>
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
         <div className="mx-auto w-full max-w-3xl space-y-1.5">

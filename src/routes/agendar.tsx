@@ -145,6 +145,15 @@ function BookingPage() {
     },
   });
 
+  const blockedQuery = useQuery({
+    queryKey: ["shop_blocked_dates"],
+    queryFn: async () => {
+      const { data, error: err } = await supabase.from("shop_blocked_dates").select("day, reason");
+      if (err) throw err;
+      return data ?? [];
+    },
+  });
+
   const profileQuery = useQuery({
     queryKey: ["profile", session?.user.id],
     enabled: !!session,
@@ -259,6 +268,7 @@ function BookingPage() {
     if (barberId && barbersQuery.data && !compatibleBarbers.some((b) => b.id === barberId)) setBarberId(null);
   }, [barberId, barbersQuery.data, compatibleBarbers]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
+  const blockedDay = blockedQuery.data?.find((b) => b.day === dateStr);
 
   const slots = service ? (busyQuery.data ?? []) : [];
 
@@ -509,6 +519,10 @@ function BookingPage() {
           <h2 className="text-base font-bold uppercase text-brand">4. Horário disponível</h2>
           {!service || !barber ? (
             <p className="text-base text-foreground/70">Escolha o serviço e o barbeiro.</p>
+          ) : blockedDay ? (
+            <p className="text-base font-semibold text-destructive">
+              Barbearia fechada nesta data{blockedDay.reason ? ` (${blockedDay.reason})` : ""}.
+            </p>
           ) : dayHours?.closed ? (
             <p className="text-base text-foreground/70">Fechado nesta data.</p>
           ) : busyQuery.isLoading ? (
