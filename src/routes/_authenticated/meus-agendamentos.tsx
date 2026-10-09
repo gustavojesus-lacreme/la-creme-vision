@@ -85,15 +85,20 @@ function MyAppointments() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-base font-bold text-card-foreground">
-                      {item.services?.name}
+                      {item.services_label || item.services?.name}
                     </p>
                     <p className="text-sm text-foreground/70">
                       {formatDateLong(when)} às {formatTime(when)}
+                      {item.total_duration_minutes ? ` · ${item.total_duration_minutes} min` : ""}
                     </p>
                     <p className="text-sm text-foreground/70">{item.barbers?.name}</p>
                   </div>
                   <span className="text-base font-bold text-brand">
-                    {item.services ? formatPrice(item.services.price_cents) : ""}
+                    {item.total_price_cents != null
+                      ? formatPrice(item.total_price_cents)
+                      : item.services
+                        ? formatPrice(item.services.price_cents)
+                        : ""}
                   </span>
                 </div>
                 {item.status === "agendado" ? (
