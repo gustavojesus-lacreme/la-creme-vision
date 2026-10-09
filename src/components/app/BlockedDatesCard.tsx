@@ -9,8 +9,7 @@ import { sCard, sInput } from "@/components/app/SettingsShell";
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmt = (s: string) => {
-  const [y = 0, m = 1, d = 1] = s.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(`${s}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
 export function BlockedDatesCard() {
