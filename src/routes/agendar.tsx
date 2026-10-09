@@ -268,6 +268,7 @@ function BookingPage() {
     if (barberId && barbersQuery.data && !compatibleBarbers.some((b) => b.id === barberId)) setBarberId(null);
   }, [barberId, barbersQuery.data, compatibleBarbers]);
   const dayHours = hoursQuery.data?.find((h) => h.weekday === weekdayOf(dateStr));
+  const blockedDay = blockedQuery.data?.find((b) => b.day === dateStr);
 
   const slots = service ? (busyQuery.data ?? []) : [];
 
