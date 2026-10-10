@@ -35,7 +35,7 @@ function NotificationsCenter() {
     queryKey: ["notifications", uid],
     enabled: !!uid,
     queryFn: async () =>
-      (await supabase.from("notifications").select("id, kind, title, body, appointment_id, read_at, created_at").eq("user_id", uid!).order("created_at", { ascending: false }).limit(100)).data ?? [],
+      (await supabase.from("notifications").select("id, kind, title, body, appointment_id, read_at, created_at, dedupe_key").eq("user_id", uid!).order("created_at", { ascending: false }).limit(100)).data ?? [],
   });
   const refresh = () => { qc.invalidateQueries({ queryKey: ["notifications"] }); qc.invalidateQueries({ queryKey: ["notif-unread"] }); };
   async function markRead(id: string) { await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id); refresh(); }
@@ -46,11 +46,12 @@ function NotificationsCenter() {
     const r = access.data?.role;
     navigate({ to: r === "admin" || r === "barbeiro" ? "/painel" : "/meus-agendamentos" });
   }
-  async function openAny(n: { id: string; kind: string; appointment_id: string | null; read_at: string | null }) {
+  async function openAny(n: { id: string; kind: string; dedupe_key: string; appointment_id: string | null; read_at: string | null }) {
     if (n.appointment_id) return open(n);
     if (!n.read_at) await markRead(n.id);
     const r = access.data?.role;
-    if (n.kind === "cadastro" && r === "admin") navigate({ to: "/admin-barbeiros" });
+    if (n.kind === "cadastro" && r === "admin" && n.dedupe_key.startsWith("profile:")) navigate({ to: "/admin-clientes", search: { cliente: n.dedupe_key.slice(8) } });
+    else if (n.kind === "cadastro" && r === "admin") navigate({ to: "/admin-barbeiros" });
     else if (n.kind === "cadastro" && r === "barbeiro") navigate({ to: "/painel" });
     else if (n.kind === "estoque" && r === "admin") navigate({ to: "/estoque" });
     else if ((n.kind === "bloqueio" || n.kind === "conflito") && r === "admin") navigate({ to: "/ausencias" });
