@@ -77,3 +77,42 @@ export const restoreClient = createServerFn({ method: "POST" })
     await supabaseAdmin.auth.admin.updateUserById(data.clientId, { ban_duration: "none" });
     return { ok: true as const };
   });
+
+export type ClientDetail = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  whatsapp: string;
+  email: string;
+  code: number | null;
+  created_at: string;
+  archived: boolean;
+  appointments: { id: string; starts_at: string; status: string; services_label: string; total_price_cents: number | null; barber: string }[];
+};
+
+// Full registration card of one client (admin only).
+export const getClientDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ clientId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<ClientDetail | null> => {
+    if (!(await assertAdmin(context))) throw new Error("forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: p }, u, { data: c }, { data: appts }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, first_name, last_name, whatsapp, created_at, archived_at").eq("id", data.clientId).maybeSingle(),
+      supabaseAdmin.auth.admin.getUserById(data.clientId),
+      supabaseAdmin.from("clients").select("code").eq("profile_id", data.clientId).maybeSingle(),
+      supabaseAdmin.from("appointments").select("id, starts_at, status, services_label, total_price_cents, barbers(name)").eq("user_id", data.clientId).order("starts_at", { ascending: false }).limit(50),
+    ]);
+    if (!p) return null;
+    return {
+      id: p.id,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      whatsapp: p.whatsapp,
+      email: u.data.user?.email ?? "",
+      code: c?.code ?? null,
+      created_at: p.created_at,
+      archived: !!p.archived_at,
+      appointments: (appts ?? []).map((a: any) => ({ id: a.id, starts_at: a.starts_at, status: a.status, services_label: a.services_label, total_price_cents: a.total_price_cents, barber: a.barbers?.name ?? "" })),
+    };
+  });
