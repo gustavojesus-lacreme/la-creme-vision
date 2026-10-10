@@ -66,7 +66,7 @@ function MyAccount() {
       const r = await supabase.auth.updateUser({ email: f.email.trim() });
       note = r.error ? `Dados salvos, mas o e-mail não foi alterado: ${r.error.message}` : "Dados salvos. Confirme o novo e-mail pelo link enviado.";
     }
-    setSaving(false); setMsg(note);
+    setSaving(false); setMsg(note); setEditing(false);
     qc.invalidateQueries({ queryKey: ["profile"] });
   }
   async function changePw() {
@@ -105,9 +105,17 @@ function MyAccount() {
           <label className={sLabel}><span>Nome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.first} onChange={(e) => setF({ ...f, first: e.target.value })} /></label>
           <label className={sLabel}><span>Sobrenome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.last} onChange={(e) => setF({ ...f, last: e.target.value })} /></label>
           <label className={sLabel}><span>WhatsApp</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} inputMode="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} /></label>
+          {editing && <p className="text-xs text-foreground/60">Ao trocar o e-mail, enviaremos um link de confirmação para o novo endereço. A troca só vale depois da confirmação.</p>}
           <label className={sLabel}><span>E-mail</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
           {msg && <p className="text-sm font-semibold text-brand" role="status">{msg}</p>}
-          <button type="submit" disabled={saving} className={`${sBtn} w-full`}>{saving ? "Salvando..." : "Salvar"}</button>
+          {editing ? (
+            <div className="flex gap-2">
+              <button type="submit" disabled={saving} className={`${sBtn} flex-1`}>{saving ? "Salvando..." : "Salvar alterações"}</button>
+              <button type="button" className={`${sBtnOutline} flex-1`} onClick={() => { setEditing(false); setReload((n) => n + 1); }}>Cancelar</button>
+            </div>
+          ) : (
+            <button type="button" className={`${sBtn} w-full`} onClick={() => { setMsg(null); setEditing(true); }}>Editar perfil</button>
+          )}
         </form>
 
         <section className={`${sCard} space-y-3`}>
