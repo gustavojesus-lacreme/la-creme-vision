@@ -34,6 +34,8 @@ function MyAccount() {
 
   const [f, setF] = useState({ first: "", last: "", whatsapp: "", email: "" });
   const [msg, setMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [reload, setReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [pw, setPw] = useState("");
   const [pwMsg, setPwMsg] = useState<string | null>(null);
@@ -51,7 +53,7 @@ function MyAccount() {
   useEffect(() => {
     const p = profileQuery.data;
     setF({ first: p?.first_name ?? "", last: p?.last_name ?? "", whatsapp: p?.whatsapp ?? "", email: session?.user.email ?? "" });
-  }, [profileQuery.data, session?.user.email]);
+  }, [reload, profileQuery.data, session?.user.email]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -100,10 +102,10 @@ function MyAccount() {
             <span aria-hidden className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-brand font-display text-2xl text-brand-foreground">{initial}</span>
             <p className="text-sm text-foreground/65">Seu avatar usa a inicial do seu nome.</p>
           </div>
-          <label className={sLabel}><span>Nome</span><input className={sInput} value={f.first} onChange={(e) => setF({ ...f, first: e.target.value })} /></label>
-          <label className={sLabel}><span>Sobrenome</span><input className={sInput} value={f.last} onChange={(e) => setF({ ...f, last: e.target.value })} /></label>
-          <label className={sLabel}><span>WhatsApp</span><input className={sInput} inputMode="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} /></label>
-          <label className={sLabel}><span>E-mail</span><input className={sInput} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
+          <label className={sLabel}><span>Nome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.first} onChange={(e) => setF({ ...f, first: e.target.value })} /></label>
+          <label className={sLabel}><span>Sobrenome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.last} onChange={(e) => setF({ ...f, last: e.target.value })} /></label>
+          <label className={sLabel}><span>WhatsApp</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} inputMode="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} /></label>
+          <label className={sLabel}><span>E-mail</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
           {msg && <p className="text-sm font-semibold text-brand" role="status">{msg}</p>}
           <button type="submit" disabled={saving} className={`${sBtn} w-full`}>{saving ? "Salvando..." : "Salvar"}</button>
         </form>

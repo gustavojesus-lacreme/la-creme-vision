@@ -50,9 +50,11 @@ function Profile({ barberId }: { barberId: string }) {
   });
   const [f, setF] = useState({ name: "", last_name: "", whatsapp: "", photo_url: "" as string | null, email: "" });
   const [msg, setMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [reload, setReload] = useState(0);
   const [pw, setPw] = useState("");
   const [pwMsg, setPwMsg] = useState<string | null>(null);
-  useEffect(() => { if (q.data) setF({ name: q.data.name ?? "", last_name: q.data.last_name ?? "", whatsapp: q.data.whatsapp ?? "", photo_url: q.data.photo_url ?? null, email: q.data.email }); }, [q.data]);
+  useEffect(() => { if (q.data) setF({ name: q.data.name ?? "", last_name: q.data.last_name ?? "", whatsapp: q.data.whatsapp ?? "", photo_url: q.data.photo_url ?? null, email: q.data.email }); }, [reload, q.data]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setMsg(null);
@@ -91,10 +93,10 @@ function Profile({ barberId }: { barberId: string }) {
           </label>
           {f.photo_url && <button type="button" className="text-sm text-destructive" onClick={() => setF({ ...f, photo_url: null })}>Remover</button>}
         </div>
-        <label className={sLabel}><span>Nome</span><input className={sInput} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-        <label className={sLabel}><span>Sobrenome</span><input className={sInput} value={f.last_name} onChange={(e) => setF({ ...f, last_name: e.target.value })} /></label>
-        <label className={sLabel}><span>WhatsApp</span><input className={sInput} inputMode="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} /></label>
-        <label className={sLabel}><span>E-mail</span><input className={sInput} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
+        <label className={sLabel}><span>Nome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+        <label className={sLabel}><span>Sobrenome</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} value={f.last_name} onChange={(e) => setF({ ...f, last_name: e.target.value })} /></label>
+        <label className={sLabel}><span>WhatsApp</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} inputMode="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} /></label>
+        <label className={sLabel}><span>E-mail</span><input disabled={!editing} className={`${sInput} disabled:bg-secondary/50 disabled:text-foreground/80`} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
         {msg && <p className="text-sm font-semibold text-brand">{msg}</p>}
         <button type="submit" className={`${sBtn} w-full`}>Salvar</button>
       </form>
