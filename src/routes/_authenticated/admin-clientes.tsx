@@ -9,7 +9,7 @@ import { deleteClient, listClients, restoreClient, type ClientRow } from "@/lib/
 
 export const Route = createFileRoute("/_authenticated/admin-clientes")({
   validateSearch: (s: Record<string, unknown>): { cliente?: string } =>
-    typeof s.cliente === "string" ? { cliente: s.cliente } : {},
+    typeof s['cliente'] === "string" ? { cliente: s['cliente'] as string } : {},
   head: () => ({
     meta: [
       { title: "Clientes | LA CREME BARBER" },
