@@ -3,10 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppNav } from "@/components/app/AppNav";
+import { ClientDetailDialog } from "@/components/app/ClientDetailDialog";
 import { isBarberAdmin } from "@/lib/admin";
 import { deleteClient, listClients, restoreClient, type ClientRow } from "@/lib/clients.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-clientes")({
+  validateSearch: (s: Record<string, unknown>): { cliente?: string } =>
+    typeof s.cliente === "string" ? { cliente: s.cliente } : {},
   head: () => ({
     meta: [
       { title: "Clientes | LA CREME BARBER" },
@@ -33,6 +36,10 @@ function AdminClientsPage() {
   const clientsQuery = useQuery({ queryKey: ["admin-clients"], enabled: isAdmin, queryFn: () => list() });
   const [confirm, setConfirm] = useState<ClientRow | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const { cliente } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const [openId, setOpenIdState] = useState<string | null>(cliente ?? null);
+  const setOpenId = (id: string | null) => { setOpenIdState(id); if (!id && cliente) navigate({ search: {}, replace: true }); };
 
   async function doDelete(c: ClientRow) {
     const res = await del({ data: { clientId: c.id } }).catch(() => ({ ok: false as const, error: "Não foi possível excluir." }));
@@ -51,11 +58,14 @@ function AdminClientsPage() {
 
   const row = (c: ClientRow) => (
     <div key={c.id} className={card}>
-      <p className="text-base font-bold text-card-foreground">{c.name}</p>
-      {c.code != null && <p className="text-sm text-foreground/70">Código: #{String(c.code).padStart(5, "0")}</p>}
-      {c.whatsapp && <p className="text-sm text-foreground/70">{c.whatsapp}</p>}
-      {c.email && <p className="truncate text-sm text-foreground/70">{c.email}</p>}
-      <p className="mt-1 text-sm text-foreground/70">{c.appointments} agendamento(s)</p>
+      <button type="button" onClick={() => setOpenId(c.id)} className="block w-full min-w-0 text-left">
+        <p className="text-base font-bold text-card-foreground">{c.name}</p>
+        {c.code != null && <p className="text-sm text-foreground/70">Código: #{String(c.code).padStart(5, "0")}</p>}
+        {c.whatsapp && <p className="text-sm text-foreground/70">{c.whatsapp}</p>}
+        {c.email && <p className="truncate text-sm text-foreground/70">{c.email}</p>}
+        <p className="mt-1 text-sm text-foreground/70">{c.appointments} agendamento(s)</p>
+        <p className="mt-1 text-sm font-semibold text-brand">Ver ficha</p>
+      </button>
       <div className="mt-3">
         {c.archived ? (
           <button className={btnOutline} onClick={() => doRestore(c)}>Reativar cliente</button>
