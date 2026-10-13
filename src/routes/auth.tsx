@@ -102,7 +102,9 @@ function AuthPage() {
         setError("Este e-mail já possui cadastro. Use a opção Entrar ou recupere sua senha.");
       } else if (signUpError) {
         const msg = signUpError.message.toLowerCase();
-        if (msg.includes("password")) {
+        if (msg.includes("weak") || msg.includes("easy to guess") || msg.includes("pwned")) {
+          setError("Essa senha é muito comum e fácil de adivinhar. Escolha outra, misturando letras, números e símbolos (ex.: Corte@2026).");
+        } else if (msg.includes("password")) {
           setError("Senha muito curta. Use pelo menos 6 caracteres.");
         } else if (msg.includes("invalid") && msg.includes("email")) {
           setError("E-mail inválido. Confira o endereço digitado.");
