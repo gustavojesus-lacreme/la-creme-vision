@@ -8,6 +8,13 @@
       "when": 1791575303724,
       "tag": "0000_shop_blocked_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791901924545,
+      "tag": "0001_client_plans",
+      "breakpoints": true
     }
   ]
 }
