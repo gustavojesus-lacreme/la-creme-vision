@@ -53,8 +53,14 @@ function AdminClientsPage() {
     qc.invalidateQueries({ queryKey: ["admin-clients"] });
   }
 
-  const active = clientsQuery.data?.filter((c) => !c.archived) ?? [];
-  const archived = clientsQuery.data?.filter((c) => c.archived) ?? [];
+  const [q, setQ] = useState("");
+  const qt = q.trim().toLowerCase();
+  const qd = qt.replace(/\D/g, "");
+  const match = (c: ClientRow) => !qt || c.name.toLowerCase().includes(qt) || c.email.toLowerCase().includes(qt)
+    || (!!qd && ((c.code != null && (String(c.code) === String(Number(qd)) || String(c.code).padStart(5, "0").includes(qd))) || c.whatsapp.replace(/\D/g, "").includes(qd)));
+  const all = clientsQuery.data?.filter(match) ?? [];
+  const active = all.filter((c) => !c.archived);
+  const archived = all.filter((c) => c.archived);
 
   const row = (c: ClientRow) => (
     <div key={c.id} className={card}>
@@ -88,6 +94,8 @@ function AdminClientsPage() {
         {isAdmin && (
           <>
             {msg && <div className={`${card} text-sm font-semibold text-foreground`}>{msg}</div>}
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, sobrenome, WhatsApp ou código"
+              className="min-h-12 w-full rounded-md border border-input bg-card px-3 text-base text-foreground" />
             {clientsQuery.isLoading && <p className="text-base text-foreground/70">Carregando...</p>}
             <h2 className="text-lg font-bold text-foreground">Clientes ativos ({active.length})</h2>
             <div className="grid gap-3">{active.map(row)}</div>

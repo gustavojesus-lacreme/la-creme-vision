@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           barber_id: string
           client_id: string | null
+          client_plan_id: string | null
           created_at: string
           created_by: string | null
           customer_first_name: string
@@ -38,6 +39,7 @@ export type Database = {
         Insert: {
           barber_id: string
           client_id?: string | null
+          client_plan_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_first_name: string
@@ -58,6 +60,7 @@ export type Database = {
         Update: {
           barber_id?: string
           client_id?: string | null
+          client_plan_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_first_name?: string
@@ -88,6 +91,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_plan_id_fkey"
+            columns: ["client_plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_plans"
             referencedColumns: ["id"]
           },
           {
@@ -297,6 +307,66 @@ export type Database = {
           weekday?: number
         }
         Relationships: []
+      }
+      client_plans: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          created_by: string | null
+          expires_on: string | null
+          id: string
+          label: string
+          note: string
+          paid_at: string
+          plan_id: string | null
+          total_uses: number
+          used_uses: number
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          label?: string
+          note?: string
+          paid_at?: string
+          plan_id?: string | null
+          total_uses?: number
+          used_uses?: number
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          label?: string
+          note?: string
+          paid_at?: string
+          plan_id?: string | null
+          total_uses?: number
+          used_uses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
