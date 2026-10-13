@@ -29,7 +29,7 @@ type Item = {
   icon: LucideIcon;
   title: string;
   desc: string;
-  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-qrcode" | "/admin-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
+  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-qrcode" | "/admin-clientes" | "/admin-planos-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
 };
 
 const groups: { title: string; items: Item[] }[] = [
@@ -54,7 +54,8 @@ const groups: { title: string; items: Item[] }[] = [
     items: [
       { icon: Users, title: "Barbeiros", desc: "Equipe, convites e ativação", to: "/admin-barbeiros" },
       { icon: QrCode, title: "QR Code para clientes", desc: "Link oficial de agendamento para imprimir", to: "/admin-qrcode" },
-      { icon: Contact, title: "Clientes", desc: "Consulte e gerencie os clientes cadastrados", to: "/admin-clientes" },
+      { icon: Contact, title: "Buscar clientes", desc: "Busque por nome, sobrenome, WhatsApp ou código", to: "/admin-clientes" },
+      { icon: BadgeCheck, title: "Clientes com plano", desc: "Registre planos pagos e veja cortes restantes", to: "/admin-planos-clientes" },
       { icon: BadgeCheck, title: "Planos", desc: "Planos e assinaturas para clientes", to: "/config-planos" },
     ],
   },
