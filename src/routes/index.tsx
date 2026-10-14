@@ -10,12 +10,12 @@ export const Route = createFileRoute("/")({
       { title: "LA CREME BARBER | Acesso" },
       {
         name: "description",
-        content: "Entre, crie seu cadastro ou continue como visitante para agendar.",
+        content: "Entre ou crie seu cadastro para agendar.",
       },
       { property: "og:title", content: "LA CREME BARBER | Acesso" },
       {
         property: "og:description",
-        content: "Entre, crie seu cadastro ou continue como visitante para agendar.",
+        content: "Entre ou crie seu cadastro para agendar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -30,7 +30,7 @@ function EntryPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (session || readGuest()) navigate({ to: "/agendar", replace: true });
+    if (session) navigate({ to: "/agendar", replace: true });
   }, [session, loading, navigate]);
 
   return (
@@ -55,13 +55,6 @@ function EntryPage() {
             className="flex min-h-13 w-full items-center justify-center rounded-lg border border-sidebar-foreground/25 px-6 text-base font-bold text-sidebar-foreground hover:bg-sidebar-accent"
           >
             Criar cadastro
-          </Link>
-          <Link
-            to="/auth"
-            search={{ modo: "visitante" }}
-            className="flex min-h-13 w-full items-center justify-center rounded-lg px-6 text-base font-semibold text-sidebar-foreground/80 underline-offset-4 hover:underline"
-          >
-            Continuar como visitante
           </Link>
         </div>
       </div>

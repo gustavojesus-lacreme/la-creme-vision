@@ -22,6 +22,13 @@
       "when": 1791901939543,
       "tag": "0002_plan_release_only_cancel",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791945611531,
+      "tag": "0003_disable_guest_booking",
+      "breakpoints": true
     }
   ]
 }
