@@ -6,8 +6,11 @@ export type GuestData = {
 
 const KEY = "lacreme_guest";
 
+// Modo visitante desativado: agendamento exige conta e login.
 export function readGuest(): GuestData | null {
   if (typeof window === "undefined") return null;
+  window.localStorage.removeItem(KEY);
+  return null;
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;

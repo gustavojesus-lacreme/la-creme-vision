@@ -13,9 +13,7 @@ export const Route = createFileRoute("/auth")({
     modo:
       search['modo'] === "cadastro"
         ? "cadastro"
-        : search['modo'] === "visitante"
-          ? "visitante"
-          : "entrar",
+        : "entrar",
   }),
   head: () => ({
     meta: [
