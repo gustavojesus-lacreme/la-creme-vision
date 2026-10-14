@@ -29,6 +29,13 @@
       "when": 1791945611531,
       "tag": "0003_disable_guest_booking",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791981976707,
+      "tag": "0004_guest_booking_toggle",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
-import { readGuest, type GuestData } from "@/lib/guest";
+import { readGuest, clearGuest, fetchGuestBookingEnabled, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
 import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
@@ -192,8 +192,12 @@ function BookingPage() {
   });
 
   useEffect(() => {
-    setGuest(readGuest());
-    setGuestChecked(true);
+    const g = readGuest();
+    if (!g) { setGuestChecked(true); return; }
+    fetchGuestBookingEnabled().then((on) => {
+      if (on) setGuest(g); else clearGuest();
+      setGuestChecked(true);
+    });
   }, []);
 
   useEffect(() => {

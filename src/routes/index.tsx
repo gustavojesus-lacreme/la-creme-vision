@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import logo from "@/assets/la-creme-logo-tight.png.asset.json";
 import { useSession } from "@/hooks/useSession";
-import { readGuest } from "@/lib/guest";
+import { fetchGuestBookingEnabled } from "@/lib/guest";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,11 +27,16 @@ export const Route = createFileRoute("/")({
 function EntryPage() {
   const { session, loading } = useSession();
   const navigate = useNavigate();
+  const [guestOn, setGuestOn] = useState(false);
 
   useEffect(() => {
     if (loading) return;
     if (session) navigate({ to: "/agendar", replace: true });
   }, [session, loading, navigate]);
+
+  useEffect(() => {
+    fetchGuestBookingEnabled().then(setGuestOn);
+  }, []);
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-sidebar px-5 py-10">
@@ -56,6 +61,15 @@ function EntryPage() {
           >
             Criar cadastro
           </Link>
+          {guestOn && (
+            <Link
+              to="/auth"
+              search={{ modo: "visitante" }}
+              className="flex min-h-12 w-full items-center justify-center rounded-lg px-6 text-sm font-semibold text-sidebar-foreground/80 underline-offset-4 hover:underline"
+            >
+              Continuar como visitante
+            </Link>
+          )}
         </div>
       </div>
     </main>

@@ -4,7 +4,7 @@ import logo from "@/assets/la-creme-logo-tight.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
-import { saveGuest } from "@/lib/guest";
+import { saveGuest, fetchGuestBookingEnabled, isValidBrWhatsapp } from "@/lib/guest";
 
 type Modo = "entrar" | "cadastro" | "visitante";
 
@@ -13,7 +13,9 @@ export const Route = createFileRoute("/auth")({
     modo:
       search['modo'] === "cadastro"
         ? "cadastro"
-        : "entrar",
+        : search['modo'] === "visitante"
+          ? "visitante"
+          : "entrar",
   }),
   head: () => ({
     meta: [
@@ -47,11 +49,20 @@ function AuthPage() {
     if (session) navigate({ to: "/agendar", replace: true });
   }, [session, navigate]);
 
+  useEffect(() => {
+    if (mode !== "visitante") return;
+    fetchGuestBookingEnabled().then((on) => { if (!on) setMode("entrar"); });
+  }, [mode]);
+
   function handleGuest(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!firstName.trim() || !whatsapp.trim()) {
-      setError("Informe nome e WhatsApp para continuar.");
+    if (firstName.trim().length < 2) {
+      setError("Informe seu nome para continuar.");
+      return;
+    }
+    if (!isValidBrWhatsapp(whatsapp)) {
+      setError("Informe um WhatsApp válido, com DDD e 9 dígitos (ex.: 11 98765-4321).");
       return;
     }
     saveGuest({
