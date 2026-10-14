@@ -125,6 +125,7 @@ function BarberPanel() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [pick, setPick] = useState("");
   const [colorFilter, setColorFilter] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
@@ -191,7 +192,10 @@ function BarberPanel() {
   const legend = !barberFilter
     ? teamBarbers.map((b) => ({ id: b.id, name: b.name, count: dayAppts.filter((x) => x.barber_id === b.id && x.status !== "cancelado").length }))
     : [];
-  const shown = dayAppts.filter((a) => !colorFilter || a.barber_id === colorFilter);
+  const isHidden = (s: string) => s === "cancelado" || s === "nao_compareceu";
+  const byBarber = dayAppts.filter((a) => !colorFilter || a.barber_id === colorFilter);
+  const hiddenCount = byBarber.filter((a) => isHidden(a.status)).length;
+  const shown = showHidden ? byBarber : byBarber.filter((a) => !isHidden(a.status));
   const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
@@ -317,6 +321,13 @@ function BarberPanel() {
           </div>
         )}
 
+        {hiddenCount > 0 && (
+          <button type="button" onClick={() => setShowHidden(!showHidden)} aria-pressed={showHidden}
+            className="min-h-10 w-full rounded-md border border-destructive/50 bg-card px-3 text-sm font-semibold text-destructive">
+            {showHidden ? `Ocultar cancelados e faltas (${hiddenCount})` : `Mostrar ocultos — cancelados e faltas (${hiddenCount})`}
+          </button>
+        )}
+
         {access != null && !pending && !appointmentsQuery.isLoading && !appointmentsQuery.isError && shown.length === 0 && (
           <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
             <p className="text-base text-foreground/80">Nenhum agendamento neste dia.</p>
@@ -329,19 +340,19 @@ function BarberPanel() {
             const c = colorOf(item.barber_id);
             const faded = item.status === "cancelado" || item.status === "nao_compareceu";
             return (
-              <div key={item.id} className={`overflow-hidden rounded-xl border border-border shadow-sm ${faded ? "opacity-60" : ""}`}
-                style={{ backgroundColor: tint(c, 7), borderLeftColor: c, borderLeftWidth: 6 }}>
+              <div key={item.id} className={`overflow-hidden rounded-xl border shadow-sm ${faded ? "border-destructive/60 bg-destructive/10" : "border-border"}`}
+                style={faded ? { borderLeftColor: "var(--destructive)", borderLeftWidth: 6 } : { backgroundColor: tint(c, 7), borderLeftColor: c, borderLeftWidth: 6 }}>
                 <div className="flex items-stretch gap-3 p-4">
-                  <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg text-brand-foreground" style={{ backgroundColor: c }}>
+                  <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg ${faded ? "bg-destructive text-destructive-foreground" : "text-brand-foreground"}`} style={faded ? undefined : { backgroundColor: c }}>
                     <span className="text-base font-bold tabular-nums">{formatTime(when)}</span>
                     <span className="text-[10px] tabular-nums opacity-85">{formatTime(new Date(item.ends_at))}</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="min-w-0 truncate text-base font-bold text-card-foreground">
+                      <p className={`min-w-0 truncate text-base font-bold ${faded ? "text-destructive line-through" : "text-card-foreground"}`}>
                         {item.customer_first_name} {item.customer_last_name}
                       </p>
-                      <span className="shrink-0 rounded-md bg-card px-2 py-0.5 text-[11px] font-bold text-foreground">
+                      <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${faded ? "bg-destructive text-destructive-foreground" : "bg-card text-foreground"}`}>
                         {STATUS_LABELS[item.status] ?? item.status}
                       </span>
                     </div>
