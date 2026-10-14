@@ -619,6 +619,7 @@ export type Database = {
           commission_plan_pct: number
           commission_product_pct: number
           commission_service_pct: number
+          guest_booking_enabled: boolean
           id: number
           lunch_end: string | null
           lunch_start: string | null
@@ -644,6 +645,7 @@ export type Database = {
           commission_plan_pct?: number
           commission_product_pct?: number
           commission_service_pct?: number
+          guest_booking_enabled?: boolean
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
@@ -669,6 +671,7 @@ export type Database = {
           commission_plan_pct?: number
           commission_product_pct?: number
           commission_service_pct?: number
+          guest_booking_enabled?: boolean
           id?: number
           lunch_end?: string | null
           lunch_start?: string | null
@@ -1144,6 +1147,7 @@ export type Database = {
           stock: number
         }[]
       }
+      guest_booking_enabled: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1214,6 +1218,7 @@ export type Database = {
         }
         Returns: string
       }
+      valid_br_whatsapp: { Args: { _w: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "barbeiro"
