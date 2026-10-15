@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -35,6 +35,7 @@ export function AppNav() {
           items[0], items[1],
           { to: "/financeiro" as const, label: "Financeiro", icon: Wallet },
           { to: "/estoque" as const, label: "Estoque", icon: Package },
+          { to: "/admin-clientes" as const, label: "Buscar clientes", icon: Search },
           { to: "/configuracoes" as const, label: "Configurações", icon: Settings },
         ]
       : access?.role === "barbeiro"

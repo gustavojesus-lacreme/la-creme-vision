@@ -80,12 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "LA CREME BARBER" },
       { name: "description", content: "Barbearia moderna com cuidado masculino de alto padrão." },
       { name: "author", content: "LA CREME BARBER" },
+      { name: "theme-color", content: "#0D2830" },
       { property: "og:title", content: "LA CREME BARBER" },
       { property: "og:description", content: "Cuidado masculino com estilo, precisão e atendimento profissional." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
       {
         rel: "stylesheet",
         href: appCss,

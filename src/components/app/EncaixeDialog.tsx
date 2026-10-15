@@ -21,6 +21,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
   const [day, setDay] = useState(toDateInputValue(new Date()));
   const [ids, setIds] = useState<string[]>([]);
   const [slot, setSlot] = useState("");
+  const [manual, setManual] = useState("");
   const [encaixe, setEncaixe] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -102,7 +103,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
     <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
       <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
         <h2 className="text-lg font-bold text-card-foreground">Agendamento avulso</h2>
-        <p className="text-xs text-foreground/60">Somente em horários livres, com as regras normais de agendamento.</p>
+        <p className="text-xs text-foreground/60">Escolha um horário livre ou, no encaixe, digite qualquer horário dentro do funcionamento.</p>
 
         <div className="space-y-2">
           <p className="text-sm font-semibold">1. Cliente</p>
@@ -175,12 +176,20 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
                 {slots.isLoading && <p className="col-span-4 text-sm">Carregando...</p>}
                 {slots.data?.length === 0 && <p className="col-span-4 text-sm text-foreground/70">Nenhum horário livre neste dia.</p>}
                 {slots.data?.map((s) => (
-                  <button key={s.starts_at} type="button" onClick={() => setSlot(s.starts_at)}
+                  <button key={s.starts_at} type="button" onClick={() => { setSlot(s.starts_at); setManual(""); }}
                     className={`min-h-11 rounded-md border text-sm font-semibold ${slot === s.starts_at ? "border-brand bg-brand text-brand-foreground" : "border-input"}`}>
                     {formatTime(new Date(s.starts_at))}
                   </button>
                 ))}
               </div>
+            )}
+            {barberId && ids.length > 0 && encaixe && (
+              <label className="block space-y-1 text-sm font-semibold"><span>Ou digite um horário (encaixe, dentro do funcionamento)</span>
+                <input type="time" className={input} value={manual} onChange={(e) => {
+                  setManual(e.target.value);
+                  setSlot(e.target.value ? new Date(`${day}T${e.target.value}:00-03:00`).toISOString() : "");
+                }} />
+              </label>
             )}
             <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
               <input type="checkbox" className="h-5 w-5" checked={encaixe} onChange={(e) => setEncaixe(e.target.checked)} />
