@@ -103,7 +103,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
     <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
       <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
         <h2 className="text-lg font-bold text-card-foreground">Agendamento avulso</h2>
-        <p className="text-xs text-foreground/60">Somente em horários livres, com as regras normais de agendamento.</p>
+        <p className="text-xs text-foreground/60">Escolha um horário livre ou, no encaixe, digite qualquer horário dentro do funcionamento.</p>
 
         <div className="space-y-2">
           <p className="text-sm font-semibold">1. Cliente</p>
