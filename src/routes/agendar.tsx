@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
-import { readGuest, clearGuest, fetchGuestBookingEnabled, type GuestData } from "@/lib/guest";
+import { readGuest, clearGuest, fetchGuestBookingEnabled, isValidBrWhatsapp, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
 import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
