@@ -43,6 +43,13 @@
       "when": 1792023202950,
       "tag": "0005_fix_encaixe_and_signup_names",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792028226835,
+      "tag": "0006_encaixe_any_time",
+      "breakpoints": true
     }
   ]
 }
