@@ -36,6 +36,13 @@
       "when": 1791981976707,
       "tag": "0004_guest_booking_toggle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792023202950,
+      "tag": "0005_fix_encaixe_and_signup_names",
+      "breakpoints": true
     }
   ]
 }
