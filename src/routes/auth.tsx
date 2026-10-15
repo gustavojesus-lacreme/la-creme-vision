@@ -96,7 +96,7 @@ function AuthPage() {
     } else {
       if (firstName.trim().length < 2 || lastName.trim().length < 2 || !isValidBrWhatsapp(whatsapp)) {
         setError("Preencha nome, sobrenome e um WhatsApp válido com DDD (ex.: (11) 98765-4321).");
-        setLoading?.(false);
+        setBusy(false);
         return;
       }
       const { data, error: signUpError } = await supabase.auth.signUp({

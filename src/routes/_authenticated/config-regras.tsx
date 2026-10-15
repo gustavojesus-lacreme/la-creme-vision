@@ -24,7 +24,7 @@ const num = (v: string) => (v.trim() === "" ? null : Math.max(0, Math.round(Numb
 type Form = {
   slot_step_minutes: string; min_advance_minutes: string; max_advance_days: string; tolerance_minutes: string;
   cancel_min_hours: string; reschedule_per_week: string; reschedule_fee: string; reschedule_block_saturday: boolean;
-  reschedule_cutoff_weekday: string; reschedule_cutoff_time: string;
+  reschedule_cutoff_weekday: string; reschedule_cutoff_time: string; guest_booking_enabled: boolean;
 };
 
 function Pending() {
@@ -53,6 +53,7 @@ function RulesPage() {
       reschedule_block_saturday: d.reschedule_block_saturday,
       reschedule_cutoff_weekday: d.reschedule_cutoff_weekday == null ? "" : String(d.reschedule_cutoff_weekday),
       reschedule_cutoff_time: hhmm(d.reschedule_cutoff_time),
+      guest_booking_enabled: d.guest_booking_enabled,
     });
   }, [q.data]);
 
@@ -75,6 +76,7 @@ function RulesPage() {
       reschedule_block_saturday: f.reschedule_block_saturday,
       reschedule_cutoff_weekday: f.reschedule_cutoff_weekday === "" ? null : Number(f.reschedule_cutoff_weekday),
       reschedule_cutoff_time: f.reschedule_cutoff_time || null,
+      guest_booking_enabled: f.guest_booking_enabled,
     }).eq("id", 1);
     setMsg(error ? "Não foi possível salvar. Confira os valores." : "Regras salvas e já em uso.");
     qc.invalidateQueries({ queryKey: ["booking-rules"] });
@@ -134,6 +136,15 @@ function RulesPage() {
           <label className={sLabel}><span>às</span>
             <input type="time" className={sInput} value={f.reschedule_cutoff_time} onChange={(e) => set("reschedule_cutoff_time", e.target.value)} /></label>
         </div>
+      </section>
+
+      <section className={`${sCard} space-y-2`}>
+        <h2 className="text-base font-bold uppercase tracking-wide text-brand">Visitantes</h2>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-semibold text-foreground">Permitir agendamento por visitantes (sem login)</span>
+          <Toggle checked={f.guest_booking_enabled} onChange={(v) => set("guest_booking_enabled", v)} label="Permitir visitantes" />
+        </div>
+        <p className="text-xs text-foreground/60">Ligado: aparece "Continuar como visitante" na tela inicial, exigindo nome e WhatsApp válido. Desligado: só agenda quem tem cadastro e login.</p>
       </section>
 
       <section className={`${sCard} space-y-1`}>
