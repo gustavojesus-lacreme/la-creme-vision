@@ -283,8 +283,21 @@ function BookingPage() {
 
   async function handleConfirm() {
     if (!ready || !service || !barber || !slot) return;
+    if (firstName.trim().length < 2 || !isValidBrWhatsapp(whatsapp)) {
+      setError("Informe seu nome e um WhatsApp válido com DDD (ex.: (11) 98765-4321).");
+      return;
+    }
     setSaving(true);
     setError(null);
+    const p = profileQuery.data;
+    if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !p.whatsapp?.trim())) {
+      await supabase.from("profiles").update({
+        first_name: p.first_name?.trim() || firstName.trim(),
+        last_name: p.last_name?.trim() || lastName.trim(),
+        whatsapp: p.whatsapp?.trim() || whatsapp.trim(),
+      }).eq("id", session.user.id);
+    }
+
 
     const ends = new Date(slot.getTime() + service.duration_minutes * 60000);
     const { error: insertError } = await supabase.from("appointments").insert({
