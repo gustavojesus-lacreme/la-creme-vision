@@ -87,7 +87,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, services(name), barbers(name, color)",
+          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, client_plan_id, client_plans(total_uses, used_uses), services(name), barbers(name, color)",
         )
         .gte("starts_at", spStartISO(stripStart))
         .lt("starts_at", spStartISO(addDays(stripStart, 7)))
@@ -126,6 +126,17 @@ function BarberPanel() {
   const [pick, setPick] = useState("");
   const [colorFilter, setColorFilter] = useState("");
   const [showHidden, setShowHidden] = useState(false);
+  const [showDone, setShowDone] = useState(false);
+  const [rename, setRename] = useState<{ id: string; first: string; last: string } | null>(null);
+  const [renameErr, setRenameErr] = useState<string | null>(null);
+  async function saveRename() {
+    if (!rename) return;
+    setRenameErr(null);
+    const { error } = await supabase.rpc("rename_appointment", { _id: rename.id, _first: rename.first, _last: rename.last });
+    if (error) return setRenameErr(error.message || "Não foi possível salvar.");
+    setRename(null);
+    queryClient.invalidateQueries();
+  }
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
   const [payError, setPayError] = useState<string | null>(null);
@@ -195,7 +206,8 @@ function BarberPanel() {
   const isHidden = (s: string) => s === "cancelado" || s === "nao_compareceu";
   const byBarber = dayAppts.filter((a) => !colorFilter || a.barber_id === colorFilter);
   const hiddenCount = byBarber.filter((a) => isHidden(a.status)).length;
-  const shown = showHidden ? byBarber : byBarber.filter((a) => !isHidden(a.status));
+  const doneCount = byBarber.filter((a) => a.status === "finalizado").length;
+  const shown = byBarber.filter((a) => (showHidden || !isHidden(a.status)) && (showDone || a.status !== "finalizado"));
   const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
@@ -321,6 +333,13 @@ function BarberPanel() {
           </div>
         )}
 
+        {doneCount > 0 && (
+          <button type="button" onClick={() => setShowDone(!showDone)} aria-pressed={showDone}
+            className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground">
+            {showDone ? `Ocultar finalizados (${doneCount})` : `Finalizados (${doneCount})`}
+          </button>
+        )}
+
         {hiddenCount > 0 && (
           <button type="button" onClick={() => setShowHidden(!showHidden)} aria-pressed={showHidden}
             className="min-h-10 w-full rounded-md border border-destructive/50 bg-card px-3 text-sm font-semibold text-destructive">
@@ -349,9 +368,11 @@ function BarberPanel() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`min-w-0 truncate text-base font-bold ${faded ? "text-destructive line-through" : "text-card-foreground"}`}>
+                      <button type="button" disabled={!!previewId} title="Alterar nome"
+                        onClick={() => { setRenameErr(null); setRename({ id: item.id, first: item.customer_first_name, last: item.customer_last_name }); }}
+                        className={`min-w-0 truncate text-left text-base font-bold underline-offset-2 hover:underline ${faded ? "text-destructive line-through" : "text-card-foreground"}`}>
                         {item.customer_first_name} {item.customer_last_name}
-                      </p>
+                      </button>
                       <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${faded ? "bg-destructive text-destructive-foreground" : "bg-card text-foreground"}`}>
                         {STATUS_LABELS[item.status] ?? item.status}
                       </span>
@@ -362,7 +383,21 @@ function BarberPanel() {
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c }} />{item.barbers?.name}
                       </span>
                       {item.is_walkin && <span className="rounded-full border border-gold px-2 py-0.5 font-semibold text-foreground">Avulso/Encaixe</span>}
+                      {(item as any).client_plans && <span className="rounded-full bg-gold/20 px-2 py-0.5 font-semibold text-foreground">Plano (restam {(item as any).client_plans.total_uses - (item as any).client_plans.used_uses})</span>}
                     </div>
+                    {rename?.id === item.id && (
+                      <div className="mt-3 space-y-2 rounded-md border border-border bg-card p-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input aria-label="Nome" className="min-h-11 min-w-0 rounded-md border border-input bg-background px-2 text-base" value={rename.first} onChange={(e) => setRename({ ...rename, first: e.target.value })} />
+                          <input aria-label="Sobrenome" className="min-h-11 min-w-0 rounded-md border border-input bg-background px-2 text-base" value={rename.last} onChange={(e) => setRename({ ...rename, last: e.target.value })} />
+                        </div>
+                        {renameErr && <p className="text-sm text-destructive">{renameErr}</p>}
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setRename(null)} className="min-h-11 flex-1 rounded-md border border-input text-sm font-semibold">Cancelar</button>
+                          <button type="button" onClick={saveRename} className="min-h-11 flex-1 rounded-md bg-brand text-sm font-bold text-brand-foreground">Salvar nome</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {item.status === "agendado" && !previewId && (

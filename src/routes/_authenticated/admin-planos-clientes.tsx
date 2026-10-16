@@ -29,10 +29,22 @@ function ClientPlansPage() {
   const [found, setFound] = useState<Found[]>([]);
   const [sel, setSel] = useState<Found | null>(null);
   const [planId, setPlanId] = useState("");
-  const [uses, setUses] = useState("4");
+  const [uses, setUses] = useState("2");
   const [expires, setExpires] = useState(in30());
   const [msg, setMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [kind, setKind] = useState<"completo" | "parcial">("completo");
+  const [fullDraft, setFullDraft] = useState<string | null>(null);
+  const rulesQ = useQuery({ queryKey: ["plan-rules"], queryFn: async () => (await supabase.from("operation_settings").select("plan_full_uses").eq("id", 1).maybeSingle()).data });
+  const fullUses = rulesQ.data?.plan_full_uses ?? 4;
+  async function saveRule() {
+    const n = Math.round(Number(fullDraft));
+    if (!(n >= 1 && n <= 60)) return setMsg("Créditos do plano completo: de 1 a 60.");
+    const { error } = await supabase.from("operation_settings").update({ plan_full_uses: n }).eq("id", 1);
+    if (error) return setMsg("Não foi possível salvar a regra.");
+    setFullDraft(null); setMsg("Regra do plano salva.");
+    qc.invalidateQueries({ queryKey: ["plan-rules"] });
+  }
 
   const plansQ = useQuery({ queryKey: ["plans-active"], queryFn: async () => (await supabase.from("plans").select("id, name").eq("active", true).order("name")).data ?? [] });
   const listQ = useQuery({
@@ -52,9 +64,10 @@ function ClientPlansPage() {
 
   async function add() {
     if (!sel) return;
-    const total = Math.round(Number(uses));
+    const total = kind === "completo" ? fullUses : Math.round(Number(uses));
     if (!(total > 0)) return setMsg("Informe a quantidade de cortes.");
-    const label = plansQ.data?.find((p) => p.id === planId)?.name ?? "Plano mensal";
+    const base = plansQ.data?.find((p) => p.id === planId)?.name ?? "Plano mensal";
+    const label = `${base} (${kind === "completo" ? "completo" : "parcial"})`;
     const { error } = await supabase.from("client_plans").insert({ client_id: sel.id, plan_id: planId || null, label, total_uses: total, expires_on: expires || null });
     if (error) return setMsg("Não foi possível salvar o plano.");
     setMsg(`Plano registrado para ${sel.first_name}.`);
@@ -84,6 +97,14 @@ function ClientPlansPage() {
 
   return (
     <SettingsShell title="Clientes com plano">
+      <section className={`${sCard} space-y-2`}>
+        <h2 className="text-base font-bold text-card-foreground">Regra do plano/assinatura</h2>
+        <p className="text-sm text-foreground/70">Plano completo dá {fullUses} créditos (1 corte por crédito). Plano parcial: você define a quantidade ao registrar.</p>
+        <div className="flex gap-2">
+          <input inputMode="numeric" aria-label="Créditos do plano completo" className={sInput} value={fullDraft ?? String(fullUses)} onChange={(e) => setFullDraft(e.target.value)} />
+          <button type="button" onClick={saveRule} disabled={fullDraft == null} className={sBtn}>Salvar</button>
+        </div>
+      </section>
       <section className={`${sCard} space-y-3`}>
         <h2 className="text-base font-bold text-card-foreground">Registrar plano pago</h2>
         <div className="flex gap-2">
@@ -106,8 +127,16 @@ function ClientPlansPage() {
                 {plansQ.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["completo", "parcial"] as const).map((k) => (
+                <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}
+                  className={kind === k ? sBtn : sBtnOutline}>{k === "completo" ? `Completo (${fullUses})` : "Parcial"}</button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <label className={sLabel}><span>Cortes no plano</span><input inputMode="numeric" className={sInput} value={uses} onChange={(e) => setUses(e.target.value)} /></label>
+              {kind === "parcial"
+                ? <label className={sLabel}><span>Créditos (parcial)</span><input inputMode="numeric" className={sInput} value={uses} onChange={(e) => setUses(e.target.value)} /></label>
+                : <p className="self-end pb-3 text-sm font-semibold text-foreground">{fullUses} créditos</p>}
               <label className={sLabel}><span>Válido até</span><input type="date" className={sInput} value={expires} onChange={(e) => setExpires(e.target.value)} /></label>
             </div>
             <div className="flex gap-2">

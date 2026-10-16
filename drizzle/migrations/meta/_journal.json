@@ -50,6 +50,13 @@
       "when": 1792028226835,
       "tag": "0006_encaixe_any_time",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792118579221,
+      "tag": "0007_rename_early_finish_plan_rules",
+      "breakpoints": true
     }
   ]
 }

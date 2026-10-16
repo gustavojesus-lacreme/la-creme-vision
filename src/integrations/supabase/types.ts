@@ -625,6 +625,7 @@ export type Database = {
           lunch_start: string | null
           max_advance_days: number | null
           min_advance_minutes: number
+          plan_full_uses: number
           reschedule_block_saturday: boolean
           reschedule_cutoff_time: string | null
           reschedule_cutoff_weekday: number | null
@@ -651,6 +652,7 @@ export type Database = {
           lunch_start?: string | null
           max_advance_days?: number | null
           min_advance_minutes?: number
+          plan_full_uses?: number
           reschedule_block_saturday?: boolean
           reschedule_cutoff_time?: string | null
           reschedule_cutoff_weekday?: number | null
@@ -677,6 +679,7 @@ export type Database = {
           lunch_start?: string | null
           max_advance_days?: number | null
           min_advance_minutes?: number
+          plan_full_uses?: number
           reschedule_block_saturday?: boolean
           reschedule_cutoff_time?: string | null
           reschedule_cutoff_weekday?: number | null
@@ -1192,6 +1195,10 @@ export type Database = {
           _quantity: number
           _unit_cost_cents?: number
         }
+        Returns: undefined
+      }
+      rename_appointment: {
+        Args: { _first: string; _id: string; _last: string }
         Returns: undefined
       }
       search_clients: {
