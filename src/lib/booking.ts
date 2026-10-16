@@ -193,3 +193,21 @@ export function formatBarberServices(serviceIds: string[], services: { id: strin
   if (!names.length) return "Nenhum serviço definido";
   return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
 }
+
+/** Preço de um serviço adicionado na finalização: menor preço promocional entre as combinações
+ * ativas que o contêm e cujos outros serviços já estão no atendimento; senão preço cheio.
+ * Espelha public.extra_service_price no banco. Unidades extras (qtd > 1) pagam preço cheio. */
+export function extraServicePrice(
+  service: { id: string; price_cents: number },
+  context: string[],
+  combos: ServiceCombo[],
+  quantity = 1,
+) {
+  let unit = service.price_cents;
+  for (const c of combos) {
+    const p = c.item_prices?.[service.id];
+    if (p == null || !c.service_ids.includes(service.id)) continue;
+    if (c.service_ids.every((id) => id === service.id || context.includes(id))) unit = Math.min(unit, p);
+  }
+  return unit + service.price_cents * Math.max(0, quantity - 1);
+}
