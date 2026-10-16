@@ -57,6 +57,13 @@
       "when": 1792118579221,
       "tag": "0007_rename_early_finish_plan_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792177431934,
+      "tag": "0008_finalize_extras_combo_prices",
+      "breakpoints": true
     }
   ]
 }

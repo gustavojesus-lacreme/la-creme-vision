@@ -1080,6 +1080,10 @@ export type Database = {
           id: string
         }[]
       }
+      extra_service_price: {
+        Args: { _context: string[]; _service_id: string }
+        Returns: number
+      }
       finalize_appointment: {
         Args: {
           _appointment_id: string
