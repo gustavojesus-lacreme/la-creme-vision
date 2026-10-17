@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Plus, Minus, X, Check, Banknote, CreditCard, ArrowDownLeft } from "lucide-react";
 import { cashChange } from "@/lib/cash-change";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -595,10 +595,10 @@ function BarberPanel() {
               </div>
             )}
             {method === "dinheiro" && <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex min-h-11 items-center justify-between gap-3">
-                <label htmlFor="has-change" className="cursor-pointer text-sm font-medium">Teve troco?</label>
-                <Switch id="has-change" checked={hasChange} disabled={payBusy} onCheckedChange={(checked) => { setHasChange(checked); setCashReceived(""); setChangeMethod("pix"); setPayError(null); }} />
-              </div>
+              <label htmlFor="has-change" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-medium">
+                <Checkbox id="has-change" checked={hasChange} disabled={payBusy} onCheckedChange={(checked) => { setHasChange(checked === true); setCashReceived(""); setChangeMethod("pix"); setPayError(null); }} className="h-5 w-5 rounded-md" />
+                <span>Teve troco?</span>
+              </label>
               {hasChange && <>
               <label className="block space-y-1.5 text-sm font-medium"><span>Dinheiro recebido</span>
                 <div className="flex h-11 items-center rounded-md border border-input bg-card px-3"><span className="text-muted-foreground">R$</span><input aria-label="Dinheiro recebido" inputMode="decimal" disabled={payBusy} value={cashReceived} placeholder="0,00" onChange={(e) => { setCashReceived(e.target.value); setPayError(null); }} className="h-full w-full min-w-0 bg-transparent pl-2 text-base outline-none" /></div>
