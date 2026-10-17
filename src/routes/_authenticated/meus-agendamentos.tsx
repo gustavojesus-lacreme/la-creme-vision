@@ -136,7 +136,8 @@ function MyAppointments() {
                 {item.status === "agendado" && managerQuery.data?.includes(item.barber_id) && (
                   <Button variant="outline" className="mt-3 min-h-11 w-full" onClick={() => {
                     const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(item.starts_at));
-                    setEditError(null); setEdit({ id: item.id, first: item.customer_first_name, last: item.customer_last_name, day: parts, time: formatTime(new Date(item.starts_at)) });
+                    const time = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(item.starts_at));
+                    setEditError(null); setEdit({ id: item.id, first: item.customer_first_name, last: item.customer_last_name, day: parts, time });
                   }}><Pencil />Editar agendamento</Button>
                 )}
                 {item.status === "agendado" ? (
