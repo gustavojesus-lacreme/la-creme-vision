@@ -64,6 +64,13 @@
       "when": 1792177431934,
       "tag": "0008_finalize_extras_combo_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792199951175,
+      "tag": "0009_restore_appointments_read_access",
+      "breakpoints": true
     }
   ]
 }
