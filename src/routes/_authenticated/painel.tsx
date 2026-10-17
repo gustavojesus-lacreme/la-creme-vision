@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { formatTime, isServiceBlocked } from "@/lib/booking";
+import { formatTime, isServiceBlocked, extraServicePrice, type ServiceCombo } from "@/lib/booking";
+import { ClientDetailDialog } from "@/components/app/ClientDetailDialog";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
@@ -87,7 +88,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, client_plan_id, client_plans(total_uses, used_uses), services(name), barbers(name, color)",
+          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, total_duration_minutes, customer_first_name, customer_last_name, customer_whatsapp, client_id, barber_id, is_walkin, client_plan_id, client_plans(total_uses, used_uses), services(name), barbers(name, color)",
         )
         .gte("starts_at", spStartISO(stripStart))
         .lt("starts_at", spStartISO(addDays(stripStart, 7)))
@@ -120,6 +121,13 @@ function BarberPanel() {
     enabled: !!paying,
     queryFn: async () => (await supabase.from("services").select("id, name, price_cents").eq("active", true).order("sort_order")).data ?? [],
   });
+  const combosQuery = useQuery({
+    queryKey: ["panel-combos", paying],
+    enabled: !!paying,
+    queryFn: async () => (await supabase.from("service_combos").select("*").eq("active", true)).data ?? [],
+  });
+  const [detail, setDetail] = useState<string | null>(null);
+  const [clientCard, setClientCard] = useState<string | null>(null);
   const [extras, setExtras] = useState<Record<string, number>>({});
   const [pickSvc, setPickSvc] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -214,7 +222,15 @@ function BarberPanel() {
   const extraSvc = allServices.filter((x) => extras[x.id]);
   // Corte inclui Pezinho; Barba inclui Bigode (mesma regra do agendamento).
   const addable = allServices.filter((x) => !isServiceBlocked(x, [...bookedSvc, ...extraSvc]));
-  const extrasTotal = Object.entries(extras).reduce((t, [id, q]) => t + (allServices.find((x) => x.id === id)?.price_cents ?? 0) * q, 0);
+  const combos = (combosQuery.data ?? []) as unknown as ServiceCombo[];
+  const extraPrice = (x: { id: string; price_cents: number }, q = 1) => {
+    const ctx = [...(payingItem?.service_ids ?? []), ...Object.keys(extras).filter((id) => id !== x.id)];
+    return extraServicePrice(x, ctx, combos, q);
+  };
+  const extrasTotal = Object.entries(extras).reduce((t, [id, q]) => {
+    const s = allServices.find((x) => x.id === id);
+    return t + (s ? extraPrice(s, q) : 0);
+  }, 0);
   const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
   function changeSvc(id: string, delta: number) {
     const q = (extras[id] ?? 0) + delta;
