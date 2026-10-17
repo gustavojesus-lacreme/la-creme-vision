@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Registrar dinheiro recebido e troco por Pix sem duplicar despesas ou faturamento
+- [ ] Simplificar e ampliar a tela de finalização, verificar pagamento e apresentação
 - [x] Ordenar agendamentos atuais por data e hora e permitir edição apenas a admin/dono/líder
 - [x] Corrigir carregamento e histórico diário do Painel, com todos os status visíveis
 - [x] Mostrar nome do cliente em Meus agendamentos
