@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsShell, Toggle, sCard } from "@/components/app/SettingsShell";
+import { WhatsappConfirmations } from "@/components/app/WhatsappConfirmations";
 
 export const Route = createFileRoute("/_authenticated/config-notificacoes")({
   head: () => ({
@@ -48,6 +49,7 @@ function NotificationsPage() {
           ))}
         </section>
       ))}
+      <WhatsappConfirmations />
     </SettingsShell>
   );
 }
