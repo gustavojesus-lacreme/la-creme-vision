@@ -28,11 +28,12 @@ function atTime(dateStr: string, time: string) {
 }
 
 export function formatTime(date: Date) {
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 export function formatDateLong(date: Date) {
   return date.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     weekday: "long",
     day: "2-digit",
     month: "long",
