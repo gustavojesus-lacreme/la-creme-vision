@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Ordenar agendamentos atuais por data e hora e permitir edição apenas a admin/dono/líder
 - [ ] Corrigir carregamento e histórico diário do Painel, com todos os status visíveis
 - [ ] Mostrar nome do cliente em Meus agendamentos
 - [ ] Permitir retirar serviço antes da finalização e sincronizar preços promocionais
