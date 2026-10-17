@@ -11,3 +11,5 @@
 - Stock balance changes only via stock_movements (trigger-guarded); product sales go through finalize_appointment and financial_entries — single source for finance/commission.
 - Client codes come only from the clients table sequence (DB-generated, immutable); staff walk-in bookings go through staff_create_appointment so availability and pricing rules stay in the database.
 - Barber colors come from src/lib/barber-colors.ts (brand palette tokens --barber-N, then golden-angle generated; admin-chosen color wins) so every screen colors barbers consistently.
+- Booked service removal goes through remove_appointment_service, which authorizes staff and recalculates combo totals and plan coverage in the database; never accept client-supplied totals.
+- Appointment name/date/time editing uses edit_appointment and can_edit_appointment; managers only edit rows already in their permitted scope and regular bookings retain availability checks.
