@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, Minus, X, Check, Banknote, CreditCard, ArrowDownLeft } from "lucide-react";
+import { cashChange } from "@/lib/cash-change";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,6 +130,15 @@ function BarberPanel() {
     queryFn: async () => { const { data, error } = await supabase.from("service_combos").select("*").eq("active", true); if (error) throw error; return data ?? []; },
   });
   const [detail, setDetail] = useState<string | null>(null);
+  const receiptQuery = useQuery({
+    queryKey: ["panel-receipt", detail],
+    enabled: !!detail,
+    queryFn: async () => {
+      if (!detail) return null;
+      const { data } = await supabase.from("financial_entries").select("cash_received_cents, change_cents, change_method").eq("appointment_id", detail).eq("category", "servico").maybeSingle();
+      return data;
+    },
+  });
   const [clientCard, setClientCard] = useState<string | null>(null);
   const [extras, setExtras] = useState<Record<string, number>>({});
   const [pickSvc, setPickSvc] = useState("");
@@ -148,6 +158,8 @@ function BarberPanel() {
   }
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
+  const [cashReceived, setCashReceived] = useState("");
+  const [changeMethod, setChangeMethod] = useState("pix");
   const [payError, setPayError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
   const [encaixe, setEncaixe] = useState(false);
@@ -159,6 +171,8 @@ function BarberPanel() {
       setPaying(id);
       setPayError(null);
       setDiscount("");
+      setCashReceived("");
+      setChangeMethod("pix");
       setCart({});
       setPick("");
       setExtras({});
@@ -173,14 +187,17 @@ function BarberPanel() {
 
   async function confirmPayment() {
     if (!paying) return;
+    if (change.error) return setPayError(change.error);
     setPayBusy(true);
     setPayError(null);
-    const { error } = await supabase.rpc("finalize_appointment", {
+    const { error } = await supabase.rpc("finalize_appointment_with_change", {
       _appointment_id: paying,
       _method: method,
       _discount_cents: toCents(discount),
       _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
       _services: Object.entries(extras).map(([service_id, quantity]) => ({ service_id, quantity })),
+      ...(method === "dinheiro" && cashReceived.trim() ? { _cash_received_cents: toCents(cashReceived) } : {}),
+      _change_method: changeMethod,
     });
     setPayBusy(false);
     if (error) return setPayError(error.message || "Não foi possível finalizar.");
@@ -188,6 +205,7 @@ function BarberPanel() {
     queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
     queryClient.invalidateQueries({ queryKey: ["fin-entries"] });
     queryClient.invalidateQueries({ queryKey: ["stock"] });
+    queryClient.invalidateQueries({ queryKey: ["panel-receipt"] });
   }
   const products = productsQuery.data ?? [];
   const productsTotal = Object.entries(cart).reduce((s, [id, q]) => s + (products.find((p) => p.id === id)?.price_cents ?? 0) * q, 0);
@@ -221,7 +239,7 @@ function BarberPanel() {
     { label: "Finalizados", items: shown.filter((a) => a.status === "finalizado") },
     { label: "Cancelados e não compareceram", items: shown.filter((a) => isHidden(a.status)) },
   ];
-  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
+  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying);
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
   const extraSvc = allServices.filter((x) => extras[x.id]);
@@ -237,6 +255,8 @@ function BarberPanel() {
     return t + (s ? extraPrice(s, q) : 0);
   }, 0);
   const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
+  const totalDue = servicesTotal - toCents(discount) + productsTotal;
+  const change = cashChange(totalDue, method === "dinheiro" && cashReceived.trim() ? toCents(cashReceived) : null);
   function changeSvc(id: string, delta: number) {
     const q = (extras[id] ?? 0) + delta;
     const next = { ...extras };
@@ -473,6 +493,8 @@ function BarberPanel() {
               {row("Situação", STATUS_LABELS[a.status] ?? a.status)}
               {a.client_plans && row("Plano", `restam ${a.client_plans.total_uses - a.client_plans.used_uses} de ${a.client_plans.total_uses}`)}
               {a.is_walkin && row("Tipo", "Avulso/Encaixe")}
+              {receiptQuery.data?.cash_received_cents != null && row("Dinheiro recebido", brl(receiptQuery.data.cash_received_cents))}
+              {receiptQuery.data?.change_cents != null && row(`Troco (${receiptQuery.data.change_method === "pix" ? "Pix" : "dinheiro"})`, brl(receiptQuery.data.change_cents))}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => setDetail(null)} className="min-h-11 rounded-md border border-input text-sm font-semibold">Fechar</button>
                 <button type="button" disabled={!a.client_id} onClick={() => { setClientCard(a.client_id); setDetail(null); }}
@@ -483,94 +505,111 @@ function BarberPanel() {
         );
       })()}
       {paying && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
-          <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
-            <h2 className="text-lg font-bold text-card-foreground">Finalizar e registrar pagamento</h2>
-            <div className="space-y-2 border-b border-border pb-3">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-2 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+          <div className="flex max-h-[94svh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-card text-card-foreground shadow-card">
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <h2 id="payment-title" className="text-xl font-bold">Finalizar atendimento</h2>
+                <p className="mt-1 break-words text-sm text-muted-foreground">{payingItem?.customer_first_name} {payingItem?.customer_last_name}{payingItem && ` · ${formatTime(new Date(payingItem.starts_at))}`}</p>
+              </div>
+              <Button variant="ghost" size="icon" aria-label="Fechar finalização" title="Fechar" disabled={payBusy} onClick={() => setPaying(null)}><X /></Button>
+            </header>
+            <div className="overflow-y-auto overscroll-contain">
+            <div className="grid sm:grid-cols-[1.1fr_1fr]">
+            <section className="min-w-0 space-y-5 p-5 sm:border-r sm:border-border sm:p-6" aria-label="Itens do atendimento">
+            <div className="space-y-1">
               <p className="text-sm font-bold text-foreground">Serviços agendados</p>
-              {bookedSvc.map((s) => <div key={s.id} className="flex items-center justify-between gap-2 text-sm">
+              {bookedSvc.map((s) => <div key={s.id} className="flex min-h-10 items-center justify-between gap-2 border-b border-border text-sm last:border-0">
                 <span>{s.name}</span>
                 <Button variant="ghost" size="icon" title="Retirar serviço" aria-label={`Retirar ${s.name}`} disabled={removing || payBusy || (payingItem?.service_ids?.length ?? 0) <= 1} onClick={() => removeBookedService(s.id)}><Trash2 /></Button>
               </div>)}
             </div>
-            <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-2">
               <p className="text-sm font-semibold text-foreground">Adicionar serviço</p>
-              <p className="text-xs text-foreground/60">Complementa este atendimento. Não cria novo agendamento nem altera a agenda.</p>
               <div className="flex gap-2">
-                <select value={pickSvc} onChange={(e) => setPickSvc(e.target.value)}
+                <select aria-label="Serviço adicional" value={pickSvc} onChange={(e) => setPickSvc(e.target.value)}
                   className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm">
                   <option value="">{servicesQuery.isLoading ? "Carregando..." : "Escolha um serviço"}</option>
                   {addable.map((x) => <option key={x.id} value={x.id}>{x.name} — {brl(extraPrice(x))}</option>)}
                 </select>
-                <button type="button" disabled={!pickSvc} onClick={() => { changeSvc(pickSvc, 1); setPickSvc(""); }}
-                  className="min-h-11 shrink-0 rounded-md border border-brand px-3 text-sm font-bold text-brand disabled:opacity-50">Adicionar</button>
+                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" title="Adicionar serviço" aria-label="Adicionar serviço" disabled={!pickSvc || payBusy} onClick={() => { changeSvc(pickSvc, 1); setPickSvc(""); }}><Plus /></Button>
               </div>
               {extraSvc.map((x) => (
                 <div key={x.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="min-w-0 truncate">{x.name} — {brl(extraPrice(x, extras[x.id] ?? 0))}</span>
+                  <span className="min-w-0 break-words">{x.name} — {brl(extraPrice(x, extras[x.id] ?? 0))}</span>
                   <span className="flex shrink-0 items-center gap-1">
-                    <button type="button" aria-label="Diminuir" onClick={() => changeSvc(x.id, -1)} className="h-9 w-9 rounded-md border border-input">−</button>
+                    <Button variant="ghost" size="icon" title="Diminuir serviço" aria-label={`Diminuir ${x.name}`} disabled={payBusy} onClick={() => changeSvc(x.id, -1)}><Minus /></Button>
                     <span className="w-6 text-center font-bold">{extras[x.id]}</span>
-                    <button type="button" aria-label="Aumentar" onClick={() => changeSvc(x.id, 1)} className="h-9 w-9 rounded-md border border-input">+</button>
+                    <Button variant="ghost" size="icon" title="Aumentar serviço" aria-label={`Aumentar ${x.name}`} disabled={payBusy} onClick={() => changeSvc(x.id, 1)}><Plus /></Button>
                   </span>
                 </div>
               ))}
             </div>
-            <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-2 border-t border-border pt-5">
               <p className="text-sm font-semibold text-foreground">Adicionar produto</p>
               <div className="flex gap-2">
-                <select value={pick} onChange={(e) => setPick(e.target.value)}
+                <select aria-label="Produto adicional" value={pick} onChange={(e) => setPick(e.target.value)}
                   className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm">
                   <option value="">{productsQuery.isLoading ? "Carregando..." : products.length ? "Escolha um produto" : "Nenhum produto disponível"}</option>
                   {products.map((p) => <option key={p.id} value={p.id}>{p.name} — {brl(p.price_cents)} ({p.stock} em estoque)</option>)}
                 </select>
-                <button type="button" onClick={addProduct} disabled={!pick}
-                  className="min-h-11 shrink-0 rounded-md border border-brand px-3 text-sm font-bold text-brand disabled:opacity-50">Adicionar</button>
+                <Button variant="outline" size="icon" className="h-11 w-11 shrink-0" title="Adicionar produto" aria-label="Adicionar produto" onClick={addProduct} disabled={!pick || payBusy}><Plus /></Button>
               </div>
               {Object.entries(cart).map(([id, q]) => {
                 const p = products.find((x) => x.id === id);
                 return (
                   <div key={id} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate">{p?.name} — {brl((p?.price_cents ?? 0) * q)}</span>
+                    <span className="min-w-0 break-words">{p?.name} — {brl((p?.price_cents ?? 0) * q)}</span>
                     <span className="flex shrink-0 items-center gap-1">
-                      <button type="button" aria-label="Diminuir" onClick={() => changeQty(id, -1)} className="h-9 w-9 rounded-md border border-input">−</button>
+                      <Button variant="ghost" size="icon" title="Diminuir produto" aria-label={`Diminuir ${p?.name}`} disabled={payBusy} onClick={() => changeQty(id, -1)}><Minus /></Button>
                       <span className="w-6 text-center font-bold">{q}</span>
-                      <button type="button" aria-label="Aumentar" onClick={() => changeQty(id, 1)} className="h-9 w-9 rounded-md border border-input">+</button>
+                      <Button variant="ghost" size="icon" title="Aumentar produto" aria-label={`Aumentar ${p?.name}`} disabled={payBusy} onClick={() => changeQty(id, 1)}><Plus /></Button>
                     </span>
                   </div>
                 );
               })}
             </div>
-            {payingItem?.total_price_cents != null && (
-              <div className="space-y-0.5 text-sm text-foreground">
-                <p className="flex justify-between"><span>Serviços</span><span>{brl(servicesTotal)}</span></p>
-                {toCents(discount) > 0 && <p className="flex justify-between"><span>Desconto (serviços)</span><span>−{brl(toCents(discount))}</span></p>}
-                <p className="flex justify-between"><span>Produtos</span><span>{brl(productsTotal)}</span></p>
-                <p className="flex justify-between border-t border-border pt-1 text-base font-bold"><span>TOTAL</span><span>{brl(servicesTotal - toCents(discount) + productsTotal)}</span></p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
+            </section>
+            <section className="min-w-0 space-y-5 border-t border-border bg-muted/40 p-5 sm:border-t-0 sm:p-6" aria-label="Pagamento">
+            <h3 className="text-sm font-bold">Pagamento</h3>
+            <div className="grid grid-cols-2 gap-2" aria-label="Forma de pagamento">
               {methodsQuery.data?.map((m) => (
-                <button key={m.id} type="button" onClick={() => setMethod(m.id)}
-                  className={`min-h-12 rounded-md border px-2 text-sm font-semibold ${method === m.id ? "border-brand bg-secondary text-brand" : "border-input text-foreground"}`}>
-                  {m.label}
-                </button>
+                <Button key={m.id} variant={method === m.id ? "default" : "outline"} aria-pressed={method === m.id} disabled={payBusy} onClick={() => { setMethod(m.id); setPayError(null); }} className="min-h-11 h-auto whitespace-normal px-2 py-2 text-xs">
+                  {m.id === "dinheiro" ? <Banknote /> : m.id === "pix" ? <ArrowDownLeft /> : <CreditCard />}{m.label}
+                </Button>
               ))}
             </div>
-            <label className="block space-y-1 text-sm font-semibold text-foreground">
-              <span>Desconto nos serviços (R$, opcional)</span>
-              <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)}
-                className="min-h-12 w-full rounded-md border border-input bg-background px-3 text-base" />
+            <label className="block space-y-1.5 text-sm font-medium">
+              <span>Desconto nos serviços</span>
+              <div className="flex h-11 items-center rounded-md border border-input bg-card px-3"><span className="text-muted-foreground">R$</span><input aria-label="Desconto nos serviços" inputMode="decimal" disabled={payBusy} value={discount} placeholder="0,00" onChange={(e) => setDiscount(e.target.value)} className="h-full w-full min-w-0 bg-transparent pl-2 text-base outline-none" /></div>
             </label>
+            {payingItem?.total_price_cents != null && (
+              <div className="space-y-2 border-t border-border pt-4 text-sm text-foreground">
+                <p className="flex justify-between"><span>Serviços</span><span>{brl(servicesTotal)}</span></p>
+                {toCents(discount) > 0 && <p className="flex justify-between"><span>Desconto (serviços)</span><span>−{brl(toCents(discount))}</span></p>}
+                {productsTotal > 0 && <p className="flex justify-between"><span>Produtos</span><span>{brl(productsTotal)}</span></p>}
+                <p className="flex items-center justify-between gap-2 pt-2 font-bold"><span>Total a pagar</span><span className="text-2xl tabular-nums">{brl(totalDue)}</span></p>
+              </div>
+            )}
+            {method === "dinheiro" && <div className="space-y-3 border-t border-border pt-4">
+              <label className="block space-y-1.5 text-sm font-medium"><span>Dinheiro recebido</span>
+                <div className="flex h-11 items-center rounded-md border border-input bg-card px-3"><span className="text-muted-foreground">R$</span><input aria-label="Dinheiro recebido" inputMode="decimal" disabled={payBusy} value={cashReceived} placeholder="0,00" onChange={(e) => { setCashReceived(e.target.value); setPayError(null); }} className="h-full w-full min-w-0 bg-transparent pl-2 text-base outline-none" /></div>
+              </label>
+              {cashReceived.trim() && !change.error && <>
+                <p className="flex items-center justify-between gap-2 text-sm font-semibold"><span>Troco</span><span className="text-lg tabular-nums">{brl(change.changeCents)}</span></p>
+                {change.changeCents > 0 && <fieldset className="space-y-2"><legend className="text-sm text-muted-foreground">Devolver troco em</legend><div className="grid grid-cols-2 gap-2">{[{ id: "pix", label: "Pix" }, { id: "dinheiro", label: "Dinheiro" }].map((m) => <Button key={m.id} disabled={payBusy} aria-pressed={changeMethod === m.id} variant={changeMethod === m.id ? "default" : "outline"} onClick={() => setChangeMethod(m.id)} className="h-11">{m.id === "pix" ? <ArrowDownLeft /> : <Banknote />}{m.label}</Button>)}</div></fieldset>}
+              </>}
+              {change.error && <p role="alert" className="text-sm text-destructive">{change.error}</p>}
+            </div>}
             {(servicesQuery.isError || combosQuery.isError) && <p role="alert" className="text-sm text-destructive">Não foi possível carregar serviços e descontos. Feche e tente novamente.</p>}
-            {payError && <p className="text-sm font-semibold text-destructive">{payError}</p>}
-            <div className="sticky bottom-0 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-border bg-card p-4">
-              <button type="button" onClick={() => setPaying(null)} className="min-h-12 rounded-md border border-input text-sm font-semibold">Voltar</button>
-              <button type="button" disabled={payBusy || removing || servicesQuery.isLoading || combosQuery.isLoading || servicesQuery.isError || combosQuery.isError} onClick={confirmPayment}
-                className="min-h-12 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">
-                {payBusy ? "Salvando..." : "Confirmar pagamento"}
-              </button>
+            {payError && <p role="alert" className="text-sm font-semibold text-destructive">{payError}</p>}
+            </section>
             </div>
+            </div>
+            <footer className="flex shrink-0 items-center gap-3 border-t border-border bg-card px-5 py-4 sm:justify-end sm:px-6">
+              <Button variant="outline" disabled={payBusy} onClick={() => setPaying(null)} className="h-12">Voltar</Button>
+              <Button disabled={payBusy || removing || !!change.error || servicesQuery.isLoading || combosQuery.isLoading || productsQuery.isLoading || servicesQuery.isError || combosQuery.isError} onClick={confirmPayment} className="h-12 min-w-0 flex-1 whitespace-normal sm:flex-none"><Check />{payBusy ? "Salvando..." : "Confirmar pagamento"}</Button>
+            </footer>
           </div>
         </div>
       )}
