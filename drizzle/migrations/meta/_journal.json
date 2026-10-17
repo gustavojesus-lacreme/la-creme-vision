@@ -92,6 +92,13 @@
       "when": 1792200241722,
       "tag": "0012_manager_edit_appointment",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792200347464,
+      "tag": "0013_verify_manager_edit_permissions",
+      "breakpoints": true
     }
   ]
 }
