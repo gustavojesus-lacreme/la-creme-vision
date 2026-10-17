@@ -414,7 +414,10 @@ export type Database = {
           amount_cents: number
           appointment_id: string | null
           barber_id: string | null
+          cash_received_cents: number | null
           category: string
+          change_cents: number | null
+          change_method: string | null
           client_name: string
           commission_barber_id: string | null
           commission_cents: number
@@ -443,7 +446,10 @@ export type Database = {
           amount_cents: number
           appointment_id?: string | null
           barber_id?: string | null
+          cash_received_cents?: number | null
           category: string
+          change_cents?: number | null
+          change_method?: string | null
           client_name?: string
           commission_barber_id?: string | null
           commission_cents?: number
@@ -472,7 +478,10 @@ export type Database = {
           amount_cents?: number
           appointment_id?: string | null
           barber_id?: string | null
+          cash_received_cents?: number | null
           category?: string
+          change_cents?: number | null
+          change_method?: string | null
           client_name?: string
           commission_barber_id?: string | null
           commission_cents?: number
@@ -1092,6 +1101,18 @@ export type Database = {
       finalize_appointment: {
         Args: {
           _appointment_id: string
+          _discount_cents?: number
+          _method: string
+          _products?: Json
+          _services?: Json
+        }
+        Returns: undefined
+      }
+      finalize_appointment_with_change: {
+        Args: {
+          _appointment_id: string
+          _cash_received_cents?: number
+          _change_method?: string
           _discount_cents?: number
           _method: string
           _products?: Json

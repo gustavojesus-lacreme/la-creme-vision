@@ -99,6 +99,13 @@
       "when": 1792200347464,
       "tag": "0013_verify_manager_edit_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792201171412,
+      "tag": "0014_cash_change_at_finalization",
+      "breakpoints": true
     }
   ]
 }
