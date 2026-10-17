@@ -196,7 +196,7 @@ function BarberPanel() {
       _discount_cents: toCents(discount),
       _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
       _services: Object.entries(extras).map(([service_id, quantity]) => ({ service_id, quantity })),
-      _cash_received_cents: method === "dinheiro" && cashReceived.trim() ? toCents(cashReceived) : undefined,
+      ...(method === "dinheiro" && cashReceived.trim() ? { _cash_received_cents: toCents(cashReceived) } : {}),
       _change_method: changeMethod,
     });
     setPayBusy(false);
