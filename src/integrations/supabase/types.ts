@@ -1058,6 +1058,136 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_outbound_messages: {
+        Row: {
+          accepted_at: string | null
+          appointment_id: string
+          attempts: number
+          blocked_reason: string | null
+          created_at: string
+          delivered_at: string | null
+          error_code: string | null
+          failed_at: string | null
+          id: string
+          last_attempt_at: string | null
+          provider_message_id: string | null
+          read_at: string | null
+          sent_at: string | null
+          state: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          appointment_id: string
+          attempts?: number
+          blocked_reason?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          error_code?: string | null
+          failed_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          provider_message_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          state?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          appointment_id?: string
+          attempts?: number
+          blocked_reason?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          error_code?: string | null
+          failed_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          provider_message_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_outbound_messages_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_status_callbacks: {
+        Row: {
+          applied_at: string | null
+          errors: Json | null
+          event_id: string
+          id: string
+          provider_at: string
+          provider_message_id: string
+          state: string
+        }
+        Insert: {
+          applied_at?: string | null
+          errors?: Json | null
+          event_id: string
+          id?: string
+          provider_at: string
+          provider_message_id: string
+          state: string
+        }
+        Update: {
+          applied_at?: string | null
+          errors?: Json | null
+          event_id?: string
+          id?: string
+          provider_at?: string
+          provider_message_id?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_status_callbacks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_webhook_events: {
+        Row: {
+          delivery_id: string
+          event: string
+          id: string
+          next_attempt_at: string
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          received_at: string
+        }
+        Insert: {
+          delivery_id: string
+          event: string
+          id?: string
+          next_attempt_at?: string
+          payload: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+        }
+        Update: {
+          delivery_id?: string
+          event?: string
+          id?: string
+          next_attempt_at?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1213,6 +1343,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      reconcile_whatsapp_status: {
+        Args: { _message_id: string }
+        Returns: undefined
+      }
+      recover_whatsapp_events: { Args: never; Returns: number }
       refund_product_sale: {
         Args: { _entry_id: string; _note?: string }
         Returns: undefined
