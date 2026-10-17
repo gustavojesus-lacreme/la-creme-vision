@@ -650,7 +650,7 @@ function BookingPage() {
           <button
             type="button"
             disabled={!ready || saving}
-            onClick={handleConfirm}
+            onClick={() => handleConfirm()}
             className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-3 z-10 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground shadow-lg active:opacity-90 disabled:opacity-50"
           >
             Confirmar agendamento
