@@ -78,6 +78,13 @@
       "when": 1792199997492,
       "tag": "0010_staff_remove_booked_service",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792200177866,
+      "tag": "0011_verify_service_removal_rollback",
+      "breakpoints": true
     }
   ]
 }
