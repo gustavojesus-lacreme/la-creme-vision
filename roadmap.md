@@ -1,9 +1,10 @@
 # Roadmap
-- [ ] Conectar WhatsApp Business e aprovar modelo de confirmação
-- [ ] Preparar envio automático após registro, tentativas e proteção contra duplicidade
-- [ ] Registrar callbacks de entrega e recuperação de trabalho pendente
-- [ ] Exibir status na área administrativa existente
-- [ ] Testar falhas, repetição e confirmação real; validar destino dos callbacks antes de concluir
+- [ ] Conectar WhatsApp Business e aprovar modelo de confirmação — aguardando conexão posterior autorizada pelo usuário
+- [x] Preparar fila automática após registro, contador de tentativas e proteção contra duplicidade, sem envio ativo
+- [x] Preparar recebimento assinado de callbacks, armazenamento e reconciliação transacional com recuperação limitada em novas chamadas
+- [x] Exibir status na área administrativa existente
+- [ ] Ativar envio e nova tentativa controlada com acionamento durável — depende da conexão e modelo aprovado
+- [ ] Testar envio real, indisponibilidade do provedor e destino publicado dos callbacks — depende da conexão e autorização de publicação
 - [x] Registrar dinheiro recebido e troco por Pix sem duplicar despesas ou faturamento
 - [x] Simplificar e ampliar a tela de finalização, verificar pagamento e apresentação
 - [x] Ordenar agendamentos atuais por data e hora e permitir edição apenas a admin/dono/líder
