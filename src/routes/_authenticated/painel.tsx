@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +72,7 @@ function BarberPanel() {
   });
 
   const [day, setDay] = useState(todaySP());
-  const stripStart = (() => { const t = todaySP(); const s3 = addDays(day, -3); return s3 < t ? t : s3; })();
+  const stripStart = day < todaySP() ? day : (() => { const s3 = addDays(day, -3); return s3 < todaySP() ? todaySP() : s3; })();
   const strip = Array.from({ length: 7 }, (_, i) => addDays(stripStart, i));
 
   const barbersQuery = useQuery({
@@ -119,12 +121,12 @@ function BarberPanel() {
   const servicesQuery = useQuery({
     queryKey: ["panel-services", paying],
     enabled: !!paying,
-    queryFn: async () => (await supabase.from("services").select("id, name, price_cents").eq("active", true).order("sort_order")).data ?? [],
+    queryFn: async () => { const { data, error } = await supabase.from("services").select("id, name, price_cents").eq("active", true).order("sort_order"); if (error) throw error; return data ?? []; },
   });
   const combosQuery = useQuery({
     queryKey: ["panel-combos", paying],
     enabled: !!paying,
-    queryFn: async () => (await supabase.from("service_combos").select("*").eq("active", true)).data ?? [],
+    queryFn: async () => { const { data, error } = await supabase.from("service_combos").select("*").eq("active", true); if (error) throw error; return data ?? []; },
   });
   const [detail, setDetail] = useState<string | null>(null);
   const [clientCard, setClientCard] = useState<string | null>(null);
@@ -133,8 +135,7 @@ function BarberPanel() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [pick, setPick] = useState("");
   const [colorFilter, setColorFilter] = useState("");
-  const [showHidden, setShowHidden] = useState(false);
-  const [showDone, setShowDone] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [rename, setRename] = useState<{ id: string; first: string; last: string } | null>(null);
   const [renameErr, setRenameErr] = useState<string | null>(null);
   async function saveRename() {
@@ -165,7 +166,8 @@ function BarberPanel() {
       setMethod(methodsQuery.data?.[0]?.id ?? "pix");
       return;
     }
-    await supabase.from("appointments").update({ status }).eq("id", id);
+    const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
+    if (error) { window.alert("Não foi possível alterar o atendimento: " + error.message); return; }
     queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
   }
 
@@ -213,9 +215,12 @@ function BarberPanel() {
     : [];
   const isHidden = (s: string) => s === "cancelado" || s === "nao_compareceu";
   const byBarber = dayAppts.filter((a) => !colorFilter || a.barber_id === colorFilter);
-  const hiddenCount = byBarber.filter((a) => isHidden(a.status)).length;
-  const doneCount = byBarber.filter((a) => a.status === "finalizado").length;
-  const shown = byBarber.filter((a) => (showHidden || !isHidden(a.status)) && (showDone || a.status !== "finalizado"));
+  const shown = byBarber;
+  const groups = [
+    { label: "Aguardando atendimento", items: shown.filter((a) => a.status !== "finalizado" && !isHidden(a.status)) },
+    { label: "Finalizados", items: shown.filter((a) => a.status === "finalizado") },
+    { label: "Cancelados e não compareceram", items: shown.filter((a) => isHidden(a.status)) },
+  ];
   const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
@@ -237,6 +242,17 @@ function BarberPanel() {
     const next = { ...extras };
     if (q <= 0) delete next[id]; else next[id] = Math.min(q, 20);
     setExtras(next);
+  }
+
+  async function removeBookedService(id: string) {
+    if (!paying || removing || !window.confirm("Retirar este serviço do atendimento? O valor será recalculado.")) return;
+    setRemoving(true); setPayError(null);
+    const { error } = await supabase.rpc("remove_appointment_service", { _appointment_id: paying, _service_id: id });
+    setRemoving(false);
+    if (error) return setPayError(error.message || "Não foi possível retirar o serviço.");
+    await queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["my-appointments"] });
+    queryClient.invalidateQueries({ queryKey: ["barber-day"] });
   }
 
   return (
@@ -349,37 +365,27 @@ function BarberPanel() {
           </div>
         )}
 
-        {doneCount > 0 && (
-          <button type="button" onClick={() => setShowDone(!showDone)} aria-pressed={showDone}
-            className="min-h-10 w-full rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground">
-            {showDone ? `Ocultar finalizados (${doneCount})` : `Finalizados (${doneCount})`}
-          </button>
-        )}
-
-        {hiddenCount > 0 && (
-          <button type="button" onClick={() => setShowHidden(!showHidden)} aria-pressed={showHidden}
-            className="min-h-10 w-full rounded-md border border-destructive/50 bg-card px-3 text-sm font-semibold text-destructive">
-            {showHidden ? `Ocultar cancelados e faltas (${hiddenCount})` : `Mostrar ocultos — cancelados e faltas (${hiddenCount})`}
-          </button>
-        )}
-
         {access != null && !pending && !appointmentsQuery.isLoading && !appointmentsQuery.isError && shown.length === 0 && (
           <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
             <p className="text-base text-foreground/80">Nenhum agendamento neste dia.</p>
           </div>
         )}
 
-        <div className="grid gap-3">
-          {shown.map((item) => {
+        {groups.map((group) => (
+        <section key={group.label} className="space-y-3" aria-label={group.label}>
+          <h2 className="font-display text-lg font-bold text-foreground">{group.label} ({group.items.length})</h2>
+          {!appointmentsQuery.isLoading && !appointmentsQuery.isError && group.items.length === 0 && <p className="text-sm text-muted-foreground">Nenhum atendimento.</p>}
+          <div className="grid gap-3">
+          {group.items.map((item) => {
             const when = new Date(item.starts_at);
             const c = colorOf(item.barber_id);
             const faded = item.status === "cancelado" || item.status === "nao_compareceu";
+            const statusStyle = faded ? "border-destructive/60 bg-destructive/10" : item.status === "finalizado" ? "border-success/60 bg-success/10" : "border-warning/60 bg-warning/15";
             return (
-              <div key={item.id} className={`overflow-hidden rounded-xl border shadow-sm ${faded ? "border-destructive/60 bg-destructive/10" : "border-border"}`}
-                style={faded ? { borderLeftColor: "var(--destructive)", borderLeftWidth: 6 } : { backgroundColor: tint(c, 7), borderLeftColor: c, borderLeftWidth: 6 }}>
+              <div key={item.id} className={`overflow-hidden rounded-lg border border-l-4 shadow-sm ${statusStyle}`}>
                 <div className="flex cursor-pointer items-stretch gap-3 p-4" title="Ver detalhes"
                   onClick={(e) => { if (!(e.target as HTMLElement).closest("button,input,select,a")) setDetail(item.id); }}>
-                  <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg ${faded ? "bg-destructive text-destructive-foreground" : "text-brand-foreground"}`} style={faded ? undefined : { backgroundColor: c }}>
+                  <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg ${faded ? "bg-destructive text-destructive-foreground" : item.status === "finalizado" ? "bg-success text-success-foreground" : "bg-warning text-warning-foreground"}`}>
                     <span className="text-base font-bold tabular-nums">{formatTime(when)}</span>
                     <span className="text-[10px] tabular-nums opacity-85">{formatTime(new Date(item.ends_at))}</span>
                   </div>
@@ -390,11 +396,12 @@ function BarberPanel() {
                         className={`min-w-0 truncate text-left text-base font-bold underline-offset-2 hover:underline ${faded ? "text-destructive line-through" : "text-card-foreground"}`}>
                         {item.customer_first_name} {item.customer_last_name}
                       </button>
-                      <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${faded ? "bg-destructive text-destructive-foreground" : "bg-card text-foreground"}`}>
+                      <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${faded ? "bg-destructive text-destructive-foreground" : item.status === "finalizado" ? "bg-success text-success-foreground" : "bg-warning text-warning-foreground"}`}>
                         {STATUS_LABELS[item.status] ?? item.status}
                       </span>
                     </div>
-                    <p className="truncate text-sm text-foreground/75">{item.services_label || item.services?.name}</p>
+                    <p className="break-words text-sm text-foreground/75">{item.services_label || item.services?.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{brl(item.total_price_cents ?? 0)}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                       <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: c }}>
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c }} />{item.barbers?.name}
@@ -434,7 +441,9 @@ function BarberPanel() {
               </div>
             );
           })}
-        </div>
+          </div>
+        </section>
+        ))}
 
         {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} day={day} />}
       </main>
@@ -477,6 +486,13 @@ function BarberPanel() {
         <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
           <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
             <h2 className="text-lg font-bold text-card-foreground">Finalizar e registrar pagamento</h2>
+            <div className="space-y-2 border-b border-border pb-3">
+              <p className="text-sm font-bold text-foreground">Serviços agendados</p>
+              {bookedSvc.map((s) => <div key={s.id} className="flex items-center justify-between gap-2 text-sm">
+                <span>{s.name}</span>
+                <Button variant="ghost" size="icon" title="Retirar serviço" aria-label={`Retirar ${s.name}`} disabled={removing || payBusy || (payingItem?.service_ids?.length ?? 0) <= 1} onClick={() => removeBookedService(s.id)}><Trash2 /></Button>
+              </div>)}
+            </div>
             <div className="space-y-2 rounded-md border border-border p-3">
               <p className="text-sm font-semibold text-foreground">Adicionar serviço</p>
               <p className="text-xs text-foreground/60">Complementa este atendimento. Não cria novo agendamento nem altera a agenda.</p>
@@ -484,14 +500,14 @@ function BarberPanel() {
                 <select value={pickSvc} onChange={(e) => setPickSvc(e.target.value)}
                   className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm">
                   <option value="">{servicesQuery.isLoading ? "Carregando..." : "Escolha um serviço"}</option>
-                  {addable.map((x) => <option key={x.id} value={x.id}>{x.name} — {brl(x.price_cents)}</option>)}
+                  {addable.map((x) => <option key={x.id} value={x.id}>{x.name} — {brl(extraPrice(x))}</option>)}
                 </select>
                 <button type="button" disabled={!pickSvc} onClick={() => { changeSvc(pickSvc, 1); setPickSvc(""); }}
                   className="min-h-11 shrink-0 rounded-md border border-brand px-3 text-sm font-bold text-brand disabled:opacity-50">Adicionar</button>
               </div>
               {extraSvc.map((x) => (
                 <div key={x.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="min-w-0 truncate">{x.name} — {brl(x.price_cents * (extras[x.id] ?? 0))}</span>
+                  <span className="min-w-0 truncate">{x.name} — {brl(extraPrice(x, extras[x.id] ?? 0))}</span>
                   <span className="flex shrink-0 items-center gap-1">
                     <button type="button" aria-label="Diminuir" onClick={() => changeSvc(x.id, -1)} className="h-9 w-9 rounded-md border border-input">−</button>
                     <span className="w-6 text-center font-bold">{extras[x.id]}</span>
@@ -546,10 +562,11 @@ function BarberPanel() {
               <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)}
                 className="min-h-12 w-full rounded-md border border-input bg-background px-3 text-base" />
             </label>
+            {(servicesQuery.isError || combosQuery.isError) && <p role="alert" className="text-sm text-destructive">Não foi possível carregar serviços e descontos. Feche e tente novamente.</p>}
             {payError && <p className="text-sm font-semibold text-destructive">{payError}</p>}
             <div className="sticky bottom-0 -mx-4 -mb-4 grid grid-cols-2 gap-2 border-t border-border bg-card p-4">
               <button type="button" onClick={() => setPaying(null)} className="min-h-12 rounded-md border border-input text-sm font-semibold">Voltar</button>
-              <button type="button" disabled={payBusy} onClick={confirmPayment}
+              <button type="button" disabled={payBusy || removing || servicesQuery.isLoading || combosQuery.isLoading || servicesQuery.isError || combosQuery.isError} onClick={confirmPayment}
                 className="min-h-12 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">
                 {payBusy ? "Salvando..." : "Confirmar pagamento"}
               </button>

@@ -28,7 +28,7 @@ function MyAppointments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, starts_at, status, services_label, total_price_cents, total_duration_minutes, services(name, price_cents), barbers(name)")
+        .select("id, starts_at, status, services_label, total_price_cents, total_duration_minutes, customer_first_name, customer_last_name, services(name, price_cents), barbers(name)")
         .order("starts_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -84,7 +84,8 @@ function MyAppointments() {
               <div key={item.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-bold text-card-foreground">
+                    <p className="text-base font-bold text-card-foreground">{`${item.customer_first_name} ${item.customer_last_name}`.trim() || "Cliente sem nome"}</p>
+                    <p className="break-words text-sm font-semibold text-card-foreground">
                       {item.services_label || item.services?.name}
                     </p>
                     <p className="text-sm text-foreground/70">

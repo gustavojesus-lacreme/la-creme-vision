@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateTotals, formatPrice, formatTime, isServiceBlocked, toDateInputValue } from "@/lib/booking";
+import { appliedServicePrices, calculateTotals, formatPrice, formatTime, isServiceBlocked, toDateInputValue } from "@/lib/booking";
 
 const input = "min-h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base text-foreground";
 const code5 = (n: number) => `#${String(n).padStart(5, "0")}`;
@@ -54,6 +54,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
   const services = data.data?.services ?? [];
   const selected = services.filter((s) => ids.includes(s.id));
   const totals = calculateTotals(selected, data.data?.combos ?? []);
+  const appliedPrices = appliedServicePrices(selected, data.data?.combos ?? []);
 
   const slots = useQuery({
     queryKey: ["encaixe-slots", barberId, day, ids.join(","), totals.durationMinutes],
@@ -103,7 +104,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
     <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
       <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">
         <h2 className="text-lg font-bold text-card-foreground">Agendamento avulso</h2>
-        <p className="text-xs text-foreground/60">Escolha um horário livre ou, no encaixe, digite qualquer horário dentro do funcionamento.</p>
+        <p className="text-xs text-foreground/60">Escolha um horário livre ou, no encaixe, digite qualquer horário.</p>
 
         <div className="space-y-2">
           <p className="text-sm font-semibold">1. Cliente</p>
@@ -159,7 +160,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
                   {services.map((s) => (
                     <button key={s.id} type="button" onClick={() => toggle(s.id)}
                       className={`flex min-h-11 items-center justify-between rounded-md border px-3 text-sm ${ids.includes(s.id) ? "border-brand bg-secondary text-brand" : "border-input"}`}>
-                      <span>{s.name}</span><span>{formatPrice(s.price_cents)}</span>
+                      <span>{s.name}</span><span>{formatPrice(appliedPrices.get(s.id) ?? s.price_cents)}</span>
                     </button>
                   ))}
                 </div>
@@ -184,7 +185,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
               </div>
             )}
             {barberId && ids.length > 0 && encaixe && (
-              <label className="block space-y-1 text-sm font-semibold"><span>Ou digite um horário (encaixe, dentro do funcionamento)</span>
+              <label className="block space-y-1 text-sm font-semibold"><span>Ou digite um horário (encaixe)</span>
                 <input type="time" className={input} value={manual} onChange={(e) => {
                   setManual(e.target.value);
                   setSlot(e.target.value ? new Date(`${day}T${e.target.value}:00-03:00`).toISOString() : "");
