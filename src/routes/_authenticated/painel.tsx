@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/app/AppNav";
-import { formatTime, isServiceBlocked } from "@/lib/booking";
+import { formatTime, isServiceBlocked, extraServicePrice, type ServiceCombo } from "@/lib/booking";
+import { ClientDetailDialog } from "@/components/app/ClientDetailDialog";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
@@ -87,7 +88,7 @@ function BarberPanel() {
       let query = supabase
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, customer_first_name, customer_last_name, barber_id, is_walkin, client_plan_id, client_plans(total_uses, used_uses), services(name), barbers(name, color)",
+          "id, starts_at, ends_at, status, services_label, service_ids, total_price_cents, total_duration_minutes, customer_first_name, customer_last_name, customer_whatsapp, client_id, barber_id, is_walkin, client_plan_id, client_plans(total_uses, used_uses), services(name), barbers(name, color)",
         )
         .gte("starts_at", spStartISO(stripStart))
         .lt("starts_at", spStartISO(addDays(stripStart, 7)))
@@ -120,6 +121,13 @@ function BarberPanel() {
     enabled: !!paying,
     queryFn: async () => (await supabase.from("services").select("id, name, price_cents").eq("active", true).order("sort_order")).data ?? [],
   });
+  const combosQuery = useQuery({
+    queryKey: ["panel-combos", paying],
+    enabled: !!paying,
+    queryFn: async () => (await supabase.from("service_combos").select("*").eq("active", true)).data ?? [],
+  });
+  const [detail, setDetail] = useState<string | null>(null);
+  const [clientCard, setClientCard] = useState<string | null>(null);
   const [extras, setExtras] = useState<Record<string, number>>({});
   const [pickSvc, setPickSvc] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -214,7 +222,15 @@ function BarberPanel() {
   const extraSvc = allServices.filter((x) => extras[x.id]);
   // Corte inclui Pezinho; Barba inclui Bigode (mesma regra do agendamento).
   const addable = allServices.filter((x) => !isServiceBlocked(x, [...bookedSvc, ...extraSvc]));
-  const extrasTotal = Object.entries(extras).reduce((t, [id, q]) => t + (allServices.find((x) => x.id === id)?.price_cents ?? 0) * q, 0);
+  const combos = (combosQuery.data ?? []) as unknown as ServiceCombo[];
+  const extraPrice = (x: { id: string; price_cents: number }, q = 1) => {
+    const ctx = [...(payingItem?.service_ids ?? []), ...Object.keys(extras).filter((id) => id !== x.id)];
+    return extraServicePrice(x, ctx, combos, q);
+  };
+  const extrasTotal = Object.entries(extras).reduce((t, [id, q]) => {
+    const s = allServices.find((x) => x.id === id);
+    return t + (s ? extraPrice(s, q) : 0);
+  }, 0);
   const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
   function changeSvc(id: string, delta: number) {
     const q = (extras[id] ?? 0) + delta;
@@ -361,7 +377,8 @@ function BarberPanel() {
             return (
               <div key={item.id} className={`overflow-hidden rounded-xl border shadow-sm ${faded ? "border-destructive/60 bg-destructive/10" : "border-border"}`}
                 style={faded ? { borderLeftColor: "var(--destructive)", borderLeftWidth: 6 } : { backgroundColor: tint(c, 7), borderLeftColor: c, borderLeftWidth: 6 }}>
-                <div className="flex items-stretch gap-3 p-4">
+                <div className="flex cursor-pointer items-stretch gap-3 p-4" title="Ver detalhes"
+                  onClick={(e) => { if (!(e.target as HTMLElement).closest("button,input,select,a")) setDetail(item.id); }}>
                   <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg ${faded ? "bg-destructive text-destructive-foreground" : "text-brand-foreground"}`} style={faded ? undefined : { backgroundColor: c }}>
                     <span className="text-base font-bold tabular-nums">{formatTime(when)}</span>
                     <span className="text-[10px] tabular-nums opacity-85">{formatTime(new Date(item.ends_at))}</span>
@@ -425,6 +442,37 @@ function BarberPanel() {
         <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} onClose={() => setEncaixe(false)}
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
+      {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
+      {detail && (() => {
+        const a = weekAppts.find((x) => x.id === detail) as any;
+        if (!a) return null;
+        const row = (k: string, v: React.ReactNode) => (
+          <div className="flex justify-between gap-3 border-b border-border py-2 text-sm last:border-0"><span className="text-foreground/60">{k}</span><span className="text-right font-semibold text-card-foreground">{v}</span></div>
+        );
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true" onClick={() => setDetail(null)}>
+            <div className="max-h-[90svh] w-full max-w-md overflow-y-auto rounded-lg bg-card p-4" onClick={(e) => e.stopPropagation()}>
+              <h2 className="mb-2 text-lg font-bold text-card-foreground">Detalhes do agendamento</h2>
+              {row("Cliente", `${a.customer_first_name} ${a.customer_last_name}`)}
+              {a.customer_whatsapp && row("WhatsApp", a.customer_whatsapp)}
+              {row("Data", new Date(a.starts_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }))}
+              {row("Horário", `${formatTime(new Date(a.starts_at))} – ${formatTime(new Date(a.ends_at))}`)}
+              {row("Serviços", a.services_label || a.services?.name)}
+              {a.total_duration_minutes != null && row("Duração", `${a.total_duration_minutes} min`)}
+              {row("Valor", brl(a.total_price_cents ?? 0))}
+              {row("Barbeiro", a.barbers?.name)}
+              {row("Situação", STATUS_LABELS[a.status] ?? a.status)}
+              {a.client_plans && row("Plano", `restam ${a.client_plans.total_uses - a.client_plans.used_uses} de ${a.client_plans.total_uses}`)}
+              {a.is_walkin && row("Tipo", "Avulso/Encaixe")}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setDetail(null)} className="min-h-11 rounded-md border border-input text-sm font-semibold">Fechar</button>
+                <button type="button" disabled={!a.client_id} onClick={() => { setClientCard(a.client_id); setDetail(null); }}
+                  className="min-h-11 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50">Ficha do cliente</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {paying && (
         <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
           <div className="max-h-[90svh] w-full max-w-md space-y-3 overflow-y-auto rounded-lg bg-card p-4">

@@ -50,6 +50,7 @@ function BookingPage() {
   const { session, loading } = useSession();
   const navigate = useNavigate();
   const [guest, setGuest] = useState<GuestData | null>(null);
+  const [dupe, setDupe] = useState<{ id: string; starts_at: string; label: string } | null>(null);
   const [guestChecked, setGuestChecked] = useState(false);
 
 
@@ -281,7 +282,7 @@ function BookingPage() {
   const ready =
     !!service && !!barber && !!slot && firstName.trim() !== "" && whatsapp.trim() !== "";
 
-  async function handleConfirm() {
+  async function handleConfirm(choice?: "keep" | "replace") {
     if (!ready || !service || !barber || !slot) return;
     if (firstName.trim().length < 2 || !isValidBrWhatsapp(whatsapp)) {
       setError("Informe seu nome e um WhatsApp válido com DDD (ex.: (11) 98765-4321).");
@@ -289,6 +290,29 @@ function BookingPage() {
     }
     setSaving(true);
     setError(null);
+    if (session && !choice) {
+      const dayStr = slot.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const from = new Date(`${dayStr}T00:00:00-03:00`);
+      const { data: same } = await supabase.from("appointments")
+        .select("id, starts_at, services_label")
+        .eq("user_id", session.user.id).in("status", ["agendado", "confirmado"])
+        .gte("starts_at", from.toISOString()).lt("starts_at", new Date(from.getTime() + 86400000).toISOString())
+        .order("starts_at").limit(1);
+      if (same && same.length) {
+        const f = same[0]!; setDupe({ id: f.id, starts_at: f.starts_at, label: f.services_label || "Agendamento" });
+        setSaving(false);
+        return;
+      }
+    }
+    if (choice === "replace" && dupe) {
+      const { error: cErr } = await supabase.from("appointments").update({ status: "cancelado" }).eq("id", dupe.id);
+      if (cErr) {
+        setError("Não foi possível cancelar o agendamento anterior. Tente novamente.");
+        setSaving(false);
+        return;
+      }
+    }
+    setDupe(null);
     const p = profileQuery.data;
     if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !p.whatsapp?.trim())) {
       await supabase.from("profiles").update({
@@ -297,6 +321,7 @@ function BookingPage() {
         whatsapp: p.whatsapp?.trim() || whatsapp.trim(),
       }).eq("id", session.user.id);
     }
+
 
 
     const ends = new Date(slot.getTime() + service.duration_minutes * 60000);
@@ -410,6 +435,21 @@ function BookingPage() {
   return (
     <div className="min-h-svh bg-background">
       <AppNav />
+      {dupe && (
+        <div className="fixed inset-0 z-50 grid place-items-end bg-foreground/40 p-3 sm:place-items-center" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md space-y-3 rounded-lg bg-card p-4">
+            <h2 className="text-lg font-bold text-card-foreground">Você já tem um agendamento neste dia</h2>
+            <p className="text-sm text-foreground/75">
+              {dupe.label} às {formatTime(new Date(dupe.starts_at))}. Quer manter os dois agendamentos ou cancelar o primeiro e ficar com o novo?
+            </p>
+            <div className="grid gap-2">
+              <button type="button" disabled={saving} onClick={() => handleConfirm("replace")} className="min-h-11 rounded-md bg-brand text-sm font-bold text-brand-foreground">Cancelar o primeiro e ficar com o novo</button>
+              <button type="button" disabled={saving} onClick={() => handleConfirm("keep")} className="min-h-11 rounded-md border border-brand text-sm font-bold text-brand">Manter os dois</button>
+              <button type="button" onClick={() => setDupe(null)} className="min-h-11 rounded-md border border-input text-sm font-semibold">Voltar</button>
+            </div>
+          </div>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Agendar horário</h1>
 
@@ -610,7 +650,7 @@ function BookingPage() {
           <button
             type="button"
             disabled={!ready || saving}
-            onClick={handleConfirm}
+            onClick={() => handleConfirm()}
             className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-3 z-10 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground shadow-lg active:opacity-90 disabled:opacity-50"
           >
             Confirmar agendamento

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { extraServicePrice } from "./booking";
 const combos = [
   { id: "1", name: "C+S", service_ids: ["corte", "sobr"], price_cents: 4000, duration_minutes: 0, item_prices: { corte: 3500, sobr: 500 } },
