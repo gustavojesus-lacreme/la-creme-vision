@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, Minus, X, Check, Banknote, CreditCard, ArrowDownLeft } from "lucide-react";
+import { cashChange } from "@/lib/cash-change";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -129,6 +130,15 @@ function BarberPanel() {
     queryFn: async () => { const { data, error } = await supabase.from("service_combos").select("*").eq("active", true); if (error) throw error; return data ?? []; },
   });
   const [detail, setDetail] = useState<string | null>(null);
+  const receiptQuery = useQuery({
+    queryKey: ["panel-receipt", detail],
+    enabled: !!detail,
+    queryFn: async () => {
+      if (!detail) return null;
+      const { data } = await supabase.from("financial_entries").select("cash_received_cents, change_cents, change_method").eq("appointment_id", detail).eq("category", "servico").maybeSingle();
+      return data;
+    },
+  });
   const [clientCard, setClientCard] = useState<string | null>(null);
   const [extras, setExtras] = useState<Record<string, number>>({});
   const [pickSvc, setPickSvc] = useState("");
@@ -148,6 +158,8 @@ function BarberPanel() {
   }
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
+  const [cashReceived, setCashReceived] = useState("");
+  const [changeMethod, setChangeMethod] = useState("pix");
   const [payError, setPayError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
   const [encaixe, setEncaixe] = useState(false);
@@ -159,6 +171,8 @@ function BarberPanel() {
       setPaying(id);
       setPayError(null);
       setDiscount("");
+      setCashReceived("");
+      setChangeMethod("pix");
       setCart({});
       setPick("");
       setExtras({});
@@ -173,14 +187,17 @@ function BarberPanel() {
 
   async function confirmPayment() {
     if (!paying) return;
+    if (change.error) return setPayError(change.error);
     setPayBusy(true);
     setPayError(null);
-    const { error } = await supabase.rpc("finalize_appointment", {
+    const { error } = await supabase.rpc("finalize_appointment_with_change", {
       _appointment_id: paying,
       _method: method,
       _discount_cents: toCents(discount),
       _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
       _services: Object.entries(extras).map(([service_id, quantity]) => ({ service_id, quantity })),
+      _cash_received_cents: method === "dinheiro" && cashReceived.trim() ? toCents(cashReceived) : undefined,
+      _change_method: changeMethod,
     });
     setPayBusy(false);
     if (error) return setPayError(error.message || "Não foi possível finalizar.");
@@ -188,6 +205,7 @@ function BarberPanel() {
     queryClient.invalidateQueries({ queryKey: ["panel-appointments"] });
     queryClient.invalidateQueries({ queryKey: ["fin-entries"] });
     queryClient.invalidateQueries({ queryKey: ["stock"] });
+    queryClient.invalidateQueries({ queryKey: ["panel-receipt"] });
   }
   const products = productsQuery.data ?? [];
   const productsTotal = Object.entries(cart).reduce((s, [id, q]) => s + (products.find((p) => p.id === id)?.price_cents ?? 0) * q, 0);
@@ -221,7 +239,7 @@ function BarberPanel() {
     { label: "Finalizados", items: shown.filter((a) => a.status === "finalizado") },
     { label: "Cancelados e não compareceram", items: shown.filter((a) => isHidden(a.status)) },
   ];
-  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying) as { total_price_cents?: number | null; service_ids?: string[] } | undefined;
+  const payingItem = appointmentsQuery.data?.find((a) => a.id === paying);
   const allServices = servicesQuery.data ?? [];
   const bookedSvc = allServices.filter((x) => payingItem?.service_ids?.includes(x.id));
   const extraSvc = allServices.filter((x) => extras[x.id]);
@@ -237,6 +255,8 @@ function BarberPanel() {
     return t + (s ? extraPrice(s, q) : 0);
   }, 0);
   const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
+  const totalDue = servicesTotal - toCents(discount) + productsTotal;
+  const change = cashChange(totalDue, method === "dinheiro" && cashReceived.trim() ? toCents(cashReceived) : null);
   function changeSvc(id: string, delta: number) {
     const q = (extras[id] ?? 0) + delta;
     const next = { ...extras };
@@ -473,6 +493,8 @@ function BarberPanel() {
               {row("Situação", STATUS_LABELS[a.status] ?? a.status)}
               {a.client_plans && row("Plano", `restam ${a.client_plans.total_uses - a.client_plans.used_uses} de ${a.client_plans.total_uses}`)}
               {a.is_walkin && row("Tipo", "Avulso/Encaixe")}
+              {receiptQuery.data?.cash_received_cents != null && row("Dinheiro recebido", brl(receiptQuery.data.cash_received_cents))}
+              {receiptQuery.data?.change_cents != null && row(`Troco (${receiptQuery.data.change_method === "pix" ? "Pix" : "dinheiro"})`, brl(receiptQuery.data.change_cents))}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => setDetail(null)} className="min-h-11 rounded-md border border-input text-sm font-semibold">Fechar</button>
                 <button type="button" disabled={!a.client_id} onClick={() => { setClientCard(a.client_id); setDetail(null); }}

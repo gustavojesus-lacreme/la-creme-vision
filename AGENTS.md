@@ -13,3 +13,4 @@
 - Barber colors come from src/lib/barber-colors.ts (brand palette tokens --barber-N, then golden-angle generated; admin-chosen color wins) so every screen colors barbers consistently.
 - Booked service removal goes through remove_appointment_service, which authorizes staff and recalculates combo totals and plan coverage in the database; never accept client-supplied totals.
 - Appointment name/date/time editing uses edit_appointment and can_edit_appointment; managers only edit rows already in their permitted scope and regular bookings retain availability checks.
+- Cash change is recorded atomically through finalize_appointment_with_change on the service financial entry; database-derived sale totals remain the source for revenue and commission, preventing change from becoming a duplicate expense.
