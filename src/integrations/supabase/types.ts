@@ -1201,6 +1201,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      remove_appointment_service: {
+        Args: { _appointment_id: string; _service_id: string }
+        Returns: undefined
+      }
       rename_appointment: {
         Args: { _first: string; _id: string; _last: string }
         Returns: undefined
