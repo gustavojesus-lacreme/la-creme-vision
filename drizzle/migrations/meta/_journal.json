@@ -85,6 +85,13 @@
       "when": 1792200177866,
       "tag": "0011_verify_service_removal_rollback",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792200241722,
+      "tag": "0012_manager_edit_appointment",
+      "breakpoints": true
     }
   ]
 }

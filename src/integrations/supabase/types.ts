@@ -1072,6 +1072,7 @@ export type Database = {
         }
         Returns: string
       }
+      can_edit_appointment: { Args: { _barber_id: string }; Returns: boolean }
       create_walkin_client: {
         Args: { _first: string; _last: string; _whatsapp: string }
         Returns: {
@@ -1079,6 +1080,10 @@ export type Database = {
           existed: boolean
           id: string
         }[]
+      }
+      edit_appointment: {
+        Args: { _first: string; _id: string; _last: string; _starts_at: string }
+        Returns: undefined
       }
       extra_service_price: {
         Args: { _context: string[]; _service_id: string }
