@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, Minus, X, Check, Banknote, CreditCard, ArrowDownLeft } from "lucide-react";
 import { cashChange } from "@/lib/cash-change";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -159,6 +160,7 @@ function BarberPanel() {
   const [method, setMethod] = useState("pix");
   const [discount, setDiscount] = useState("");
   const [cashReceived, setCashReceived] = useState("");
+  const [hasChange, setHasChange] = useState(false);
   const [changeMethod, setChangeMethod] = useState("pix");
   const [payError, setPayError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
@@ -172,6 +174,7 @@ function BarberPanel() {
       setPayError(null);
       setDiscount("");
       setCashReceived("");
+      setHasChange(false);
       setChangeMethod("pix");
       setCart({});
       setPick("");
@@ -196,7 +199,7 @@ function BarberPanel() {
       _discount_cents: toCents(discount),
       _products: Object.entries(cart).map(([product_id, quantity]) => ({ product_id, quantity })),
       _services: Object.entries(extras).map(([service_id, quantity]) => ({ service_id, quantity })),
-      ...(method === "dinheiro" && cashReceived.trim() ? { _cash_received_cents: toCents(cashReceived) } : {}),
+      ...(method === "dinheiro" && hasChange && cashReceived.trim() ? { _cash_received_cents: toCents(cashReceived) } : {}),
       _change_method: changeMethod,
     });
     setPayBusy(false);
@@ -256,7 +259,7 @@ function BarberPanel() {
   }, 0);
   const servicesTotal = (payingItem?.total_price_cents ?? 0) + extrasTotal;
   const totalDue = servicesTotal - toCents(discount) + productsTotal;
-  const change = cashChange(totalDue, method === "dinheiro" && cashReceived.trim() ? toCents(cashReceived) : null);
+  const change = cashChange(totalDue, cashReceived.trim() ? toCents(cashReceived) : null, method === "dinheiro" && hasChange);
   function changeSvc(id: string, delta: number) {
     const q = (extras[id] ?? 0) + delta;
     const next = { ...extras };
@@ -592,6 +595,11 @@ function BarberPanel() {
               </div>
             )}
             {method === "dinheiro" && <div className="space-y-3 border-t border-border pt-4">
+              <div className="flex min-h-11 items-center justify-between gap-3">
+                <label htmlFor="has-change" className="cursor-pointer text-sm font-medium">Teve troco?</label>
+                <Switch id="has-change" checked={hasChange} disabled={payBusy} onCheckedChange={(checked) => { setHasChange(checked); setCashReceived(""); setChangeMethod("pix"); setPayError(null); }} />
+              </div>
+              {hasChange && <>
               <label className="block space-y-1.5 text-sm font-medium"><span>Dinheiro recebido</span>
                 <div className="flex h-11 items-center rounded-md border border-input bg-card px-3"><span className="text-muted-foreground">R$</span><input aria-label="Dinheiro recebido" inputMode="decimal" disabled={payBusy} value={cashReceived} placeholder="0,00" onChange={(e) => { setCashReceived(e.target.value); setPayError(null); }} className="h-full w-full min-w-0 bg-transparent pl-2 text-base outline-none" /></div>
               </label>
@@ -600,6 +608,7 @@ function BarberPanel() {
                 {change.changeCents > 0 && <fieldset className="space-y-2"><legend className="text-sm text-muted-foreground">Devolver troco em</legend><div className="grid grid-cols-2 gap-2">{[{ id: "pix", label: "Pix" }, { id: "dinheiro", label: "Dinheiro" }].map((m) => <Button key={m.id} disabled={payBusy} aria-pressed={changeMethod === m.id} variant={changeMethod === m.id ? "default" : "outline"} onClick={() => setChangeMethod(m.id)} className="h-11">{m.id === "pix" ? <ArrowDownLeft /> : <Banknote />}{m.label}</Button>)}</div></fieldset>}
               </>}
               {change.error && <p role="alert" className="text-sm text-destructive">{change.error}</p>}
+              </>}
             </div>}
             {(servicesQuery.isError || combosQuery.isError) && <p role="alert" className="text-sm text-destructive">Não foi possível carregar serviços e descontos. Feche e tente novamente.</p>}
             {payError && <p role="alert" className="text-sm font-semibold text-destructive">{payError}</p>}
