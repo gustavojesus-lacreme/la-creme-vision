@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { cashChange } from "./cash-change";
 
 describe("troco em dinheiro ou Pix", () => {
+  it("sem troco mantém o fluxo normal mesmo com valor anterior preenchido", () => {
+    expect(cashChange(4500, 10000, false)).toEqual({ changeCents: 0, error: null });
+  });
+  it("com troco exige informar o dinheiro recebido", () => {
+    expect(cashChange(4500, null, true).error).not.toBeNull();
+  });
   it("devolve apenas a diferença, mantendo o valor do atendimento", () => {
     expect(cashChange(4500, 10000)).toEqual({ changeCents: 5500, error: null });
   });
