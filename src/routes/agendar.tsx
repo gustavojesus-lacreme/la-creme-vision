@@ -299,7 +299,7 @@ function BookingPage() {
         .gte("starts_at", from.toISOString()).lt("starts_at", new Date(from.getTime() + 86400000).toISOString())
         .order("starts_at").limit(1);
       if (same && same.length) {
-        setDupe({ id: same[0].id, starts_at: same[0].starts_at, label: same[0].services_label || "Agendamento" });
+        const f = same[0]!; setDupe({ id: f.id, starts_at: f.starts_at, label: f.services_label || "Agendamento" });
         setSaving(false);
         return;
       }
