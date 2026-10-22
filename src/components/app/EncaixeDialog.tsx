@@ -149,7 +149,7 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
               <label className="block space-y-1 text-sm font-semibold"><span>2. Barbeiro</span>
                 <select className={input} value={pickedBarber} onChange={(e) => { setPickedBarber(e.target.value); setIds([]); setSlot(""); }}>
                   <option value="">Escolha o barbeiro</option>
-                  {barbers.data?.map((b) => <option key={b.id} value={b.id}>{`${b.name} ${b.last_name}`.trim()}</option>)}
+                  {barbers.data?.map((b) => <option key={b.id} value={b.id}>{b.last_name && b.name.endsWith(b.last_name) ? b.name : `${b.name} ${b.last_name}`.trim()}</option>)}
                 </select>
               </label>
             )}
