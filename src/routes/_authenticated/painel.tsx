@@ -148,6 +148,7 @@ function BarberPanel() {
   const [colorFilter, setColorFilter] = useState("");
   const [removing, setRemoving] = useState(false);
   const [rename, setRename] = useState<{ id: string; first: string; last: string } | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
   const [renameErr, setRenameErr] = useState<string | null>(null);
   async function saveRename() {
     if (!rename) return;
@@ -453,12 +454,20 @@ function BarberPanel() {
                       <button
                         key={action.status}
                         type="button"
-                        onClick={() => setStatus(item.id, action.status)}
+                        onClick={() => action.status === "cancelado" ? setConfirmCancel(item.id) : setStatus(item.id, action.status)}
                         className="min-h-11 rounded-md border border-input bg-card px-2 text-xs font-semibold text-foreground"
                       >
                         {action.label}
                       </button>
                     ))}
+                  </div>
+                )}
+                {isHidden(item.status) && access?.role === "admin" && !previewId && (
+                  <div className="border-t border-border bg-card/70 p-3">
+                    <button type="button" onClick={() => setStatus(item.id, "agendado")}
+                      className="min-h-11 w-full rounded-md border border-brand bg-card px-2 text-xs font-bold text-brand">
+                      Reativar agendamento
+                    </button>
                   </div>
                 )}
               </div>
@@ -475,6 +484,24 @@ function BarberPanel() {
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
       {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
+      {confirmCancel && (() => {
+        const a = weekAppts.find((x) => x.id === confirmCancel);
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4" role="dialog" aria-modal="true" aria-label="Confirmar cancelamento" onClick={() => setConfirmCancel(null)}>
+            <div className="w-full max-w-sm rounded-lg bg-card p-5 text-center" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-card-foreground">Cancelar agendamento?</h2>
+              <p className="mt-2 text-sm text-foreground/80">
+                Tem certeza que deseja cancelar o agendamento{a ? ` de ${a.customer_first_name} ${a.customer_last_name}` : ""}? Essa ação pode ser desfeita depois com "Reativar agendamento".
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setConfirmCancel(null)} className="min-h-11 rounded-md border border-input text-sm font-semibold">Não, voltar</button>
+                <button type="button" onClick={() => { setStatus(confirmCancel, "cancelado"); setConfirmCancel(null); }}
+                  className="min-h-11 rounded-md bg-destructive text-sm font-bold text-destructive-foreground">Sim, cancelar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {detail && (() => {
         const a = weekAppts.find((x) => x.id === detail) as any;
         if (!a) return null;
