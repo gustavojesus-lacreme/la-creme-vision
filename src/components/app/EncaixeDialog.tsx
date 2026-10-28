@@ -8,7 +8,7 @@ const code5 = (n: number) => `#${String(n).padStart(5, "0")}`;
 type Client = { id: string; code: number; first_name: string; last_name: string; whatsapp: string | null };
 
 /** Agendamento avulso / encaixe: admin escolhe o barbeiro; barbeiro/líder só na própria agenda. Sempre em horários livres. */
-export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barberId?: string; onClose: () => void; onDone: () => void }) {
+export function EncaixeDialog({ barberId: fixedBarber, canCreateClient = false, onClose, onDone }: { barberId?: string; canCreateClient?: boolean; onClose: () => void; onDone: () => void }) {
   const [client, setClient] = useState<Client | null>(null);
   const [term, setTerm] = useState("");
   const [creating, setCreating] = useState(false);
@@ -72,15 +72,15 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
     });
   }
 
-  async function createClient() {
+  async function createClient(f = first, l = last, w = whats) {
     setErr(null); setNotice(null);
-    if (!first.trim()) return setErr("Informe o nome do cliente.");
+    if (!f.trim()) return setErr("Informe o nome do cliente.");
     setBusy(true);
-    const { data: rows, error } = await supabase.rpc("create_walkin_client", { _first: first, _last: last, _whatsapp: whats });
+    const { data: rows, error } = await supabase.rpc("create_walkin_client", { _first: f, _last: l, _whatsapp: w });
     setBusy(false);
     const r = rows?.[0];
     if (error || !r) return setErr(error?.message || "Não foi possível cadastrar.");
-    setClient({ id: r.id, code: r.code, first_name: first.trim(), last_name: last.trim(), whatsapp: whats.trim() || null });
+    setClient({ id: r.id, code: r.code, first_name: f.trim(), last_name: l.trim(), whatsapp: w.trim() || null });
     setNotice(r.existed ? `Cliente já cadastrado (${code5(r.code)}). Usando o cadastro existente.` : `Cliente cadastrado com o código ${code5(r.code)}.`);
     setCreating(false);
   }
@@ -123,12 +123,12 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
               <input className={input} placeholder="WhatsApp (opcional)" inputMode="tel" maxLength={30} value={whats} onChange={(e) => setWhats(e.target.value)} />
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" className="min-h-11 rounded-md border border-input text-sm font-semibold" onClick={() => setCreating(false)}>Voltar à busca</button>
-                <button type="button" disabled={busy} className="min-h-11 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50" onClick={createClient}>Salvar cliente</button>
+                <button type="button" disabled={busy} className="min-h-11 rounded-md bg-brand text-sm font-bold text-brand-foreground disabled:opacity-50" onClick={() => createClient()}>Salvar cliente</button>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
-              <input className={input} placeholder="Buscar por código (#00001), WhatsApp ou nome" value={term} onChange={(e) => setTerm(e.target.value)} />
+              <input className={input} placeholder="Digite o nome, código (#00001) ou WhatsApp" value={term} onChange={(e) => setTerm(e.target.value)} />
               {search.isFetching && <p className="text-sm text-foreground/60">Buscando...</p>}
               {search.data?.map((c) => (
                 <button key={c.id} type="button" onClick={() => setClient(c)} className="flex w-full flex-col items-start rounded-md border border-input p-3 text-left">
@@ -136,8 +136,18 @@ export function EncaixeDialog({ barberId: fixedBarber, onClose, onDone }: { barb
                   <span className="text-xs text-foreground/70">Código: {code5(c.code)}{c.whatsapp ? ` · WhatsApp: ${c.whatsapp}` : ""}</span>
                 </button>
               ))}
-              {term.trim().length >= 2 && search.data?.length === 0 && <p className="text-sm text-foreground/70">Nenhum cliente encontrado.</p>}
-              <button type="button" className="min-h-11 w-full rounded-md border border-input text-sm font-semibold" onClick={() => { setCreating(true); setErr(null); }}>+ Cadastrar novo cliente</button>
+              {term.trim().length >= 2 && search.data?.length === 0 && !search.isFetching && <p className="text-sm text-foreground/70">Nenhum cliente encontrado.</p>}
+              {canCreateClient && term.trim().length >= 2 && !/^#?\d+$/.test(term.trim()) && (
+                <button type="button" disabled={busy} className="min-h-11 w-full rounded-md bg-brand px-3 text-sm font-bold text-brand-foreground disabled:opacity-50"
+                  onClick={() => { const [f, ...rest] = term.trim().split(/\s+/); createClient(f ?? "", rest.join(" "), ""); }}>
+                  Usar só o nome “{term.trim()}”
+                </button>
+              )}
+              {canCreateClient && <button type="button" className="min-h-11 w-full rounded-md border border-input text-sm font-semibold" onClick={() => {
+                const [f, ...rest] = term.trim().split(/\s+/);
+                if (!/^#?\d+$/.test(term.trim())) { setFirst(f ?? ""); setLast(rest.join(" ")); }
+                setCreating(true); setErr(null);
+              }}>+ Cadastrar novo cliente</button>}
             </div>
           )}
           {notice && <p className="text-sm text-foreground/80">{notice}</p>}
