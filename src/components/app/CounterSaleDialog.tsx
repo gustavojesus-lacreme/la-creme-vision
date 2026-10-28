@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/booking";
 
 const input = "min-h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base text-foreground";
-type Item = { type: "produto" | "servico"; id: string; name: string; price: number; qty: number; stock?: number };
+type Item = { type: "produto" | "servico"; id: string; name: string; price: number; qty: number; stock?: number | undefined };
 
 /** Venda de balcão ou bonificação (produto/serviço) sem agendamento. Só administrador e líder. */
 export function CounterSaleDialog({ onClose, onDone }: { onClose: () => void; onDone: (msg: string) => void }) {
