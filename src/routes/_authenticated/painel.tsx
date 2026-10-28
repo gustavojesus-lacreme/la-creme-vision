@@ -13,6 +13,7 @@ import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
 import { EncaixeDialog } from "@/components/app/EncaixeDialog";
+import { CounterSaleDialog } from "@/components/app/CounterSaleDialog";
 import { todaySP } from "@/lib/absences";
 import { buildBarberColors, tint } from "@/lib/barber-colors";
 
@@ -497,6 +498,7 @@ function BarberPanel() {
         <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} canCreateClient={access?.role === "admin"} onClose={() => setEncaixe(false)}
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
+      {sale && <CounterSaleDialog onClose={() => setSale(false)} onDone={(msg) => { setSale(false); window.alert(msg); }} />}
       {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
       {confirmCancel && (() => {
         const a = weekAppts.find((x) => x.id === confirmCancel);
