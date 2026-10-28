@@ -1318,6 +1318,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_or_leader: { Args: never; Returns: boolean }
       is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
       is_staff_booker: { Args: never; Returns: boolean }
       notify: {
@@ -1351,6 +1352,17 @@ export type Database = {
       refund_product_sale: {
         Args: { _entry_id: string; _note?: string }
         Returns: undefined
+      }
+      register_counter_sale: {
+        Args: {
+          _bonus: boolean
+          _client_name: string
+          _items: Json
+          _method: string
+          _note: string
+          _seller_barber_id: string
+        }
+        Returns: number
       }
       register_stock_movement: {
         Args: {
