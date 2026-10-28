@@ -120,6 +120,13 @@
       "when": 1792513623564,
       "tag": "0016_lunch_blocks_only_start",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793187574707,
+      "tag": "0017_booking_check_uses_available_slots",
+      "breakpoints": true
     }
   ]
 }
