@@ -167,6 +167,13 @@ function BarberPanel() {
   const [payBusy, setPayBusy] = useState(false);
   const [encaixe, setEncaixe] = useState(false);
   const isBarber = access?.role === "barbeiro";
+  const [sale, setSale] = useState(false);
+  const canSellQuery = useQuery({
+    queryKey: ["can-sell"],
+    enabled: access != null,
+    queryFn: async () => (await supabase.rpc("is_admin_or_leader")).data === true,
+  });
+  const canSell = canSellQuery.data === true;
   const actions = ACTIONS.filter((a) => a.status !== "cancelado" || access?.role === "admin");
 
   async function setStatus(id: string, status: string) {
@@ -285,11 +292,18 @@ function BarberPanel() {
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-display text-2xl font-bold text-foreground">Meu Painel</h1>
-          {(isBarber || (access?.role === "admin" && !previewId)) && (
-            <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
-              + Agendamento avulso
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {canSell && !previewId && (
+              <button type="button" onClick={() => setSale(true)} className="min-h-11 rounded-md border border-brand px-4 text-sm font-bold text-brand">
+                Vender produto
+              </button>
+            )}
+            {(isBarber || (access?.role === "admin" && !previewId)) && (
+              <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
+                + Agendamento avulso
+              </button>
+            )}
+          </div>
         </div>
         {previewId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand bg-secondary p-3">
@@ -480,7 +494,7 @@ function BarberPanel() {
         {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} day={day} />}
       </main>
       {encaixe && (isBarber || access?.role === "admin") && (
-        <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} onClose={() => setEncaixe(false)}
+        <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} canCreateClient={access?.role === "admin"} onClose={() => setEncaixe(false)}
           onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
       )}
       {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
