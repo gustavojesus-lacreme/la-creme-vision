@@ -127,6 +127,13 @@
       "when": 1793187574707,
       "tag": "0017_booking_check_uses_available_slots",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793200831759,
+      "tag": "0018_counter_sales_and_bonus",
+      "breakpoints": true
     }
   ]
 }
