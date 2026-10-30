@@ -155,6 +155,13 @@
       "when": 1793403643372,
       "tag": "0021_scoped_schedules_and_weekly_absences",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793403744447,
+      "tag": "0022_schedule_consistency_guards",
+      "breakpoints": true
     }
   ]
 }
