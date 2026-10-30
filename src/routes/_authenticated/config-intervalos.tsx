@@ -53,7 +53,7 @@ function BreaksPage() {
     if (!clear && e <= s) return setMsg("O fim deve ser depois do início.");
     if (scope === "barber" && !barberId) return setMsg("Selecione o barbeiro.");
     setSaving(true);
-    const { error } = await supabase.rpc("save_scoped_lunch", { _scope: scope, _barber: barberId || undefined, _start: clear ? undefined : s, _end: clear ? undefined : e });
+    const { error } = await supabase.rpc("save_scoped_lunch", { _scope: scope, _barber: barberId || "00000000-0000-0000-0000-000000000000", _start: clear ? "00:00" : s, _end: clear ? "00:00" : e });
     setSaving(false);
     setMsg(error ? error.message : clear ? "Intervalo padrão removido." : "Intervalo padrão salvo.");
     qc.invalidateQueries({ queryKey: ["operation-settings"] });

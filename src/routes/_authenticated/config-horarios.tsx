@@ -141,7 +141,7 @@ function HoursPage() {
     setSaving(true);
     setFeedback(null);
     const { error } = await supabase.rpc("save_scoped_hours", {
-      _scope: scope, _barber: barberId || undefined,
+      _scope: scope, _barber: barberId || "00000000-0000-0000-0000-000000000000",
       _days: dirtyDays.flatMap((d) => { const st = days[d]; return st ? [{ weekday: d, closed: !st.open, periods: st.periods }] : []; }),
     });
     const failed = error?.message ?? null;
