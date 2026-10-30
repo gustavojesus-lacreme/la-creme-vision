@@ -224,7 +224,7 @@ function HoursPage() {
                           <span>Fecha</span>
                           <TimeSelect value={p.c} onChange={(v) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: v } : x)) })} />
                         </label>
-                        <Button type="button" aria-label="Remover período"
+                        <Button variant="ghost" type="button" aria-label="Remover período"
                           onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
                           className="grid h-12 w-11 place-items-center rounded-md text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4" />
@@ -233,7 +233,7 @@ function HoursPage() {
                     ))}
                     {st.periods.length === 0 && <p className="text-sm text-foreground/60">Nenhum período. Adicione um abaixo.</p>}
                   </div>
-                  <Button type="button"
+                  <Button variant="ghost" type="button"
                     onClick={() => { const last = st.periods[st.periods.length - 1]; update(day, { periods: [...st.periods, last ? { o: last.c, c: last.c < "19:00" ? "19:00" : last.c } : { o: "09:00", c: "19:00" }] }); }}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-brand/60 text-sm font-semibold text-brand">
                     <Plus className="h-4 w-4" /> Adicionar período
@@ -250,7 +250,7 @@ function HoursPage() {
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
         <div className="mx-auto w-full max-w-3xl space-y-1.5">
-          <Button type="button" onClick={saveAll} disabled={saving || dirtyCount === 0}
+          <Button variant="ghost" type="button" onClick={saveAll} disabled={saving || dirtyCount === 0}
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 text-base font-bold text-brand-foreground disabled:bg-muted disabled:text-foreground/40">
             {saving ? "Salvando..." : dirtyCount ? `Salvar alterações (${dirtyCount})` : "Salvar alterações"}
             {!saving && dirtyCount > 0 && <span className="h-2 w-2 rounded-full bg-gold" />}
@@ -268,8 +268,8 @@ function HoursPage() {
           <div className={`${sCard} w-full max-w-sm space-y-4`}>
             <p className="font-display text-lg font-bold text-card-foreground">Você tem alterações não salvas.</p>
             <div className="grid gap-2">
-              <Button type="button" onClick={() => blocker.reset?.()} className="min-h-12 rounded-md bg-brand font-bold text-brand-foreground">Continuar editando</Button>
-              <Button type="button" onClick={() => blocker.proceed?.()} className="min-h-12 rounded-md border border-destructive/60 font-semibold text-destructive">Descartar alterações</Button>
+              <Button variant="ghost" type="button" onClick={() => blocker.reset?.()} className="min-h-12 rounded-md bg-brand font-bold text-brand-foreground">Continuar editando</Button>
+              <Button variant="ghost" type="button" onClick={() => blocker.proceed?.()} className="min-h-12 rounded-md border border-destructive/60 font-semibold text-destructive">Descartar alterações</Button>
             </div>
           </div>
         </div>

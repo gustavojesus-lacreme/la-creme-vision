@@ -266,11 +266,11 @@ function AbsencesPage() {
                 </label>}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" onClick={() => setPartial(false)}
+                <Button variant="ghost" type="button" onClick={() => setPartial(false)}
                   className={`min-h-12 rounded-md border px-2 text-sm font-semibold ${!partial ? "border-brand bg-secondary text-brand" : "border-input text-foreground"}`}>
                   Dia inteiro
                 </Button>
-                <Button type="button" onClick={() => setPartial(true)}
+                <Button variant="ghost" type="button" onClick={() => setPartial(true)}
                   className={`min-h-12 rounded-md border px-2 text-sm font-semibold ${partial ? "border-brand bg-secondary text-brand" : "border-input text-foreground"}`}>
                   Só um horário
                 </Button>
@@ -304,11 +304,11 @@ function AbsencesPage() {
               {ok && <p className="text-sm font-semibold text-brand">{ok}</p>}
               <div className="flex gap-2">
                 {editing && (
-                  <Button type="button" onClick={resetForm} className="min-h-12 flex-1 rounded-md border border-input px-4 text-base font-semibold text-foreground">
+                  <Button variant="ghost" type="button" onClick={resetForm} className="min-h-12 flex-1 rounded-md border border-input px-4 text-base font-semibold text-foreground">
                     Cancelar
                   </Button>
                 )}
-                <Button type="button" disabled={saving} onClick={save}
+                <Button variant="ghost" type="button" disabled={saving} onClick={save}
                   className="min-h-12 flex-1 rounded-md bg-brand px-4 text-base font-bold text-brand-foreground disabled:opacity-50">
                   {saving ? "Salvando..." : editing ? "Salvar alterações" : "Salvar ausência"}
                 </Button>
@@ -359,10 +359,10 @@ function AbsencesPage() {
                         </span>
                       </div>
                       {(isAdmin || a.created_by === meQuery.data) && <div className="mt-3 flex gap-2">
-                        <Button type="button" onClick={() => startEdit(a)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-foreground">
+                        <Button variant="ghost" type="button" onClick={() => startEdit(a)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-foreground">
                           Editar
                         </Button>
-                        <Button type="button" onClick={() => remove(a.id, !!a.recurring)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-destructive">
+                        <Button variant="ghost" type="button" onClick={() => remove(a.id, !!a.recurring)} className="min-h-11 rounded-md border border-input px-3 text-sm font-semibold text-destructive">
                           Remover
                         </Button>
                       </div>}

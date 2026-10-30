@@ -72,9 +72,9 @@ function BreaksPage() {
           <label className={sLabel}><span>Fim</span><input type="time" className={sInput} value={e} onChange={(ev) => setE(ev.target.value)} /></label>
         </div>
         {msg && <p className="text-sm font-semibold text-foreground">{msg}</p>}
-        <Button disabled={saving} type="button" onClick={() => save()} className={`${sBtn} w-full`}>Salvar</Button>
+        <Button variant="ghost" disabled={saving} type="button" onClick={() => save()} className={`${sBtn} w-full`}>Salvar</Button>
         {q.data?.lunch_start && (
-          <Button disabled={saving} type="button" onClick={() => window.confirm("Remover o intervalo padrão?") && save(true)} className={`${sBtnOutline} w-full`}>
+          <Button variant="ghost" disabled={saving} type="button" onClick={() => window.confirm("Remover o intervalo padrão?") && save(true)} className={`${sBtnOutline} w-full`}>
             Sem intervalo padrão
           </Button>
         )}
