@@ -12,6 +12,8 @@ import {
   isCounted, professionalReport, TEAM_ROLE_LABEL, groupAttendances, type Attendance,
 } from "@/lib/finance";
 import { todaySP, formatDay } from "@/lib/absences";
+import { PaymentCorrections } from "@/components/app/PaymentCorrections";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/financeiro")({
 const TABS = [
   { key: "geral", label: "Visão geral" },
   { key: "mov", label: "Movimentações" },
+  { key: "cor", label: "Corrigir pagamentos" },
   { key: "com", label: "Comissões" },
   { key: "desp", label: "Despesas" },
   { key: "rel", label: "Relatórios" },
@@ -65,6 +68,11 @@ function FinancePage() {
   const isAdmin = accessQuery.data?.role === "admin";
   const ownBarberId = accessQuery.data?.role === "barbeiro" ? accessQuery.data.barberId : null;
   const canSee = isAdmin || !!ownBarberId;
+  const correctionAccess = useQuery({ queryKey: ["payment-correction-access", ownBarberId, isAdmin], enabled: canSee, queryFn: async () => {
+    const { data, error } = await supabase.rpc("can_correct_appointment_payment");
+    if (error) throw error;
+    return data;
+  } });
   const [tab, setTab] = useState<Tab>("geral");
   const [period, setPeriod] = useState<PeriodKey>("mes");
   const [custom, setCustom] = useState({ from: todaySP(), to: todaySP() });
@@ -107,6 +115,7 @@ function FinancePage() {
               ))}
             </div>}
             {!isAdmin && <p className="text-sm text-foreground/70">Meu relatório: somente os seus dados.</p>}
+            {!isAdmin && correctionAccess.data && <div className="grid grid-cols-2 gap-2"><Button variant={tab === "geral" ? "default" : "outline"} onClick={() => setTab("geral")}>Meu relatório</Button><Button variant={tab === "cor" ? "default" : "outline"} onClick={() => setTab("cor")}>Corrigir pagamentos</Button></div>}
 
             {(tab !== "pag" || !isAdmin) && (
               <section className={`${card} space-y-3`}>
@@ -131,7 +140,8 @@ function FinancePage() {
             )}
 
             {entries.isLoading && tab !== "pag" && <p className="text-base text-foreground/70">Carregando...</p>}
-            {!isAdmin && ownBarberId && <ProfessionalReport {...ctx} fixedId={ownBarberId} />}
+            {!isAdmin && ownBarberId && tab !== "cor" && <ProfessionalReport {...ctx} fixedId={ownBarberId} />}
+            {tab === "cor" && correctionAccess.data && <PaymentCorrections range={range} methods={ctx.methods} isAdmin={isAdmin} />}
             {isAdmin && tab === "geral" && <Overview {...ctx} />}
             {isAdmin && tab === "mov" && <Movements {...ctx} />}
             {isAdmin && tab === "com" && <Commissions {...ctx} />}
