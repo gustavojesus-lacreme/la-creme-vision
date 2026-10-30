@@ -68,8 +68,7 @@ function PaymentCorrectionDialog({ attendance, methods, onClose, onDone }: { att
       const { error } = await supabase.rpc("correct_appointment_payment", {
         _appointment_id: id, _method: method, _reason: reason.trim(),
         _expected: [...rows].sort((a, b) => a.id.localeCompare(b.id)).map(e => ({ id: e.id, updated_at: e.updated_at })),
-        _cash_received_cents: method === "dinheiro" && hasChange ? toCents(cash) : null,
-        _change_method: method === "dinheiro" && hasChange ? changeMethod : null,
+        ...method === "dinheiro" && hasChange ? { _cash_received_cents: toCents(cash), _change_method: changeMethod } : {},
       });
       if (error) throw error;
       onDone();
