@@ -409,6 +409,32 @@ export type Database = {
           },
         ]
       }
+      financial_correction_permissions: {
+        Row: {
+          barber_id: string
+          granted_at: string
+          granted_by: string
+        }
+        Insert: {
+          barber_id: string
+          granted_at?: string
+          granted_by: string
+        }
+        Update: {
+          barber_id?: string
+          granted_at?: string
+          granted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_correction_permissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: true
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_entries: {
         Row: {
           amount_cents: number
@@ -547,6 +573,44 @@ export type Database = {
             columns: ["seller_barber_id"]
             isOneToOne: false
             referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_payment_corrections: {
+        Row: {
+          after_entries: Json
+          appointment_id: string
+          before_entries: Json
+          changed_at: string
+          changed_by: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          after_entries: Json
+          appointment_id: string
+          before_entries: Json
+          changed_at?: string
+          changed_by: string
+          id?: string
+          reason: string
+        }
+        Update: {
+          after_entries?: Json
+          appointment_id?: string
+          before_entries?: Json
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_payment_corrections_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
             referencedColumns: ["id"]
           },
         ]
@@ -1211,7 +1275,19 @@ export type Database = {
         }
         Returns: string
       }
+      can_correct_appointment_payment: { Args: never; Returns: boolean }
       can_edit_appointment: { Args: { _barber_id: string }; Returns: boolean }
+      correct_appointment_payment: {
+        Args: {
+          _appointment_id: string
+          _cash_received_cents?: number
+          _change_method?: string
+          _expected: Json
+          _method: string
+          _reason: string
+        }
+        Returns: undefined
+      }
       create_walkin_client: {
         Args: { _first: string; _last: string; _whatsapp: string }
         Returns: {
@@ -1321,6 +1397,47 @@ export type Database = {
       is_admin_or_leader: { Args: never; Returns: boolean }
       is_barber_bookable: { Args: { _barber_id: string }; Returns: boolean }
       is_staff_booker: { Args: never; Returns: boolean }
+      list_correctable_payment_entries: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          amount_cents: number
+          appointment_id: string | null
+          barber_id: string | null
+          cash_received_cents: number | null
+          category: string
+          change_cents: number | null
+          change_method: string | null
+          client_name: string
+          commission_barber_id: string | null
+          commission_cents: number
+          commission_paid_at: string | null
+          commission_percent: number
+          commission_status: string
+          created_at: string
+          description: string
+          discount_cents: number
+          fee_cents: number
+          fee_percent: number
+          id: string
+          kind: string
+          note: string
+          occurred_at: string
+          payment_method: string | null
+          product_id: string | null
+          quantity: number
+          received_by: string | null
+          refunded_at: string | null
+          refunded_by: string | null
+          seller_barber_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "financial_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       notify: {
         Args: {
           _appt: string
@@ -1393,6 +1510,10 @@ export type Database = {
         }[]
       }
       send_appointment_reminders: { Args: never; Returns: undefined }
+      set_financial_correction_permission: {
+        Args: { _barber_id: string; _enabled: boolean }
+        Returns: undefined
+      }
       staff_create_appointment: {
         Args: {
           _barber_id: string

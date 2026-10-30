@@ -134,6 +134,13 @@
       "when": 1793200831759,
       "tag": "0018_counter_sales_and_bonus",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793399811967,
+      "tag": "0019_appointment_payment_corrections",
+      "breakpoints": true
     }
   ]
 }
