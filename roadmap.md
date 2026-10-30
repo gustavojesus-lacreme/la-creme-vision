@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Corrigir forma de pagamento de atendimento finalizado no Financeiro com histórico e recálculo seguro
+- [ ] Permitir ao administrador autorizar individualmente líderes para correção de pagamentos
+- [ ] Testar correção financeira e restrições de acesso
 - [ ] Conectar WhatsApp Business e aprovar modelo de confirmação — aguardando conexão posterior autorizada pelo usuário
 - [x] Preparar fila automática após registro, contador de tentativas e proteção contra duplicidade, sem envio ativo
 - [x] Preparar recebimento assinado de callbacks, armazenamento e reconciliação transacional com recuperação limitada em novas chamadas
