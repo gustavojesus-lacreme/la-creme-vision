@@ -29,13 +29,15 @@ function Availability({ barberId }: { barberId: string }) {
   const q = useQuery({
     queryKey: ["my-availability", barberId],
     queryFn: async () => {
-      const [p, h, s, b] = await Promise.all([
+      const [p, h, s, b, o, overrides] = await Promise.all([
         supabase.from("business_periods").select("weekday, opens_at, closes_at").order("opens_at"),
         supabase.from("business_hours").select("weekday, closed"),
         supabase.from("operation_settings").select("lunch_start, lunch_end").eq("id", 1).maybeSingle(),
         supabase.from("barbers").select("lunch_start").eq("id", barberId).maybeSingle(),
+        supabase.from("barber_lunch_overrides").select("starts_time, ends_time").eq("barber_id", barberId).maybeSingle(),
+        supabase.from("barber_schedule_days").select("*").eq("barber_id", barberId),
       ]);
-      return { periods: p.data ?? [], hours: h.data ?? [], lunch: s.data, mine: b.data?.lunch_start ?? null };
+      return { periods: p.data ?? [], hours: h.data ?? [], lunch: o.data ? { lunch_start: o.data.starts_time, lunch_end: o.data.ends_time } : s.data, overrides: overrides.data ?? [], mine: b.data?.lunch_start ?? null };
     },
   });
   const [start, setStart] = useState("");
@@ -58,8 +60,9 @@ function Availability({ barberId }: { barberId: string }) {
         <h2 className="pb-1 text-base font-bold uppercase tracking-wide text-brand">Meu horário</h2>
         <p className="pb-1 text-xs text-foreground/60">Definido pela administração (horário da barbearia).</p>
         {DAYS.map((name, wd) => {
-          const closed = d?.hours.find((x) => x.weekday === wd)?.closed;
-          const ps = d?.periods.filter((x) => x.weekday === wd) ?? [];
+          const override = d?.overrides.find((x) => x.weekday === wd);
+          const closed = d?.hours.find((x) => x.weekday === wd)?.closed || override?.closed;
+          const ps = override ? (override.periods as { o: string; c: string }[]).map((p) => ({ opens_at: p.o, closes_at: p.c })) : d?.periods.filter((x) => x.weekday === wd) ?? [];
           return (
             <div key={wd} className="flex min-h-10 items-center justify-between border-t border-border text-sm first:border-t-0">
               <span className="font-semibold">{name}</span>
