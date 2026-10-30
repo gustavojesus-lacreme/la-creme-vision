@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Organizar funcionamento e almoço com aplicação à barbearia, equipe ou barbeiro
-- [ ] Incluir ausências em um dia ou repetição semanal, com escopo explícito e teste da agenda
+- [x] Organizar funcionamento e almoço com aplicação à barbearia, equipe ou barbeiro
+- [x] Incluir ausências em um dia ou repetição semanal, com escopo explícito — registro, leitura, remoção e bloqueio somente nos dias selecionados verificados
 - [x] Corrigir forma de pagamento de atendimento finalizado no Financeiro com histórico e recálculo seguro
 - [x] Permitir ao administrador autorizar individualmente líderes para correção de pagamentos
 - [x] Testar correção financeira e restrições de acesso — 12 testes passaram; alteração e restauração de pagamento verificadas na tela
