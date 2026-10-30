@@ -279,8 +279,9 @@ function BookingPage() {
 
   const clientLabel = `${firstName} ${lastName}`.trim() || "Visitante";
 
-  const ready =
-    !!service && !!barber && !!slot && firstName.trim() !== "" && whatsapp.trim() !== "";
+  const savedWhatsapp = session ? profileQuery.data?.whatsapp ?? "" : guest?.whatsapp ?? "";
+  const needsWhatsapp = !isValidBrWhatsapp(savedWhatsapp);
+  const ready = !!service && !!barber && !!slot;
 
   async function handleConfirm(choice?: "keep" | "replace") {
     if (!ready || !service || !barber || !slot) return;
@@ -314,11 +315,11 @@ function BookingPage() {
     }
     setDupe(null);
     const p = profileQuery.data;
-    if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !p.whatsapp?.trim())) {
+    if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !isValidBrWhatsapp(p.whatsapp ?? ""))) {
       await supabase.from("profiles").update({
         first_name: p.first_name?.trim() || firstName.trim(),
         last_name: p.last_name?.trim() || lastName.trim(),
-        whatsapp: p.whatsapp?.trim() || whatsapp.trim(),
+        whatsapp: isValidBrWhatsapp(p.whatsapp ?? "") ? p.whatsapp!.trim() : whatsapp.trim(),
       }).eq("id", session.user.id);
     }
 
@@ -645,6 +646,29 @@ function BookingPage() {
               </div>
             ))}
           </dl>
+          {needsWhatsapp && (
+            <div className="space-y-2 rounded-md border border-gold/60 bg-gold/10 p-3">
+              {firstName.trim().length < 2 && (
+                <label className="block space-y-1">
+                  <span className="text-sm font-bold text-foreground">Seu nome</span>
+                  <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nome" />
+                </label>
+              )}
+              <label className="block space-y-1">
+                <span className="text-sm font-bold text-foreground">Informe seu WhatsApp para confirmação</span>
+                <input
+                  className={inputClass}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="(16) 98765-4321"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                />
+              </label>
+              <p className="text-xs text-foreground/70">Fica salvo no seu cadastro para os próximos agendamentos.</p>
+            </div>
+          )}
           {error && <p className="text-sm font-semibold text-destructive">{error}</p>}
           <h2 className="pt-2 font-display text-lg font-bold text-card-foreground">6. Confirmar</h2>
           <button
