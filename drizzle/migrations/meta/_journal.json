@@ -148,6 +148,13 @@
       "when": 1793400023363,
       "tag": "0020_lock_payment_correction_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793403643372,
+      "tag": "0021_scoped_schedules_and_weekly_absences",
+      "breakpoints": true
     }
   ]
 }

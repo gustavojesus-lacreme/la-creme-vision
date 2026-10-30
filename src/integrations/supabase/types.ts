@@ -197,6 +197,61 @@ export type Database = {
           },
         ]
       }
+      barber_lunch_overrides: {
+        Row: {
+          barber_id: string
+          ends_time: string | null
+          starts_time: string | null
+        }
+        Insert: {
+          barber_id: string
+          ends_time?: string | null
+          starts_time?: string | null
+        }
+        Update: {
+          barber_id?: string
+          ends_time?: string | null
+          starts_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_lunch_overrides_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: true
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barber_schedule_days: {
+        Row: {
+          barber_id: string
+          closed: boolean
+          periods: Json
+          weekday: number
+        }
+        Insert: {
+          barber_id: string
+          closed?: boolean
+          periods?: Json
+          weekday: number
+        }
+        Update: {
+          barber_id?: string
+          closed?: boolean
+          periods?: Json
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_schedule_days_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barbers: {
         Row: {
           active: boolean
@@ -947,6 +1002,59 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_absences: {
+        Row: {
+          barber_id: string | null
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          ends_time: string | null
+          id: string
+          kind: string
+          note: string
+          scope: string
+          starts_on: string
+          starts_time: string | null
+          weekdays: number[] | null
+        }
+        Insert: {
+          barber_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          ends_time?: string | null
+          id?: string
+          kind?: string
+          note?: string
+          scope: string
+          starts_on: string
+          starts_time?: string | null
+          weekdays?: number[] | null
+        }
+        Update: {
+          barber_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          ends_time?: string | null
+          id?: string
+          kind?: string
+          note?: string
+          scope?: string
+          starts_on?: string
+          starts_time?: string | null
+          weekdays?: number[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_absences_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_combos: {
         Row: {
           active: boolean
@@ -1300,6 +1408,20 @@ export type Database = {
         Args: { _first: string; _id: string; _last: string; _starts_at: string }
         Returns: undefined
       }
+      effective_lunch: {
+        Args: { _barber: string; _day: string }
+        Returns: {
+          le: string
+          ls: string
+        }[]
+      }
+      effective_schedule_periods: {
+        Args: { _barber: string; _day: string }
+        Returns: {
+          closes_at: string
+          opens_at: string
+        }[]
+      }
       extra_service_price: {
         Args: { _context: string[]; _service_id: string }
         Returns: number
@@ -1498,6 +1620,23 @@ export type Database = {
       rename_appointment: {
         Args: { _first: string; _id: string; _last: string }
         Returns: undefined
+      }
+      save_scoped_hours: {
+        Args: { _barber: string; _days: Json; _scope: string }
+        Returns: undefined
+      }
+      save_scoped_lunch: {
+        Args: { _barber: string; _end: string; _scope: string; _start: string }
+        Returns: undefined
+      }
+      schedule_absence_matches: {
+        Args: {
+          _day: string
+          _end: string
+          _start: string
+          _weekdays: number[]
+        }
+        Returns: boolean
       }
       search_clients: {
         Args: { _q: string }
