@@ -1,3 +1,4 @@
+import { absenceDates } from "@/lib/schedule";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -7,7 +8,7 @@ import { ABSENCE_KINDS, todaySP, type AbsenceKind } from "@/lib/absences";
 
 const toMin = (t: string) => {
   const [h, m] = t.split(":").map(Number);
-  return h! * 60 + m!;
+  return (h ?? 0) * 60 + (m ?? 0);
 };
 const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const spMinutes = (iso: string) => {
@@ -27,15 +28,16 @@ export function BarberDayGrid({ barberId, day: fixedDay }: { barberId: string; d
     queryFn: async () => {
       const start = new Date(`${day}T00:00:00-03:00`).toISOString();
       const end = new Date(new Date(`${day}T00:00:00-03:00`).getTime() + 86400000).toISOString();
-      const [hours, periods, appts, abs, settings] = await Promise.all([
+      const [hours, periods, appts, abs, settings, rules] = await Promise.all([
         supabase.from("business_hours").select("closed").eq("weekday", weekdayOf(day)).maybeSingle(),
-        supabase.from("business_periods").select("opens_at, closes_at").eq("weekday", weekdayOf(day)).order("opens_at"),
+        supabase.rpc("effective_schedule_periods", { _barber: barberId, _day: day }),
         supabase.from("appointments").select("starts_at, ends_at, customer_first_name, status").eq("barber_id", barberId)
           .neq("status", "cancelado").gte("starts_at", start).lt("starts_at", end),
         supabase.from("barber_absences").select("kind, starts_time, ends_time").eq("barber_id", barberId).lte("starts_on", day).gte("ends_on", day),
-        supabase.from("operation_settings").select("lunch_start, lunch_end").eq("id", 1).maybeSingle(),
+        supabase.rpc("effective_lunch", { _barber: barberId, _day: day }),
+        supabase.from("schedule_absences").select("*").lte("starts_on", day).gte("ends_on", day),
       ]);
-      return { hours: hours.data, periods: periods.data ?? [], appts: appts.data ?? [], abs: abs.data ?? [], settings: settings.data };
+      return { hours: hours.data, periods: periods.data ?? [], appts: appts.data ?? [], abs: [...abs.data ?? [], ...(rules.data ?? []).filter((r) => (r.scope !== "barber" || r.barber_id === barberId) && absenceDates(r.starts_on, r.ends_on, r.weekdays).includes(day))], settings: settings.data?.[0] };
     },
   });
 
@@ -49,8 +51,8 @@ export function BarberDayGrid({ barberId, day: fixedDay }: { barberId: string; d
       for (const per of d.periods) for (let t = toMin(per.opens_at); t < toMin(per.closes_at); t += 30) {
         const e = t + 30;
         const ap = d.appts.find((a) => spMinutes(a.starts_at) < e && spMinutes(a.ends_at) > t);
-        const ab = d.abs.find((a) => !a.starts_time || (toMin(a.starts_time) < e && toMin(a.ends_time!) > t));
-        const dl = !ownLunch && d.settings?.lunch_start && toMin(d.settings.lunch_start) < e && toMin(d.settings.lunch_end!) > t;
+        const ab = d.abs.find((a) => !a.starts_time || (toMin(a.starts_time) < e && toMin(a.ends_time ?? "00:00") > t));
+        const dl = !ownLunch && d.settings?.ls && spMinutes(d.settings.ls) < e && spMinutes(d.settings.le) > t;
         const cell: Cell = ap
           ? { kind: "cliente", name: ap.customer_first_name }
           : ab

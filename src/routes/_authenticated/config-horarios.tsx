@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Clock, Info, MinusCircle, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsShell, Toggle, sCard, sInput } from "@/components/app/SettingsShell";
+import { ScheduleScope } from "@/components/app/ScheduleScope";
+import { Button } from "@/components/ui/button";
+import type { ScheduleScope as Scope } from "@/lib/schedule";
 import { BlockedDatesCard } from "@/components/app/BlockedDatesCard";
 
 export const Route = createFileRoute("/_authenticated/config-horarios")({
@@ -37,7 +40,7 @@ function validate(periods: Period[]): string | null {
     if (p.c <= p.o) return "O fechamento deve ser depois da abertura.";
   }
   for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i]!.o < sorted[i - 1]!.c) return "Os períodos não podem se sobrepor.";
+    if ((sorted[i]?.o ?? "") < (sorted[i - 1]?.c ?? "")) return "Os períodos não podem se sobrepor.";
   }
   return null;
 }
@@ -67,14 +70,18 @@ function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) 
 
 function HoursPage() {
   const qc = useQueryClient();
+  const [scope, setScope] = useState<Scope>("shop");
+  const [barberId, setBarberId] = useState("");
   const q = useQuery({
-    queryKey: ["config-hours"],
+    queryKey: ["config-hours", scope, barberId],
     queryFn: async () => {
-      const [h, p] = await Promise.all([
+      const [h, p, overrides] = await Promise.all([
         supabase.from("business_hours").select("weekday, closed"),
         supabase.from("business_periods").select("id, weekday, opens_at, closes_at").order("opens_at"),
+        supabase.from("barber_schedule_days").select("*").eq("barber_id", barberId || "00000000-0000-0000-0000-000000000000"),
       ]);
-      return { hours: h.data ?? [], periods: p.data ?? [] };
+      if (h.error || p.error || overrides.error) throw h.error ?? p.error ?? overrides.error;
+      return { hours: h.data ?? [], periods: p.data ?? [], overrides: overrides.data ?? [] };
     },
   });
 
@@ -90,9 +97,10 @@ function HoursPage() {
     const next: Record<number, DayState> = {};
     for (const [day] of DAYS) {
       const closed = q.data.hours.find((h) => h.weekday === day)?.closed ?? true;
+      const override = scope === "barber" ? q.data.overrides.find((x) => x.weekday === day) : undefined;
       next[day] = {
-        open: !closed,
-        periods: q.data.periods.filter((p) => p.weekday === day).map((p) => ({ o: toHM(p.opens_at), c: toHM(p.closes_at) })),
+        open: override ? !override.closed : !closed,
+        periods: override ? override.periods as Period[] : q.data.periods.filter((p) => p.weekday === day).map((p) => ({ o: toHM(p.opens_at), c: toHM(p.closes_at) })),
       };
     }
     setDays(next);
@@ -115,9 +123,11 @@ function HoursPage() {
 
   async function saveAll() {
     if (saving || dirtyCount === 0) return;
+    if (scope === "barber" && !barberId) return setFeedback({ text: "Selecione o barbeiro.", ok: false });
     const errs: Record<number, string> = {};
     for (const d of dirtyDays) {
-      const st = days[d]!;
+      const st = days[d];
+      if (!st) continue;
       if (!st.open) continue;
       if (st.periods.length === 0) errs[d] = "Adicione ao menos um período ou feche o dia.";
       else { const p = validate(st.periods); if (p) errs[d] = p; }
@@ -130,19 +140,11 @@ function HoursPage() {
     }
     setSaving(true);
     setFeedback(null);
-    let failed: string | null = null;
-    for (const d of dirtyDays) {
-      const st = days[d]!;
-      const { error: e1 } = await supabase.from("business_hours").update({ closed: !st.open }).eq("weekday", d);
-      if (e1) { failed = "Não foi possível salvar."; break; }
-      const { error: e2 } = await supabase.from("business_periods").delete().eq("weekday", d);
-      if (e2) { failed = "Não foi possível salvar os períodos."; break; }
-      if (st.open && st.periods.length) {
-        const rows = [...st.periods].sort((a, b) => a.o.localeCompare(b.o)).map((p) => ({ weekday: d, opens_at: p.o, closes_at: p.c }));
-        const { error: e3 } = await supabase.from("business_periods").insert(rows);
-        if (e3) { failed = e3.message.includes("sobrepõe") ? e3.message : "Não foi possível salvar os períodos."; break; }
-      }
-    }
+    const { error } = await supabase.rpc("save_scoped_hours", {
+      _scope: scope, _barber: barberId || "00000000-0000-0000-0000-000000000000",
+      _days: dirtyDays.flatMap((d) => { const st = days[d]; return st ? [{ weekday: d, closed: !st.open, periods: st.periods }] : []; }),
+    });
+    const failed = error?.message ?? null;
     setSaving(false);
     if (failed) {
       setFeedback({ text: failed, ok: false });
@@ -158,10 +160,12 @@ function HoursPage() {
 
   return (
     <SettingsShell title="Horários de funcionamento">
-      <p className="-mt-2 text-sm leading-relaxed text-foreground/65">
-        Defina os horários em que a barbearia atende. Você pode adicionar mais de um período por dia e salvar tudo no final.
-      </p>
-
+      <ScheduleScope scope={scope} barberId={barberId} disabled={saving} onChange={(next, id) => {
+        if (dirtyCount && !window.confirm("Descartar as alterações não salvas?")) return;
+        setDays({}); setSaved({}); setFeedback(null); setScope(next); setBarberId(id);
+      }} />
+      {q.isLoading && <p>Carregando horários...</p>}
+      {q.isError && <p className="text-destructive">Não foi possível carregar os horários.</p>}
       <div className="grid gap-3 pb-36 lg:pb-28">
         {DAYS.map(([day, name]) => {
           const st = days[day];
@@ -171,7 +175,7 @@ function HoursPage() {
           return (
             <section key={day} className={`${sCard} !p-0 overflow-hidden ${err ? "border-destructive/60" : ""}`}>
               <div className="flex items-center gap-3 px-4 py-3.5">
-                <button
+                <Button
                   type="button"
                   onClick={() => st.open && setExpanded(isOpen ? null : day)}
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -189,13 +193,13 @@ function HoursPage() {
                       </>
                     ) : <span className="block text-sm text-foreground/60">{summary(st)}</span>}
                   </span>
-                </button>
+                </Button>
                 <Toggle
                   checked={st.open}
                   onChange={(v) => { update(day, { open: v, periods: v && st.periods.length === 0 ? [{ o: "09:00", c: "19:00" }] : st.periods }); if (v) setExpanded(day); }}
                   label={`${name} aberto`}
                 />
-                <button
+                <Button
                   type="button"
                   disabled={!st.open}
                   onClick={() => setExpanded(isOpen ? null : day)}
@@ -203,7 +207,7 @@ function HoursPage() {
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-foreground/50 disabled:opacity-30"
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                </button>
+                </Button>
               </div>
 
               {isOpen && (
@@ -220,20 +224,20 @@ function HoursPage() {
                           <span>Fecha</span>
                           <TimeSelect value={p.c} onChange={(v) => update(day, { periods: st.periods.map((x, j) => (j === i ? { ...x, c: v } : x)) })} />
                         </label>
-                        <button type="button" aria-label="Remover período"
+                        <Button variant="ghost" type="button" aria-label="Remover período"
                           onClick={() => update(day, { periods: st.periods.filter((_, j) => j !== i) })}
                           className="grid h-12 w-11 place-items-center rounded-md text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                     {st.periods.length === 0 && <p className="text-sm text-foreground/60">Nenhum período. Adicione um abaixo.</p>}
                   </div>
-                  <button type="button"
+                  <Button variant="ghost" type="button"
                     onClick={() => { const last = st.periods[st.periods.length - 1]; update(day, { periods: [...st.periods, last ? { o: last.c, c: last.c < "19:00" ? "19:00" : last.c } : { o: "09:00", c: "19:00" }] }); }}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-brand/60 text-sm font-semibold text-brand">
                     <Plus className="h-4 w-4" /> Adicionar período
-                  </button>
+                  </Button>
                 </div>
               )}
               {err && <p className="px-4 pb-3 text-sm font-semibold text-destructive">{err}</p>}
@@ -242,15 +246,15 @@ function HoursPage() {
         })}
       </div>
 
-      <div className="pb-28"><BlockedDatesCard /></div>
+      {scope === "shop" && <div className="pb-28"><BlockedDatesCard /></div>}
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
         <div className="mx-auto w-full max-w-3xl space-y-1.5">
-          <button type="button" onClick={saveAll} disabled={saving || dirtyCount === 0}
+          <Button variant="ghost" type="button" onClick={saveAll} disabled={saving || dirtyCount === 0}
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 text-base font-bold text-brand-foreground disabled:bg-muted disabled:text-foreground/40">
             {saving ? "Salvando..." : dirtyCount ? `Salvar alterações (${dirtyCount})` : "Salvar alterações"}
             {!saving && dirtyCount > 0 && <span className="h-2 w-2 rounded-full bg-gold" />}
-          </button>
+          </Button>
           <p className={`flex items-center justify-center gap-1.5 text-xs ${feedback ? (feedback.ok ? "text-brand" : "text-destructive") : "text-foreground/60"}`}>
             {feedback ? feedback.text : dirtyCount ? (
               <><span className="h-2 w-2 rounded-full bg-gold" />{dirtyCount === 1 ? "Você tem 1 dia com alterações não salvas" : `Você tem ${dirtyCount} dias com alterações não salvas`}</>
@@ -264,8 +268,8 @@ function HoursPage() {
           <div className={`${sCard} w-full max-w-sm space-y-4`}>
             <p className="font-display text-lg font-bold text-card-foreground">Você tem alterações não salvas.</p>
             <div className="grid gap-2">
-              <button type="button" onClick={() => blocker.reset?.()} className="min-h-12 rounded-md bg-brand font-bold text-brand-foreground">Continuar editando</button>
-              <button type="button" onClick={() => blocker.proceed?.()} className="min-h-12 rounded-md border border-destructive/60 font-semibold text-destructive">Descartar alterações</button>
+              <Button variant="ghost" type="button" onClick={() => blocker.reset?.()} className="min-h-12 rounded-md bg-brand font-bold text-brand-foreground">Continuar editando</Button>
+              <Button variant="ghost" type="button" onClick={() => blocker.proceed?.()} className="min-h-12 rounded-md border border-destructive/60 font-semibold text-destructive">Descartar alterações</Button>
             </div>
           </div>
         </div>
