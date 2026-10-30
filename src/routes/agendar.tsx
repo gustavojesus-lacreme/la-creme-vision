@@ -315,11 +315,11 @@ function BookingPage() {
     }
     setDupe(null);
     const p = profileQuery.data;
-    if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !p.whatsapp?.trim())) {
+    if (session && p && (!p.first_name?.trim() || !p.last_name?.trim() || !isValidBrWhatsapp(p.whatsapp ?? ""))) {
       await supabase.from("profiles").update({
         first_name: p.first_name?.trim() || firstName.trim(),
         last_name: p.last_name?.trim() || lastName.trim(),
-        whatsapp: p.whatsapp?.trim() || whatsapp.trim(),
+        whatsapp: isValidBrWhatsapp(p.whatsapp ?? "") ? p.whatsapp!.trim() : whatsapp.trim(),
       }).eq("id", session.user.id);
     }
 
