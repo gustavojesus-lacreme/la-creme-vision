@@ -74,7 +74,7 @@ function FinancePage() {
     return data;
   } });
   const [tab, setTab] = useState<Tab>("geral");
-  const [period, setPeriod] = useState<PeriodKey>("mes");
+  const [period, setPeriod] = useState<PeriodKey>("hoje");
   const [custom, setCustom] = useState({ from: todaySP(), to: todaySP() });
   const range = periodRange(period, custom);
 
