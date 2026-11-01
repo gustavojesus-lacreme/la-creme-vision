@@ -299,11 +299,6 @@ function BarberPanel() {
                 Vender produto
               </button>
             )}
-            {(isBarber || (access?.role === "admin" && !previewId)) && (
-              <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
-                + Agendamento avulso
-              </button>
-            )}
           </div>
         </div>
         {previewId && (
