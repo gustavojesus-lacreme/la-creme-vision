@@ -487,7 +487,6 @@ function BarberPanel() {
 
         {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} day={day} />}
       </main>
-      )}
       {sale && <CounterSaleDialog onClose={() => setSale(false)} onDone={(msg) => { setSale(false); window.alert(msg); }} />}
       {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
       {confirmCancel && (() => {
