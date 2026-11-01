@@ -7,7 +7,7 @@ import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
 import { readGuest, clearGuest, fetchGuestBookingEnabled, isValidBrWhatsapp, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
-import { StaffBooking } from "@/components/app/StaffBooking";
+import { StaffClientPicker, type StaffClient, type ClientEdits } from "@/components/app/StaffClientPicker";
 import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
   formatDateLong,
@@ -229,6 +229,40 @@ function BookingPage() {
     },
   });
 
+  const staffMode = isStaff && !!staffQuery.data;
+  const [staffClient, setStaffClient] = useState<StaffClient | null>(null);
+  const [edits, setEdits] = useState<ClientEdits>({ first: "", last: "", whats: "" });
+  const [openPicker, setOpenPicker] = useState<"client" | "barber" | null>(null);
+  useEffect(() => {
+    if (staffClient) setEdits({ first: staffClient.first_name, last: staffClient.last_name, whats: staffClient.whatsapp ?? "" });
+  }, [staffClient]);
+  useEffect(() => {
+    if (staffMode && staffQuery.data?.ownBarberId) setBarberId((v) => v ?? staffQuery.data!.ownBarberId);
+  }, [staffMode, staffQuery.data]);
+
+  async function handleStaffConfirm() {
+    if (!service || !barber || !slot) return;
+    if (!staffClient) { setOpenPicker("client"); return setError("Toque em Cliente para buscar ou cadastrar."); }
+    if (!edits.first.trim()) return setError("Informe o nome do cliente.");
+    setSaving(true); setError(null);
+    const changed = edits.first.trim() !== staffClient.first_name || edits.last.trim() !== staffClient.last_name || edits.whats.trim() !== (staffClient.whatsapp ?? "");
+    if (changed) {
+      const { error: e } = await supabase.rpc("update_client_contact", { _client_id: staffClient.id, _first: edits.first, _last: edits.last, _whatsapp: edits.whats });
+      if (e) { setSaving(false); return setError(e.message || "Não foi possível atualizar o cliente."); }
+    }
+    const { error: e } = await supabase.rpc("staff_create_appointment", {
+      _client_id: staffClient.id, _barber_id: barber.id, _starts_at: slot.toISOString(), _service_ids: serviceIds,
+      _label: service.name, _price_cents: service.price_cents, _duration: service.duration_minutes, _encaixe: true,
+    });
+    setSaving(false);
+    if (e) { busyQuery.refetch(); setSlot(null); return setError(e.message || "Não foi possível agendar."); }
+    setConfirmed({ when: slot, service: service.name, priceCents: service.price_cents, durationMinutes: service.duration_minutes,
+      ends: new Date(slot.getTime() + service.duration_minutes * 60000), barber: barber.name,
+      clientName: `${edits.first.trim()} ${edits.last.trim()}`.trim() });
+    setSlot(null); setServiceIds([]); setStaffClient(null); setOpenPicker(null);
+    busyQuery.refetch();
+  }
+
   useEffect(() => {
     if (session || !guest) return;
     setFirstName((v) => v || guest.firstName);
@@ -291,6 +325,7 @@ function BookingPage() {
   const slots = service ? (busyQuery.data ?? []) : [];
 
   const clientLabel = `${firstName} ${lastName}`.trim() || "Visitante";
+  const staffLabel = staffClient ? `${edits.first} ${edits.last}`.trim() : "Toque para escolher";
 
   const savedWhatsapp = session ? profileQuery.data?.whatsapp ?? "" : guest?.whatsapp ?? "";
   const needsWhatsapp = !isValidBrWhatsapp(savedWhatsapp);
@@ -383,19 +418,6 @@ function BookingPage() {
 
   if (!session && guestChecked && !guest) return null;
 
-  if (isStaff && staffQuery.data) {
-    return (
-      <div className="min-h-svh bg-background">
-        <AppNav />
-        <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
-          <h1 className="font-display text-2xl font-bold text-foreground">Agendar cliente</h1>
-          <p className="text-sm text-foreground/70">Agendamentos feitos pela equipe ficam registrados automaticamente como avulso.</p>
-          <StaffBooking ownBarberId={staffQuery.data.ownBarberId} canChangeBarber={staffQuery.data.canChange} canCreateClient={accessQuery.data?.role === "admin"} />
-        </main>
-      </div>
-    );
-  }
-
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [
       ["Cliente", confirmed.clientName],
@@ -481,8 +503,9 @@ function BookingPage() {
         <h1 className="font-display text-2xl font-bold text-foreground">Agendar horário</h1>
 
         <p className="text-base text-foreground/70">
-          Cliente: <span className="font-bold text-foreground">{clientLabel}</span>
+          Cliente: <span className="font-bold text-foreground">{staffMode ? staffLabel : clientLabel}</span>
         </p>
+        {staffMode && <p className="text-sm text-foreground/60">Agendamento da equipe: fica registrado como avulso. Escolha o cliente no Resumo.</p>}
 
         <section className="space-y-2">
           <h2 className="text-base font-bold uppercase text-brand">1. Serviços</h2>
@@ -659,20 +682,32 @@ function BookingPage() {
                 ["Duração total", service ? formatDuration(service.duration_minutes) : "—"],
                 ["Valor total", service ? formatPrice(service.price_cents) : "—"],
               ] as Array<[string, string]>
-            ).map(([label, value]) => (
-              <div key={label} className="flex items-start justify-between gap-3 px-3 py-2">
+            ).map(([label, value]) => {
+              const tappable = staffMode && (label === "Cliente" || (label === "Barbeiro" && staffQuery.data?.canChange));
+              const shown = staffMode && label === "Cliente" ? staffLabel : value;
+              const row = (
+              <div key={label} className={`flex items-start justify-between gap-3 px-3 py-2 ${tappable ? "cursor-pointer" : ""}`}
+                onClick={tappable ? () => setOpenPicker((o) => (o === (label === "Cliente" ? "client" : "barber") ? null : label === "Cliente" ? "client" : "barber")) : undefined}>
                 <dt className="text-sm font-semibold text-foreground/60">{label}</dt>
                 <dd
                   className={`text-right text-base font-bold ${
                     label === "Valor total" ? "text-brand" : "text-card-foreground"
                   }`}
                 >
-                  {value}
+                  {shown}{tappable && <span className="ml-1 text-sm font-semibold text-brand">✎</span>}
                 </dd>
-              </div>
-            ))}
+              </div>);
+              if (label === "Cliente" && openPicker === "client") return (<div key={label}>{row}<div className="px-3 pb-3">
+                <StaffClientPicker client={staffClient} onPick={setStaffClient} edits={edits} onEdits={setEdits} canCreate={accessQuery.data?.role === "admin"} onClose={() => setOpenPicker(null)} /></div></div>);
+              if (label === "Barbeiro" && openPicker === "barber") return (<div key={label}>{row}<div className="px-3 pb-3">
+                <select className={inputClass} value={barberId ?? ""} onChange={(e) => { setBarberId(e.target.value || null); setOpenPicker(null); }}>
+                  <option value="">Escolha o barbeiro</option>
+                  {compatibleBarbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select></div></div>);
+              return row;
+            })}
           </dl>
-          {needsWhatsapp && (
+          {!staffMode && needsWhatsapp && (
             <div className="space-y-2 rounded-md border border-gold/60 bg-gold/10 p-3">
               {firstName.trim().length < 2 && (
                 <label className="block space-y-1">
@@ -700,7 +735,7 @@ function BookingPage() {
           <button
             type="button"
             disabled={!ready || saving}
-            onClick={() => handleConfirm()}
+            onClick={() => (staffMode ? handleStaffConfirm() : handleConfirm())}
             className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-3 z-10 min-h-13 w-full rounded-md bg-brand px-6 text-base font-bold uppercase text-brand-foreground shadow-lg active:opacity-90 disabled:opacity-50"
           >
             Confirmar agendamento
