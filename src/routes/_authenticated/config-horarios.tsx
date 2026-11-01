@@ -13,9 +13,9 @@ import { QuickTimeBlocksCard } from "@/components/app/QuickTimeBlocksCard";
 export const Route = createFileRoute("/_authenticated/config-horarios")({
   head: () => ({
     meta: [
-      { title: "Horários de funcionamento | LA CREME BARBER" },
+      { title: "Horários e bloqueios | LA CREME BARBER" },
       { name: "description", content: "Configure os dias e períodos de funcionamento da barbearia." },
-      { property: "og:title", content: "Horários de funcionamento | LA CREME BARBER" },
+      { property: "og:title", content: "Horários e bloqueios | LA CREME BARBER" },
       { property: "og:description", content: "Dias e horários em que a barbearia atende." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -160,7 +160,7 @@ function HoursPage() {
   const labelCls = "block min-w-0 space-y-1 text-xs font-medium text-foreground/70";
 
   return (
-    <SettingsShell title="Horários de funcionamento">
+    <SettingsShell title="Horários e bloqueios">
       <ScheduleScope scope={scope} barberId={barberId} disabled={saving} onChange={(next, id) => {
         if (dirtyCount && !window.confirm("Descartar as alterações não salvas?")) return;
         setDays({}); setSaved({}); setFeedback(null); setScope(next); setBarberId(id);
