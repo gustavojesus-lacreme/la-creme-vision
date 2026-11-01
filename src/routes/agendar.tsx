@@ -7,6 +7,7 @@ import { AppNav } from "@/components/app/AppNav";
 import { useSession } from "@/hooks/useSession";
 import { readGuest, clearGuest, fetchGuestBookingEnabled, isValidBrWhatsapp, type GuestData } from "@/lib/guest";
 import { getPanelAccess } from "@/lib/admin";
+import { StaffBooking } from "@/components/app/StaffBooking";
 import { activeAbsence, formatDayShort, returnDay } from "@/lib/absences";
 import {
   formatDateLong,
@@ -213,8 +214,20 @@ function BookingPage() {
     queryFn: getPanelAccess,
   });
   useEffect(() => {
-    if (accessQuery.data?.role === "barbeiro" || accessQuery.data?.role === "barbeiro_pendente") navigate({ to: "/painel", replace: true });
+    if (accessQuery.data?.role === "barbeiro_pendente") navigate({ to: "/painel", replace: true });
   }, [accessQuery.data, navigate]);
+  const isStaff = accessQuery.data?.role === "admin" || accessQuery.data?.role === "barbeiro";
+  const staffQuery = useQuery({
+    queryKey: ["staff-booking-access", session?.user.id],
+    enabled: !!session && isStaff,
+    queryFn: async () => {
+      const [lead, own] = await Promise.all([
+        supabase.rpc("is_admin_or_leader"),
+        supabase.from("barbers").select("id").eq("user_id", session!.user.id).eq("active", true).not("approved_at", "is", null).maybeSingle(),
+      ]);
+      return { canChange: !!lead.data, ownBarberId: own.data?.id ?? null };
+    },
+  });
 
   useEffect(() => {
     if (session || !guest) return;
@@ -369,6 +382,19 @@ function BookingPage() {
   }
 
   if (!session && guestChecked && !guest) return null;
+
+  if (isStaff && staffQuery.data) {
+    return (
+      <div className="min-h-svh bg-background">
+        <AppNav />
+        <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
+          <h1 className="font-display text-2xl font-bold text-foreground">Agendar cliente</h1>
+          <p className="text-sm text-foreground/70">Agendamentos feitos pela equipe ficam registrados automaticamente como avulso.</p>
+          <StaffBooking ownBarberId={staffQuery.data.ownBarberId} canChangeBarber={staffQuery.data.canChange} canCreateClient={accessQuery.data?.role === "admin"} />
+        </main>
+      </div>
+    );
+  }
 
   if (confirmed) {
     const summaryRows: Array<[string, string]> = [

@@ -22,3 +22,4 @@
 - [x] Entrega 3: Financeiro completo (taxas gravadas por lançamento, comissão sobre líquido, comissões configuráveis, fechamento diário, relatórios e PDF A4) — aguarda validação
 - [x] Entrega 4: cor dos barbeiros, Estoque funcional, venda de produto no atendimento, estorno — aguarda validação
 - [x] Entrega 5: relatórios geral/individual + PDF individual, serviço adicional na finalização, estoque inicial, ausências simplificadas — aguarda validação
+- [x] Agendamento da equipe na tela Agendar (avulso automático, troca de barbeiro admin/líder, edição do cliente)

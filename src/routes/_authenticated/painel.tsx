@@ -12,7 +12,6 @@ import { ClientDetailDialog } from "@/components/app/ClientDetailDialog";
 import { getPanelAccess } from "@/lib/admin";
 import { BarberDayGrid } from "@/components/app/BarberDayGrid";
 import { brl, toCents } from "@/lib/finance";
-import { EncaixeDialog } from "@/components/app/EncaixeDialog";
 import { CounterSaleDialog } from "@/components/app/CounterSaleDialog";
 import { todaySP } from "@/lib/absences";
 import { buildBarberColors, tint } from "@/lib/barber-colors";
@@ -166,7 +165,6 @@ function BarberPanel() {
   const [changeMethod, setChangeMethod] = useState("pix");
   const [payError, setPayError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
-  const [encaixe, setEncaixe] = useState(false);
   const isBarber = access?.role === "barbeiro";
   const [sale, setSale] = useState(false);
   const canSellQuery = useQuery({
@@ -297,11 +295,6 @@ function BarberPanel() {
             {canSell && !previewId && (
               <button type="button" onClick={() => setSale(true)} className="min-h-11 rounded-md border border-brand px-4 text-sm font-bold text-brand">
                 Vender produto
-              </button>
-            )}
-            {(isBarber || (access?.role === "admin" && !previewId)) && (
-              <button type="button" onClick={() => setEncaixe(true)} className="min-h-11 rounded-md bg-brand px-4 text-sm font-bold text-brand-foreground">
-                + Agendamento avulso
               </button>
             )}
           </div>
@@ -494,10 +487,6 @@ function BarberPanel() {
 
         {access != null && !pending && barberFilter && <BarberDayGrid barberId={barberFilter} day={day} />}
       </main>
-      {encaixe && (isBarber || access?.role === "admin") && (
-        <EncaixeDialog {...(isBarber ? { barberId: access.barberId } : {})} canCreateClient={access?.role === "admin"} onClose={() => setEncaixe(false)}
-          onDone={() => { setEncaixe(false); queryClient.invalidateQueries({ queryKey: ["panel-appointments"] }); queryClient.invalidateQueries({ queryKey: ["barber-day"] }); }} />
-      )}
       {sale && <CounterSaleDialog onClose={() => setSale(false)} onDone={(msg) => { setSale(false); window.alert(msg); }} />}
       {clientCard && <ClientDetailDialog clientId={clientCard} onClose={() => setClientCard(null)} />}
       {confirmCancel && (() => {
