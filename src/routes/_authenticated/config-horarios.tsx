@@ -175,7 +175,7 @@ function HoursPage() {
           return (
             <section key={day} className={`${sCard} !p-0 overflow-hidden ${err ? "border-destructive/60" : ""}`}>
               <div className="flex items-center gap-3 px-4 py-3.5">
-                <Button
+                <button
                   type="button"
                   onClick={() => st.open && setExpanded(isOpen ? null : day)}
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -188,26 +188,26 @@ function HoursPage() {
                     <span className="block font-display text-base font-bold text-card-foreground">{name}</span>
                     {st.open && st.periods.length ? (
                       <>
-                        <span className="block text-sm tabular-nums text-foreground/65">{st.periods.map((p) => `${p.o} às ${p.c}`).join(" · ")}</span>
-                        <span className="block text-sm text-foreground/55">{st.periods.length} {st.periods.length === 1 ? "período" : "períodos"}</span>
+                        <span className="block text-sm tabular-nums text-foreground/80">{st.periods.map((p) => `${p.o} às ${p.c}`).join(" · ")}</span>
+                        <span className="block text-xs text-foreground/60">{st.periods.length} {st.periods.length === 1 ? "período" : "períodos"}</span>
                       </>
                     ) : <span className="block text-sm text-foreground/60">{summary(st)}</span>}
                   </span>
-                </Button>
+                </button>
                 <Toggle
                   checked={st.open}
                   onChange={(v) => { update(day, { open: v, periods: v && st.periods.length === 0 ? [{ o: "09:00", c: "19:00" }] : st.periods }); if (v) setExpanded(day); }}
                   label={`${name} aberto`}
                 />
-                <Button
+                <button
                   type="button"
                   disabled={!st.open}
                   onClick={() => setExpanded(isOpen ? null : day)}
                   aria-label={isOpen ? "Recolher" : "Expandir"}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-foreground/50 disabled:opacity-30"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-md text-foreground/60 hover:bg-secondary disabled:opacity-30"
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                </Button>
+                </button>
               </div>
 
               {isOpen && (
