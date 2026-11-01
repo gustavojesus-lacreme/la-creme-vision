@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal, Search } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal, Search, Clock, CalendarX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -33,6 +33,8 @@ export function AppNav() {
       ? [
           painel,
           items[0], items[1],
+          { to: "/config-horarios" as const, label: "Horários", icon: Clock },
+          { to: "/bloquear-agenda" as const, label: "Bloquear agenda", icon: CalendarX },
           { to: "/financeiro" as const, label: "Financeiro", icon: Wallet },
           { to: "/estoque" as const, label: "Estoque", icon: Package },
           { to: "/admin-clientes" as const, label: "Buscar clientes", icon: Search },

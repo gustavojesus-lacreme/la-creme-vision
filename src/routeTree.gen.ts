@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminPlanosClientesRouteImport } from './routes/_
 import { Route as AuthenticatedAdminQrcodeRouteImport } from './routes/_authenticated/admin-qrcode'
 import { Route as AuthenticatedAdminServicosRouteImport } from './routes/_authenticated/admin-servicos'
 import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated/ausencias'
+import { Route as AuthenticatedBloquearAgendaRouteImport } from './routes/_authenticated/bloquear-agenda'
 import { Route as AuthenticatedConfigGeraisRouteImport } from './routes/_authenticated/config-gerais'
 import { Route as AuthenticatedConfigHorariosRouteImport } from './routes/_authenticated/config-horarios'
 import { Route as AuthenticatedConfigIntervalosRouteImport } from './routes/_authenticated/config-intervalos'
@@ -95,6 +96,12 @@ const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
   path: '/ausencias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBloquearAgendaRoute =
+  AuthenticatedBloquearAgendaRouteImport.update({
+    id: '/bloquear-agenda',
+    path: '/bloquear-agenda',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConfigGeraisRoute =
   AuthenticatedConfigGeraisRouteImport.update({
     id: '/config-gerais',
@@ -225,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/bloquear-agenda': typeof AuthenticatedBloquearAgendaRoute
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
@@ -257,6 +265,7 @@ export interface FileRoutesByTo {
   '/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
+  '/bloquear-agenda': typeof AuthenticatedBloquearAgendaRoute
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
@@ -291,6 +300,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-qrcode': typeof AuthenticatedAdminQrcodeRoute
   '/_authenticated/admin-servicos': typeof AuthenticatedAdminServicosRoute
   '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
+  '/_authenticated/bloquear-agenda': typeof AuthenticatedBloquearAgendaRoute
   '/_authenticated/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/_authenticated/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/_authenticated/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/admin-qrcode'
     | '/admin-servicos'
     | '/ausencias'
+    | '/bloquear-agenda'
     | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/admin-qrcode'
     | '/admin-servicos'
     | '/ausencias'
+    | '/bloquear-agenda'
     | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
@@ -390,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-qrcode'
     | '/_authenticated/admin-servicos'
     | '/_authenticated/ausencias'
+    | '/_authenticated/bloquear-agenda'
     | '/_authenticated/config-gerais'
     | '/_authenticated/config-horarios'
     | '/_authenticated/config-intervalos'
@@ -493,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/ausencias'
       fullPath: '/ausencias'
       preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bloquear-agenda': {
+      id: '/_authenticated/bloquear-agenda'
+      path: '/bloquear-agenda'
+      fullPath: '/bloquear-agenda'
+      preLoaderRoute: typeof AuthenticatedBloquearAgendaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/config-gerais': {
@@ -652,6 +672,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminQrcodeRoute: typeof AuthenticatedAdminQrcodeRoute
   AuthenticatedAdminServicosRoute: typeof AuthenticatedAdminServicosRoute
   AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
+  AuthenticatedBloquearAgendaRoute: typeof AuthenticatedBloquearAgendaRoute
   AuthenticatedConfigGeraisRoute: typeof AuthenticatedConfigGeraisRoute
   AuthenticatedConfigHorariosRoute: typeof AuthenticatedConfigHorariosRoute
   AuthenticatedConfigIntervalosRoute: typeof AuthenticatedConfigIntervalosRoute
@@ -679,6 +700,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminQrcodeRoute: AuthenticatedAdminQrcodeRoute,
   AuthenticatedAdminServicosRoute: AuthenticatedAdminServicosRoute,
   AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
+  AuthenticatedBloquearAgendaRoute: AuthenticatedBloquearAgendaRoute,
   AuthenticatedConfigGeraisRoute: AuthenticatedConfigGeraisRoute,
   AuthenticatedConfigHorariosRoute: AuthenticatedConfigHorariosRoute,
   AuthenticatedConfigIntervalosRoute: AuthenticatedConfigIntervalosRoute,
