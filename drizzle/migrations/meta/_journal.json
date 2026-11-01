@@ -169,6 +169,13 @@
       "when": 1793403891927,
       "tag": "0023_barber_lunch_duration_consistency",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793543321312,
+      "tag": "0024_staff_booking_in_agendar",
+      "breakpoints": true
     }
   ]
 }

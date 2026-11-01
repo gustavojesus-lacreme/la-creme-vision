@@ -1666,6 +1666,15 @@ export type Database = {
         }
         Returns: string
       }
+      update_client_contact: {
+        Args: {
+          _client_id: string
+          _first: string
+          _last: string
+          _whatsapp: string
+        }
+        Returns: undefined
+      }
       valid_br_whatsapp: { Args: { _w: string }; Returns: boolean }
     }
     Enums: {
