@@ -43,6 +43,7 @@ export function AppNav() {
       : access?.role === "barbeiro"
         ? [
             painel,
+            items[0],
             { to: "/meus-clientes" as const, label: "Clientes", icon: Contact },
             { to: "/meus-servicos" as const, label: "Serviços", icon: ScissorsIcon },
             { to: "/meus-produtos" as const, label: "Produtos", icon: Package },
