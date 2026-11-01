@@ -8,13 +8,14 @@ import { ScheduleScope } from "@/components/app/ScheduleScope";
 import { Button } from "@/components/ui/button";
 import type { ScheduleScope as Scope } from "@/lib/schedule";
 import { BlockedDatesCard } from "@/components/app/BlockedDatesCard";
+import { QuickTimeBlocksCard } from "@/components/app/QuickTimeBlocksCard";
 
 export const Route = createFileRoute("/_authenticated/config-horarios")({
   head: () => ({
     meta: [
-      { title: "Horários de funcionamento | LA CREME BARBER" },
+      { title: "Horários e bloqueios | LA CREME BARBER" },
       { name: "description", content: "Configure os dias e períodos de funcionamento da barbearia." },
-      { property: "og:title", content: "Horários de funcionamento | LA CREME BARBER" },
+      { property: "og:title", content: "Horários e bloqueios | LA CREME BARBER" },
       { property: "og:description", content: "Dias e horários em que a barbearia atende." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -159,14 +160,14 @@ function HoursPage() {
   const labelCls = "block min-w-0 space-y-1 text-xs font-medium text-foreground/70";
 
   return (
-    <SettingsShell title="Horários de funcionamento">
+    <SettingsShell title="Horários e bloqueios">
       <ScheduleScope scope={scope} barberId={barberId} disabled={saving} onChange={(next, id) => {
         if (dirtyCount && !window.confirm("Descartar as alterações não salvas?")) return;
         setDays({}); setSaved({}); setFeedback(null); setScope(next); setBarberId(id);
       }} />
       {q.isLoading && <p>Carregando horários...</p>}
       {q.isError && <p className="text-destructive">Não foi possível carregar os horários.</p>}
-      <div className="grid gap-3 pb-36 lg:pb-28">
+      <div className="grid gap-3">
         {DAYS.map(([day, name]) => {
           const st = days[day];
           if (!st) return null;
@@ -246,7 +247,10 @@ function HoursPage() {
         })}
       </div>
 
-      {scope === "shop" && <div className="pb-28"><BlockedDatesCard /></div>}
+      <div className="pb-36 lg:pb-28">
+        <QuickTimeBlocksCard scope={scope} barberId={barberId} />
+        <BlockedDatesCard />
+      </div>
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
         <div className="mx-auto w-full max-w-3xl space-y-1.5">

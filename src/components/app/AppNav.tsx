@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPanelAccess } from "@/lib/admin";
-import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal, Search, Clock, CalendarX } from "lucide-react";
+import { CalendarPlus, CalendarCheck, User, Contact, Scissors as ScissorsIcon, LogOut, Scissors, Settings, LayoutList, Wallet, Package, Menu, MoreHorizontal, Search, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { clearGuest } from "@/lib/guest";
@@ -33,8 +33,7 @@ export function AppNav() {
       ? [
           painel,
           items[0], items[1],
-          { to: "/config-horarios" as const, label: "Horários", icon: Clock },
-          { to: "/bloquear-agenda" as const, label: "Bloquear agenda", icon: CalendarX },
+          { to: "/config-horarios" as const, label: "Horários e bloqueios", icon: Clock },
           { to: "/financeiro" as const, label: "Financeiro", icon: Wallet },
           { to: "/estoque" as const, label: "Estoque", icon: Package },
           { to: "/admin-clientes" as const, label: "Buscar clientes", icon: Search },
@@ -155,7 +154,7 @@ export function AppNav() {
             className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium leading-tight text-foreground/55"
             activeProps={{ className: "!text-brand font-semibold [&_svg]:stroke-[2.4]" }}>
             <item.icon className="h-5 w-5" />
-            <span className="max-w-full truncate">{item.label}</span>
+            <span className="line-clamp-2 text-center leading-tight">{item.label}</span>
           </Link>
         ))}
         {hasMore && (

@@ -37,7 +37,7 @@ const groups: { title: string; items: Item[] }[] = [
   {
     title: "Operação",
     items: [
-      { icon: Clock, title: "Horários de funcionamento", desc: "Defina os dias e horários em que a barbearia funciona", to: "/config-horarios" },
+      { icon: Clock, title: "Horários e bloqueios", desc: "Dias de funcionamento, folgas e horários bloqueados", to: "/config-horarios" },
       { icon: Coffee, title: "Intervalos e almoço", desc: "Configure os períodos de pausa e disponibilidade", to: "/config-intervalos" },
       { icon: CalendarOff, title: "Ausências dos barbeiros", desc: "Gerencie férias, atestados, emergências e ausências", to: "/ausencias" },
     ],
