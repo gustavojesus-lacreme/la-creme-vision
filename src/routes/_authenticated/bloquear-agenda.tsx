@@ -5,6 +5,8 @@ import { Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsShell, sCard, sInput, sLabel, sBtn, hhmm } from "@/components/app/SettingsShell";
 import { BlockedDatesCard } from "@/components/app/BlockedDatesCard";
+import { ScheduleScope } from "@/components/app/ScheduleScope";
+import { barberFullName, type ScheduleScope as Scope } from "@/lib/schedule";
 
 export const Route = createFileRoute("/_authenticated/bloquear-agenda")({
   head: () => ({
@@ -28,14 +30,16 @@ function Page() {
   const [day, setDay] = useState(todaySP());
   const [start, setStart] = useState("14:00");
   const [end, setEnd] = useState("16:00");
+  const [scope, setScope] = useState<Scope>("shop");
+  const [barberId, setBarberId] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const q = useQuery({
     queryKey: ["quick-time-blocks"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schedule_absences").select("id, starts_on, ends_on, starts_time, ends_time, note, weekdays")
-        .eq("scope", "shop").not("starts_time", "is", null).gte("ends_on", todaySP()).order("starts_on");
+      const { data, error } = await supabase.from("schedule_absences").select("id, scope, starts_on, ends_on, starts_time, ends_time, note, weekdays, barbers(name, last_name)")
+        .not("starts_time", "is", null).gte("ends_on", todaySP()).order("starts_on");
       if (error) throw error;
       return (data ?? []).filter((r) => !r.weekdays);
     },
@@ -45,9 +49,10 @@ function Page() {
     setMsg(null);
     if (!day || day < todaySP()) return setMsg({ ok: false, text: "Escolha uma data de hoje em diante." });
     if (end <= start) return setMsg({ ok: false, text: "O horário final precisa ser depois do inicial." });
+    if (scope === "barber" && !barberId) return setMsg({ ok: false, text: "Selecione o barbeiro." });
     setBusy(true);
     const { error } = await supabase.from("schedule_absences").insert({
-      scope: "shop", barber_id: null, kind: "ausente", starts_on: day, ends_on: day,
+      scope, barber_id: scope === "barber" ? barberId : null, kind: "ausente", starts_on: day, ends_on: day,
       starts_time: start, ends_time: end, weekdays: null, note: "Bloqueio rápido",
     });
     setBusy(false);
@@ -69,6 +74,7 @@ function Page() {
           <Clock className="h-5 w-5 text-brand" />
           <h2 className="font-display text-lg font-bold text-card-foreground">Bloquear uma faixa de horário</h2>
         </div>
+        <ScheduleScope scope={scope} barberId={barberId} onChange={(sc, id) => { setScope(sc); setBarberId(id); }} />
         <label className={sLabel}>Dia<input type="date" className={sInput} value={day} min={todaySP()} onChange={(e) => setDay(e.target.value)} /></label>
         <div className="grid grid-cols-2 gap-3">
           <label className={sLabel}>Das<input type="time" className={sInput} value={start} onChange={(e) => setStart(e.target.value)} /></label>
@@ -80,7 +86,8 @@ function Page() {
           <h3 className="text-sm font-bold uppercase text-brand">Horários bloqueados</h3>
           {(q.data ?? []).length === 0 ? <p className="text-sm text-foreground/60">Nenhum horário bloqueado.</p> : q.data!.map((r) => (
             <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-              <p className="text-sm font-semibold capitalize text-card-foreground">{fmt(r.starts_on)} · {hhmm(r.starts_time)}–{hhmm(r.ends_time)}</p>
+              <p className="text-sm font-semibold capitalize text-card-foreground">{fmt(r.starts_on)} · {hhmm(r.starts_time)}–{hhmm(r.ends_time)}
+                <span className="block text-xs font-normal normal-case text-foreground/70">{r.scope === "shop" ? "Barbearia inteira" : r.scope === "team" ? "Todos os barbeiros" : r.barbers ? barberFullName(r.barbers.name, r.barbers.last_name) : "Barbeiro"}</span></p>
               <button type="button" aria-label="Liberar horário" onClick={() => remove(r.id)} className="grid h-11 w-11 place-items-center rounded-md text-destructive hover:bg-destructive/10">
                 <Trash2 className="h-4 w-4" />
               </button>
