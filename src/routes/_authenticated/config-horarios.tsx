@@ -8,6 +8,7 @@ import { ScheduleScope } from "@/components/app/ScheduleScope";
 import { Button } from "@/components/ui/button";
 import type { ScheduleScope as Scope } from "@/lib/schedule";
 import { BlockedDatesCard } from "@/components/app/BlockedDatesCard";
+import { QuickTimeBlocksCard } from "@/components/app/QuickTimeBlocksCard";
 
 export const Route = createFileRoute("/_authenticated/config-horarios")({
   head: () => ({
@@ -166,7 +167,7 @@ function HoursPage() {
       }} />
       {q.isLoading && <p>Carregando horários...</p>}
       {q.isError && <p className="text-destructive">Não foi possível carregar os horários.</p>}
-      <div className="grid gap-3 pb-36 lg:pb-28">
+      <div className="grid gap-3">
         {DAYS.map(([day, name]) => {
           const st = days[day];
           if (!st) return null;
@@ -246,7 +247,10 @@ function HoursPage() {
         })}
       </div>
 
-      {scope === "shop" && <div className="pb-28"><BlockedDatesCard /></div>}
+      <div className="pb-36 lg:pb-28">
+        <QuickTimeBlocksCard scope={scope} barberId={barberId} />
+        <BlockedDatesCard />
+      </div>
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:bottom-0">
         <div className="mx-auto w-full max-w-3xl space-y-1.5">
