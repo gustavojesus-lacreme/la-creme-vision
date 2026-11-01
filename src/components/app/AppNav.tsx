@@ -154,7 +154,7 @@ export function AppNav() {
             className="flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium leading-tight text-foreground/55"
             activeProps={{ className: "!text-brand font-semibold [&_svg]:stroke-[2.4]" }}>
             <item.icon className="h-5 w-5" />
-            <span className="max-w-full truncate">{item.label}</span>
+            <span className="line-clamp-2 text-center leading-tight">{item.label}</span>
           </Link>
         ))}
         {hasMore && (
