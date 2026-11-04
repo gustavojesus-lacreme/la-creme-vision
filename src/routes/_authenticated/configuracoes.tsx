@@ -29,7 +29,7 @@ type Item = {
   icon: LucideIcon;
   title: string;
   desc: string;
-  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-qrcode" | "/admin-clientes" | "/admin-planos-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais";
+  to?: "/minha-conta" | "/ausencias" | "/admin-servicos" | "/admin-barbeiros" | "/admin-qrcode" | "/admin-clientes" | "/admin-planos-clientes" | "/config-horarios" | "/config-intervalos" | "/config-planos" | "/config-regras" | "/config-notificacoes" | "/config-gerais" | "/config-liberacoes";
 };
 
 const groups: { title: string; items: Item[] }[] = [
