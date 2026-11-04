@@ -23,6 +23,7 @@ import { Route as AuthenticatedBloquearAgendaRouteImport } from './routes/_authe
 import { Route as AuthenticatedConfigGeraisRouteImport } from './routes/_authenticated/config-gerais'
 import { Route as AuthenticatedConfigHorariosRouteImport } from './routes/_authenticated/config-horarios'
 import { Route as AuthenticatedConfigIntervalosRouteImport } from './routes/_authenticated/config-intervalos'
+import { Route as AuthenticatedConfigLiberacoesRouteImport } from './routes/_authenticated/config-liberacoes'
 import { Route as AuthenticatedConfigNotificacoesRouteImport } from './routes/_authenticated/config-notificacoes'
 import { Route as AuthenticatedConfigPlanosRouteImport } from './routes/_authenticated/config-planos'
 import { Route as AuthenticatedConfigRegrasRouteImport } from './routes/_authenticated/config-regras'
@@ -118,6 +119,12 @@ const AuthenticatedConfigIntervalosRoute =
   AuthenticatedConfigIntervalosRouteImport.update({
     id: '/config-intervalos',
     path: '/config-intervalos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfigLiberacoesRoute =
+  AuthenticatedConfigLiberacoesRouteImport.update({
+    id: '/config-liberacoes',
+    path: '/config-liberacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConfigNotificacoesRoute =
@@ -236,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/config-liberacoes': typeof AuthenticatedConfigLiberacoesRoute
   '/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
   '/config-planos': typeof AuthenticatedConfigPlanosRoute
   '/config-regras': typeof AuthenticatedConfigRegrasRoute
@@ -269,6 +277,7 @@ export interface FileRoutesByTo {
   '/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/config-liberacoes': typeof AuthenticatedConfigLiberacoesRoute
   '/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
   '/config-planos': typeof AuthenticatedConfigPlanosRoute
   '/config-regras': typeof AuthenticatedConfigRegrasRoute
@@ -304,6 +313,7 @@ export interface FileRoutesById {
   '/_authenticated/config-gerais': typeof AuthenticatedConfigGeraisRoute
   '/_authenticated/config-horarios': typeof AuthenticatedConfigHorariosRoute
   '/_authenticated/config-intervalos': typeof AuthenticatedConfigIntervalosRoute
+  '/_authenticated/config-liberacoes': typeof AuthenticatedConfigLiberacoesRoute
   '/_authenticated/config-notificacoes': typeof AuthenticatedConfigNotificacoesRoute
   '/_authenticated/config-planos': typeof AuthenticatedConfigPlanosRoute
   '/_authenticated/config-regras': typeof AuthenticatedConfigRegrasRoute
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
+    | '/config-liberacoes'
     | '/config-notificacoes'
     | '/config-planos'
     | '/config-regras'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/config-gerais'
     | '/config-horarios'
     | '/config-intervalos'
+    | '/config-liberacoes'
     | '/config-notificacoes'
     | '/config-planos'
     | '/config-regras'
@@ -406,6 +418,7 @@ export interface FileRouteTypes {
     | '/_authenticated/config-gerais'
     | '/_authenticated/config-horarios'
     | '/_authenticated/config-intervalos'
+    | '/_authenticated/config-liberacoes'
     | '/_authenticated/config-notificacoes'
     | '/_authenticated/config-planos'
     | '/_authenticated/config-regras'
@@ -534,6 +547,13 @@ declare module '@tanstack/react-router' {
       path: '/config-intervalos'
       fullPath: '/config-intervalos'
       preLoaderRoute: typeof AuthenticatedConfigIntervalosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/config-liberacoes': {
+      id: '/_authenticated/config-liberacoes'
+      path: '/config-liberacoes'
+      fullPath: '/config-liberacoes'
+      preLoaderRoute: typeof AuthenticatedConfigLiberacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/config-notificacoes': {
@@ -676,6 +696,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfigGeraisRoute: typeof AuthenticatedConfigGeraisRoute
   AuthenticatedConfigHorariosRoute: typeof AuthenticatedConfigHorariosRoute
   AuthenticatedConfigIntervalosRoute: typeof AuthenticatedConfigIntervalosRoute
+  AuthenticatedConfigLiberacoesRoute: typeof AuthenticatedConfigLiberacoesRoute
   AuthenticatedConfigNotificacoesRoute: typeof AuthenticatedConfigNotificacoesRoute
   AuthenticatedConfigPlanosRoute: typeof AuthenticatedConfigPlanosRoute
   AuthenticatedConfigRegrasRoute: typeof AuthenticatedConfigRegrasRoute
@@ -704,6 +725,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfigGeraisRoute: AuthenticatedConfigGeraisRoute,
   AuthenticatedConfigHorariosRoute: AuthenticatedConfigHorariosRoute,
   AuthenticatedConfigIntervalosRoute: AuthenticatedConfigIntervalosRoute,
+  AuthenticatedConfigLiberacoesRoute: AuthenticatedConfigLiberacoesRoute,
   AuthenticatedConfigNotificacoesRoute: AuthenticatedConfigNotificacoesRoute,
   AuthenticatedConfigPlanosRoute: AuthenticatedConfigPlanosRoute,
   AuthenticatedConfigRegrasRoute: AuthenticatedConfigRegrasRoute,

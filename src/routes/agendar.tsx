@@ -221,8 +221,9 @@ function BookingPage() {
     queryKey: ["staff-booking-access", session?.user.id],
     enabled: !!session && isStaff,
     queryFn: async () => {
-      const [lead, own] = await Promise.all([
+      const [lead, create, own] = await Promise.all([
         supabase.rpc("staff_can", { _perm: "change_barber" }),
+        supabase.rpc("staff_can", { _perm: "create_clients" }),
         supabase.from("barbers").select("id").eq("user_id", session!.user.id).eq("active", true).not("approved_at", "is", null).maybeSingle(),
       ]);
       return { canChange: !!lead.data, canCreate: !!create.data, ownBarberId: own.data?.id ?? null };
