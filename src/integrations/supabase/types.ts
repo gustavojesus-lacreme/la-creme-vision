@@ -1148,6 +1148,41 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_permissions: {
+        Row: {
+          barber_id: string
+          change_barber: boolean
+          counter_sale: boolean
+          create_clients: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          barber_id: string
+          change_barber?: boolean
+          counter_sale?: boolean
+          create_clients?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          barber_id?: string
+          change_barber?: boolean
+          counter_sale?: boolean
+          create_clients?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_permissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: true
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           appointment_id: string | null
@@ -1653,6 +1688,16 @@ export type Database = {
         Args: { _barber_id: string; _enabled: boolean }
         Returns: undefined
       }
+      set_staff_permissions: {
+        Args: {
+          _barber_id: string
+          _change_barber: boolean
+          _counter_sale: boolean
+          _create_clients: boolean
+        }
+        Returns: undefined
+      }
+      staff_can: { Args: { _perm: string }; Returns: boolean }
       staff_create_appointment: {
         Args: {
           _barber_id: string
