@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Clock, Coffee, CalendarOff, Scissors, Layers, Users, Contact, BadgeCheck,
-  ListChecks, Bell, SlidersHorizontal, ChevronRight, QrCode, type LucideIcon,
+  ListChecks, Bell, SlidersHorizontal, ChevronRight, QrCode, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { AppNav } from "@/components/app/AppNav";
 import { getPanelAccess } from "@/lib/admin";
@@ -65,6 +65,7 @@ const groups: { title: string; items: Item[] }[] = [
       { icon: ListChecks, title: "Regras de agendamento", desc: "Antecedência, cancelamento e limites", to: "/config-regras" },
       { icon: Bell, title: "Notificações", desc: "Avisos para clientes e barbeiros", to: "/config-notificacoes" },
       { icon: SlidersHorizontal, title: "Configurações gerais", desc: "Dados da barbearia e preferências", to: "/config-gerais" },
+      { icon: ShieldCheck, title: "Liberações da equipe", desc: "O que barbeiros e líderes podem fazer no app", to: "/config-liberacoes" },
     ],
   },
 ];

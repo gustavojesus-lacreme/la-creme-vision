@@ -222,10 +222,10 @@ function BookingPage() {
     enabled: !!session && isStaff,
     queryFn: async () => {
       const [lead, own] = await Promise.all([
-        supabase.rpc("is_admin_or_leader"),
+        supabase.rpc("staff_can", { _perm: "change_barber" }),
         supabase.from("barbers").select("id").eq("user_id", session!.user.id).eq("active", true).not("approved_at", "is", null).maybeSingle(),
       ]);
-      return { canChange: !!lead.data, ownBarberId: own.data?.id ?? null };
+      return { canChange: !!lead.data, canCreate: !!create.data, ownBarberId: own.data?.id ?? null };
     },
   });
 
@@ -715,7 +715,7 @@ function BookingPage() {
                 </dd>
               </div>);
               if (label === "Cliente" && openPicker === "client") return (<div key={label}>{row}<div className="px-3 pb-3">
-                <StaffClientPicker client={staffClient} onPick={setStaffClient} edits={edits} onEdits={setEdits} canCreate={accessQuery.data?.role === "admin"} onClose={() => setOpenPicker(null)} /></div></div>);
+                <StaffClientPicker client={staffClient} onPick={setStaffClient} edits={edits} onEdits={setEdits} canCreate={!!staffQuery.data?.canCreate} onClose={() => setOpenPicker(null)} /></div></div>);
               if (label === "Barbeiro" && openPicker === "barber") return (<div key={label}>{row}<div className="px-3 pb-3">
                 <select className={inputClass} value={barberId ?? ""} onChange={(e) => { setBarberId(e.target.value || null); setOpenPicker(null); }}>
                   <option value="">Escolha o barbeiro</option>
