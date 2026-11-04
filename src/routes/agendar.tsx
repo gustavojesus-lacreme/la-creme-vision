@@ -658,6 +658,23 @@ function BookingPage() {
               })}
             </div>
           )}
+          {staffMode && service && barber && !blockedDay && dateStr && (
+            <div className="mt-3 space-y-2 rounded-md border border-gold/60 bg-gold/10 p-3">
+              <span className="block text-sm font-bold text-foreground">Encaixe: digite o horário que quiser</span>
+              <input
+                type="time"
+                step={300}
+                aria-label="Horário do encaixe"
+                className={inputClass}
+                value={slot ? formatTime(slot) : ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSlot(/^\d{2}:\d{2}$/.test(v) ? new Date(`${dateStr}T${v}:00-03:00`) : null);
+                }}
+              />
+              <p className="text-xs text-foreground/60">Escolha um horário da lista acima ou edite aqui livremente.</p>
+            </div>
+          )}
         </section>
 
 
