@@ -54,7 +54,7 @@ function Page() {
     const { error } = await supabase.rpc("set_staff_permissions", {
       _barber_id: id, _create_clients: cur.create_clients, _counter_sale: cur.counter_sale, _change_barber: cur.change_barber,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Liberação salva");
     qc.invalidateQueries({ queryKey: ["staff-permissions"] });
   }
