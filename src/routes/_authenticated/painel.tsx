@@ -170,7 +170,7 @@ function BarberPanel() {
   const canSellQuery = useQuery({
     queryKey: ["can-sell"],
     enabled: access != null,
-    queryFn: async () => (await supabase.rpc("is_admin_or_leader")).data === true,
+    queryFn: async () => (await supabase.rpc("staff_can", { _perm: "counter_sale" })).data === true,
   });
   const canSell = canSellQuery.data === true;
   const actions = ACTIONS.filter((a) => a.status !== "cancelado" || access?.role === "admin");

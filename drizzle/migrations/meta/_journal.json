@@ -176,6 +176,13 @@
       "when": 1793543321312,
       "tag": "0024_staff_booking_in_agendar",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793811600281,
+      "tag": "0025_staff_permissions",
+      "breakpoints": true
     }
   ]
 }
