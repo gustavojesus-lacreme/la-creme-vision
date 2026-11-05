@@ -749,6 +749,7 @@ export type Database = {
           commission_service_pct: number
           guest_booking_enabled: boolean
           id: number
+          leader_commission_service_pct: number
           lunch_end: string | null
           lunch_start: string | null
           max_advance_days: number | null
@@ -776,6 +777,7 @@ export type Database = {
           commission_service_pct?: number
           guest_booking_enabled?: boolean
           id?: number
+          leader_commission_service_pct?: number
           lunch_end?: string | null
           lunch_start?: string | null
           max_advance_days?: number | null
@@ -803,6 +805,7 @@ export type Database = {
           commission_service_pct?: number
           guest_booking_enabled?: boolean
           id?: number
+          leader_commission_service_pct?: number
           lunch_end?: string | null
           lunch_start?: string | null
           max_advance_days?: number | null

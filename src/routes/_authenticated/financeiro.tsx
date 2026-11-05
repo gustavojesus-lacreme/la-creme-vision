@@ -89,7 +89,7 @@ function FinancePage() {
   const settings = useQuery({
     queryKey: ["fin-commission-settings"], enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("operation_settings").select("id, commission_service_pct, commission_product_pct, commission_plan_pct").order("id").limit(1).maybeSingle();
+      const { data, error } = await supabase.from("operation_settings").select("id, commission_service_pct, commission_product_pct, commission_plan_pct, leader_commission_service_pct").order("id").limit(1).maybeSingle();
       if (error) throw error;
       return data as (CommissionSettings & { id: number }) | null;
     },
@@ -528,7 +528,9 @@ function SaleForm({ barbers, methods, settings, onDone }: { barbers: Barber[]; m
   const sellerB = barbers.find((b) => b.id === v.seller);
   const earns = !!sellerB && (sellerB.team_role === "barbeiro" || sellerB.team_role === "lider");
   const commPct = !earns ? 0 : Number(v.category === "produto" ? settings?.commission_product_pct ?? 30 : sellerB?.commission_plan_pct ?? settings?.commission_plan_pct ?? 50);
-  const commission = Math.round(((paidV - feeV) * commPct) / 100);
+  const commission = sellerB?.team_role === "lider"
+    ? Math.max(Math.round((paidV * commPct) / 100) - feeV, 0)
+    : Math.round(((paidV - feeV) * commPct) / 100);
   async function save() {
     setErr(null);
     if (!v.description.trim() || amount <= 0) return setErr("Informe descrição e valor.");
@@ -921,7 +923,8 @@ function Methods({ methods, entries, settings }: Ctx) {
   }
 
   const commFields: { key: keyof CommissionSettings; label: string }[] = [
-    { key: "commission_service_pct", label: "Serviços" },
+    { key: "commission_service_pct", label: "Serviços — Barbeiro (taxa dividida na proporção)" },
+    { key: "leader_commission_service_pct", label: "Serviços — Líder/Gerente (assume 100% da taxa)" },
     { key: "commission_product_pct", label: "Produtos" },
     { key: "commission_plan_pct", label: "Plano vendido pelo barbeiro" },
   ];
