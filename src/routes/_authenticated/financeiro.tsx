@@ -528,7 +528,9 @@ function SaleForm({ barbers, methods, settings, onDone }: { barbers: Barber[]; m
   const sellerB = barbers.find((b) => b.id === v.seller);
   const earns = !!sellerB && (sellerB.team_role === "barbeiro" || sellerB.team_role === "lider");
   const commPct = !earns ? 0 : Number(v.category === "produto" ? settings?.commission_product_pct ?? 30 : sellerB?.commission_plan_pct ?? settings?.commission_plan_pct ?? 50);
-  const commission = Math.round(((paidV - feeV) * commPct) / 100);
+  const commission = sellerB?.team_role === "lider"
+    ? Math.max(Math.round((paidV * commPct) / 100) - feeV, 0)
+    : Math.round(((paidV - feeV) * commPct) / 100);
   async function save() {
     setErr(null);
     if (!v.description.trim() || amount <= 0) return setErr("Informe descrição e valor.");
