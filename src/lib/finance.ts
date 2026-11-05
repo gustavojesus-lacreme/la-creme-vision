@@ -223,7 +223,7 @@ export const pct = (n: number) => `${Number(n).toLocaleString("pt-BR", { maximum
 
 export const dayOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(iso));
 
-export type CommissionSettings = { commission_service_pct: number; commission_product_pct: number; commission_plan_pct: number };
+export type CommissionSettings = { commission_service_pct: number; commission_product_pct: number; commission_plan_pct: number; leader_commission_service_pct: number };
 
 /** Relatório individual: só lançamentos atribuídos ao profissional ou com comissão dele. Mesma fonte do Financeiro. */
 export function professionalReport(all: Entry[], barberId: string) {

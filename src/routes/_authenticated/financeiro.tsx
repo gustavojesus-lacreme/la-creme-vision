@@ -89,7 +89,7 @@ function FinancePage() {
   const settings = useQuery({
     queryKey: ["fin-commission-settings"], enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase.from("operation_settings").select("id, commission_service_pct, commission_product_pct, commission_plan_pct").order("id").limit(1).maybeSingle();
+      const { data, error } = await supabase.from("operation_settings").select("id, commission_service_pct, commission_product_pct, commission_plan_pct, leader_commission_service_pct").order("id").limit(1).maybeSingle();
       if (error) throw error;
       return data as (CommissionSettings & { id: number }) | null;
     },
@@ -921,7 +921,8 @@ function Methods({ methods, entries, settings }: Ctx) {
   }
 
   const commFields: { key: keyof CommissionSettings; label: string }[] = [
-    { key: "commission_service_pct", label: "Serviços" },
+    { key: "commission_service_pct", label: "Serviços — Barbeiro (taxa dividida na proporção)" },
+    { key: "leader_commission_service_pct", label: "Serviços — Líder/Gerente (assume 100% da taxa)" },
     { key: "commission_product_pct", label: "Produtos" },
     { key: "commission_plan_pct", label: "Plano vendido pelo barbeiro" },
   ];
